@@ -1,0 +1,146 @@
+[00:00] meet Adam an aspiring entrepreneur he is
+[00:03] interested in hosting an online store
+[00:05] for home decor products like bases
+[00:07] curtains artwork and Home Furnishings he
+[00:11] requires a software application that
+[00:13] would allow the customers to browse the
+[00:15] available products at their fingertips
+[00:16] and buy them online
+[00:18] Adam eager to jump into his new business
+[00:21] wanted to understand how the software
+[00:23] development process works to start with
+[00:26] his business idea Adam meets his cousin
+[00:29] Mark who is a software developer and a
+[00:31] good one at it he pitches his idea and
+[00:34] asks his cousin to help him design an
+[00:36] online business application
+[00:38] Mark explains to Adam the way of
+[00:40] Designing the best online shopping
+[00:42] application we need to understand the
+[00:44] working of the software development
+[00:46] lifecycle also known as the sdlc it
+[00:49] involves distinctive phases to initiate
+[00:52] the software production based on the
+[00:53] client requirements
+[00:56] further Mark briefs Adam about the six
+[00:58] crucial phases of sdlc in designing any
+[01:02] software application
+[01:03] planning requirements phase requirement
+[01:06] analysis phase designing phase
+[01:08] implementation phase testing phase
+[01:11] deployment and maintenance phase
+[01:13] the development team will commence
+[01:15] production post agreeing on the terms
+[01:18] and conditions discussed between the
+[01:19] client and the development team
+[01:21] regarding all the proceedings and
+[01:23] requirements
+[01:24] initiating the production with the
+[01:26] planning requirements phase where the
+[01:28] client and the development team will
+[01:30] discuss the basic requirements for the
+[01:32] software like the purpose of the
+[01:34] application the details about the end
+[01:36] user of the product key elements like
+[01:39] format and attributes of the application
+[01:41] for Designing and the overall user
+[01:44] interface's design of the software the
+[01:47] development moves on to the second stage
+[01:48] the requirement analysis phase which
+[01:51] includes the detailed information about
+[01:53] each element to design the software is
+[01:55] discussed validating the installation of
+[01:58] elements in the application according to
+[02:00] the client's requirements calibrating
+[02:02] the security protocols and Performing
+[02:05] risk analysis for the software
+[02:06] application and all the discussed
+[02:09] details are then to be filed in the
+[02:11] software requirements specification
+[02:13] document also known as the SRS document
+[02:16] after completing the second phase third
+[02:18] stage of software development the design
+[02:21] phase the software designers will devise
+[02:23] the system design following the SRS
+[02:26] document the system design defines the
+[02:28] overall architecture of the software and
+[02:31] checks its feasibility with the client's
+[02:33] requirements
+[02:34] all the details of the design phase are
+[02:36] added to the design document
+[02:38] specification also known as the DDS
+[02:41] document and shared with the analysts
+[02:43] and stakeholders for review
+[02:46] next the development moves on to the
+[02:48] fourth stage the coding or
+[02:50] implementation phase in the coding phase
+[02:52] the developers start writing the code
+[02:55] using the languages they choose for the
+[02:57] software development the coding stage is
+[03:00] also one of the most important phases as
+[03:02] it encapsulates the implementation of
+[03:04] the software product
+[03:06] the developers use predefined guidelines
+[03:08] and development tools like compilers and
+[03:11] debuggers to implement the code
+[03:13] the next phase of the production is
+[03:15] where we begin with the fifth stage of
+[03:17] software development the testing phase
+[03:20] the develop software is now deployed in
+[03:23] multiple test environments to check the
+[03:25] functioning of all the attributes in the
+[03:27] software architecture after the test
+[03:29] cases are completed the quality
+[03:31] assurance and the testing team may find
+[03:33] errors or bugs in the software which
+[03:36] will be forwarded to the developer team
+[03:37] for debugging this testing and debugging
+[03:41] process continues until the software is
+[03:43] stable and works per the required
+[03:46] specifications
+[03:47] as for the last stage in the sdlc life
+[03:50] cycle the deployment and maintenance
+[03:52] phase is initiated
+[03:54] with the testing phase completed the
+[03:56] software application is ready for
+[03:57] deployment and consumer use
+[04:00] in this phase the development team will
+[04:02] set up links for the application and
+[04:04] make it accessible to the users after
+[04:07] the deployment is completed and users
+[04:09] begin using the application they may
+[04:12] encounter an error or a bug in the
+[04:14] application which is to be solved from
+[04:16] time to time
+[04:17] maintenance also includes releasing
+[04:20] application updates and enhancements for
+[04:22] the software for better performance and
+[04:24] user experience
+[04:25] Adam at this point was surprised by all
+[04:28] the effort and steps taken by the
+[04:30] development team to design a software
+[04:32] application and the key phases involved
+[04:35] in sdlc
+[04:37] and on that note here's a question for
+[04:39] you all what does the design document
+[04:42] specification document include software
+[04:44] code details on defects and bugs
+[04:47] software architecture details software
+[04:50] requirements give it a thought and leave
+[04:53] your answers in the comments section
+[04:54] below three lucky winners will receive
+[04:57] Amazon gift vouchers
+[04:59] with Mark's explanation of the sdlc life
+[05:01] cycle Adam understood how software is
+[05:04] developed now he can actively give
+[05:06] feedback to the development team and
+[05:08] design the best software application for
+[05:10] his online store and maybe expand to
+[05:13] other businesses as well we hope you
+[05:16] found this informative and helpful if
+[05:18] you've enjoyed this video a thumbs up
+[05:20] would really be appreciated
+[05:22] don't forget to subscribe to this simply
+[05:24] learn Channel and hit the Bell icon to
+[05:27] never miss an update on the latest
+[05:29] trending Technologies

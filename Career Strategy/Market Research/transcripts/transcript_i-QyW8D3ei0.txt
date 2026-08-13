@@ -1,0 +1,242 @@
+[00:00] In order to understand what a software
+[00:01] tester or quality assurance analyst
+[00:03] does, you first need to understand the
+[00:05] process by which the software is
+[00:07] conceptualized, developed, and
+[00:08] maintained. This process is known as
+[00:11] software development life cycle, or the
+[00:13] SDLC.
+[00:14] There are seven key points to
+[00:16] understanding the software development
+[00:17] life cycle. Phase one, planning.
+[00:20] Phase two, requirement analysis. Phase
+[00:23] three, design. Phase four,
+[00:26] implementation and coding. Phase five,
+[00:29] testing. Phase six, deployment. And
+[00:32] phase seven, maintenance.
+[00:37] So, it all starts with this guy, the
+[00:39] customer.
+[00:40] He's the guy that has the business idea
+[00:42] for our invoice application and the
+[00:44] money to get it started.
+[00:45] He's going to reach out to multiple
+[00:47] different tech companies until he finds
+[00:49] one that he likes.
+[00:51] Finally, he's going to meet our
+[00:52] company's product owner or our project
+[00:54] manager. They are going to discuss terms
+[00:56] of their agreement, sign a deal, and
+[00:59] accept the project.
+[01:01] This will move us into the next phase,
+[01:03] planning the requirements.
+[01:06] Together, the customer and the product
+[01:08] owner will outline the requirements of
+[01:09] the application.
+[01:11] Let's imagine that the requirements that
+[01:13] they've both agreed upon are as follows.
+[01:16] One, user registration.
+[01:18] Two, login.
+[01:21] Three, logout.
+[01:23] Four, the dashboard landing page.
+[01:27] And so on and so forth.
+[01:29] Throughout this course, we'll be running
+[01:31] multiple iterations of the SDLC, to
+[01:34] which new requirements and new features
+[01:35] will be added.
+[01:39] Now that we have the outlined
+[01:40] requirements, let's take them and move
+[01:42] on to the requirement analysis phase.
+[01:47] Here's our team, operations, developers,
+[01:50] product owners, and testers. We'll all
+[01:53] meet up in an office for a few hours and
+[01:54] define each outlined requirement and
+[01:57] give more planning details.
+[02:00] Let's start with requirement number one,
+[02:02] user registration. We'll need a username
+[02:04] input field, a password field, a
+[02:07] checkbox to accept the terms and
+[02:09] conditions, a submit button, and the
+[02:12] ability to save the user into our
+[02:13] database.
+[02:17] Then we'll move to requirement number
+[02:18] two, the login.
+[02:20] We'll need a login page to allow
+[02:22] returning users to log back into our
+[02:23] system. For this, we need another
+[02:26] username input field,
+[02:28] a password field along with another
+[02:30] submit button.
+[02:32] From this, we'll need to read the user's
+[02:33] information out of the database and log
+[02:35] them into our system.
+[02:40] Requirement number three will require a
+[02:42] logout button, usually located around
+[02:44] the same area where the user was logging
+[02:46] in from. When they press the logout
+[02:48] button, it should clear their session
+[02:49] out of the browser to prevent other
+[02:51] people from returning and logging back
+[02:53] into their account.
+[02:57] Finally, requirement number four, the
+[02:59] dashboard. This will essentially be the
+[03:01] home page of our application.
+[03:03] After a new user is registered, they
+[03:05] should be redirected to the dashboard.
+[03:07] Also, when the user logs in with the
+[03:10] returning account, they should be
+[03:11] redirected to the dashboard.
+[03:14] For our first SDLC, I will keep the
+[03:16] requirements easy. In upcoming videos,
+[03:19] we'll dive further in with much harder
+[03:21] customer requirements.
+[03:23] Once all of the requirements have been
+[03:25] analyzed by the team and defined,
+[03:28] the product owner will take all the
+[03:30] defined requirements and create tickets
+[03:32] in a project management system.
+[03:37] From here, we'll move into the design
+[03:38] phase of the SDLC.
+[03:43] The design phase takes all the
+[03:45] requirements and starts to plan the
+[03:47] product. The design phase may include
+[03:49] the business rules, the user interface
+[03:52] layouts,
+[03:53] color schemes,
+[03:55] what programming languages to use,
+[03:59] frameworks,
+[04:02] system server design,
+[04:05] database relationships,
+[04:10] architecture of the application,
+[04:14] mobile aspects,
+[04:17] supported browsers, and much more.
+[04:22] Next, we'll discuss the implementation
+[04:25] and the coding of the application.
+[04:29] The implementation and coding phase is
+[04:30] where everything starts to become fun.
+[04:33] The operations team will set up the
+[04:34] physical hardware for the servers, the
+[04:36] developers will start writing the code,
+[04:39] the designers will continue planning the
+[04:41] user interface,
+[04:42] and the testers will analyze the
+[04:44] requirements and start building test
+[04:45] cases for their test plans.
+[04:48] Even in this stage, testers are
+[04:49] incredibly valuable. They start to
+[04:51] imagine the usability of the application
+[04:53] and see how everything flows together.
+[04:56] Sometimes, while writing test cases,
+[04:57] they can discover things don't make
+[04:59] sense and help redesign fundamental
+[05:01] flaws in the early stages of the
+[05:03] application.
+[05:06] Next up, we'll be discussing one of the
+[05:08] most important phases, which is the
+[05:10] testing phase.
+[05:13] So, why is the testing phase so
+[05:15] important?
+[05:17] Well, imagine that the developer has
+[05:19] finished coding some of our new features
+[05:21] in our requirements. We found that when
+[05:23] the user logs out, that it's not
+[05:25] actually clearing the session in the
+[05:27] browser and that another
+[05:29] person can walk up to their computer,
+[05:32] click the login button, or click the
+[05:33] refresh on the page and they gain access
+[05:35] to their account, get access to all of
+[05:38] their money, and start making payments
+[05:40] on various things. It would be a huge
+[05:43] and expensive, terrible bug that would
+[05:45] get released if we didn't have testers
+[05:47] to test these types of things
+[05:48] beforehand.
+[05:50] So, what does a tester actually do
+[05:52] during the testing phase?
+[05:54] Now that we have the servers all set up
+[05:56] and the database is set up, developers
+[05:58] have finished coding, they've given us
+[06:00] an application, an actual website that
+[06:02] we can log into now. Now we can start
+[06:05] testing and executing our test cases
+[06:07] from the test plans that we have
+[06:08] created, validate that all of the
+[06:10] requirements have been met, make sure
+[06:12] all the functionality is working as
+[06:14] expected, find as many bugs as we
+[06:17] possibly can, which could be color
+[06:19] scheme is incorrect, or there's a user
+[06:21] interface bug somewhere, the critical
+[06:23] issue people not being able to log out,
+[06:25] maybe the users can't even register.
+[06:27] There's so many mistakes that developers
+[06:29] can make and do make frequently.
+[06:32] So, as we're testing, we start to find
+[06:34] bugs. And what we'll do is we'll report
+[06:36] them into a bug tracking system, which
+[06:39] is then assigned to a developer.
+[06:41] They'll go in and they'll fix the bug,
+[06:43] fix the issue, and assign it back to us.
+[06:45] This is called a bug life cycle.
+[06:47] You may have noticed that I've mentioned
+[06:49] test cases, test plans, and bugs.
+[06:53] In the upcoming videos, we'll go into
+[06:55] the bug life cycle,
+[06:57] iterating with developers, and how to
+[06:59] write test plans and test cases.
+[07:04] Up next, we'll talk about the deployment
+[07:07] phase.
+[07:09] In the deployment phase, the operations
+[07:12] team will end up mirroring the staging
+[07:14] or development environment systems that
+[07:16] we've been testing in and get them ready
+[07:18] for production. Meaning that they'll
+[07:20] install new hardware, brand new servers,
+[07:22] have everything scalable for production.
+[07:25] This includes setting up the links,
+[07:26] setting up the databases for real users,
+[07:29] syncing up with the development teams
+[07:31] and release managers.
+[07:33] Once they've completed all of these
+[07:35] tasks, our application will go live to
+[07:37] real users.
+[07:40] This brings us to the final phase of the
+[07:42] SDLC,
+[07:44] maintenance.
+[07:46] So, imagine that we've released and our
+[07:48] application became so successful, we're
+[07:51] just getting millions of users logging
+[07:52] in and registering and using this
+[07:54] application.
+[07:55] So, we need to maintain
+[07:57] the servers in the environment. They
+[07:59] need to monitor the load, the stress,
+[08:01] everything coming on the servers by so
+[08:02] many users logging in and using it, it
+[08:05] doesn't bring down the system. Maybe we
+[08:07] need to make larger servers, larger
+[08:09] databases, maybe we need to get faster
+[08:11] computers. There's a lot of stuff that
+[08:13] goes on during the maintenance phase.
+[08:14] There will be bugs found in production.
+[08:17] It's called production support.
+[08:19] Frequently, users will email with their
+[08:22] issues and you can stop and investigate
+[08:24] what they're complaining about or what
+[08:26] their issue is,
+[08:28] figure it out, write up a bug, get it
+[08:31] resolved, and do another deployment to
+[08:33] production with the issues fixed.
+[08:36] So, to summarize, we've discussed
+[08:39] planning, requirement analysis, design,
+[08:42] implementation and coding, testing,
+[08:45] deployment, and maintenance.
+[08:50] All right, awesome. That wraps up the
+[08:52] video on the SDLC.
+[08:54] Uh one last thing to say is once we're
+[08:56] in the maintenance phase, new features
+[08:58] will come through, new requirements will
+[09:00] come through, and we'll restart the
+[09:01] whole process again and be able to get
+[09:03] new stuff added into our existing
+[09:05] application.
