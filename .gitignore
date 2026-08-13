@@ -20,6 +20,12 @@ node_modules/
 .env.production.local
 **/.env*
 
+# Non-code assets & inspiration folders
+Career Strategy/
+Inpirations/
+Conceptual Framework/
+*.docx
+
 # Logs & Debug
 *.log
 npm-debug.log*
