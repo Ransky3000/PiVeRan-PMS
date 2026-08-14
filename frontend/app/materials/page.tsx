@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface PartItem {
+interface MaterialItem {
   id: string;
   sku: string;
   name: string;
@@ -40,7 +40,7 @@ interface PartItem {
   compatibleVehicles: string;
 }
 
-export default function AdminPartsPage() {
+export default function MaterialsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [stockStatusFilter, setStockStatusFilter] = useState("ALL");
@@ -84,12 +84,12 @@ export default function AdminPartsPage() {
   ];
 
   // Master Materials Catalog Data
-  const [parts, setParts] = useState<PartItem[]>([]);
+  const [materials, setMaterials] = useState<MaterialItem[]>([]);
 
   // Modals & Active Selections
-  const [isAddPartModalOpen, setIsAddPartModalOpen] = useState(false);
+  const [isAddMaterialModalOpen, setIsAddMaterialModalOpen] = useState(false);
   const [isStockAdjustModalOpen, setIsStockAdjustModalOpen] = useState(false);
-  const [selectedPart, setSelectedPart] = useState<PartItem | null>(null);
+  const [selectedMaterial, setSelectedMaterial] = useState<MaterialItem | null>(null);
 
   // Form State for Add / Edit
   const [formSku, setFormSku] = useState("");
@@ -116,27 +116,27 @@ export default function AdminPartsPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  // Open Edit Part Modal
-  const openEditModal = (part: PartItem) => {
-    setSelectedPart(part);
-    setFormSku(part.sku);
-    setFormName(part.name);
-    setFormBrand(part.brand);
-    setFormCategory(part.category);
-    setFormCabinetCode(part.cabinetCode);
-    setFormUnit(part.unitOfMeasure);
-    setFormCostPrice(part.costPrice.replace(/[^\d.]/g, ""));
-    setFormSellingPrice(part.sellingPrice.replace(/[^\d.]/g, ""));
-    setFormStockQty(part.stockQty.toString());
-    setFormCriticalThreshold(part.criticalThreshold.toString());
-    setFormSupplier(part.supplier);
-    setFormCompatibleVehicles(part.compatibleVehicles);
-    setIsAddPartModalOpen(true);
+  // Open Edit Material Modal
+  const openEditModal = (material: MaterialItem) => {
+    setSelectedMaterial(material);
+    setFormSku(material.sku);
+    setFormName(material.name);
+    setFormBrand(material.brand);
+    setFormCategory(material.category);
+    setFormCabinetCode(material.cabinetCode);
+    setFormUnit(material.unitOfMeasure);
+    setFormCostPrice(material.costPrice.replace(/[^\d.]/g, ""));
+    setFormSellingPrice(material.sellingPrice.replace(/[^\d.]/g, ""));
+    setFormStockQty(material.stockQty.toString());
+    setFormCriticalThreshold(material.criticalThreshold.toString());
+    setFormSupplier(material.supplier);
+    setFormCompatibleVehicles(material.compatibleVehicles);
+    setIsAddMaterialModalOpen(true);
   };
 
-  // Open New Part Modal
+  // Open New Material Modal
   const openNewPartModal = () => {
-    setSelectedPart(null);
+    setSelectedMaterial(null);
     setFormSku("");
     setFormName("");
     setFormBrand("");
@@ -149,11 +149,11 @@ export default function AdminPartsPage() {
     setFormCriticalThreshold("5");
     setFormSupplier("Rey Auto Supply Corp");
     setFormCompatibleVehicles("");
-    setIsAddPartModalOpen(true);
+    setIsAddMaterialModalOpen(true);
   };
 
-  // Save Part (Add or Update)
-  const handleSavePart = (e: React.FormEvent) => {
+  // Save Material (Add or Update)
+  const handleSaveMaterial = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formSku.trim() || !formName.trim() || !formSellingPrice.trim()) return;
 
@@ -162,9 +162,9 @@ export default function AdminPartsPage() {
     const parsedQty = parseInt(formStockQty) || 0;
     const parsedThreshold = parseInt(formCriticalThreshold) || 5;
 
-    if (selectedPart) {
-      const updated: PartItem = {
-        ...selectedPart,
+    if (selectedMaterial) {
+      const updated: MaterialItem = {
+        ...selectedMaterial,
         sku: formSku.trim(),
         name: formName.trim(),
         brand: formBrand.trim() || "Generic",
@@ -179,10 +179,10 @@ export default function AdminPartsPage() {
         compatibleVehicles: formCompatibleVehicles.trim() || "Universal"
       };
 
-      setParts(parts.map((p) => (p.id === selectedPart.id ? updated : p)));
-      triggerToast(`Updated part details: ${formName}`);
+      setMaterials(materials.map((p) => (p.id === selectedMaterial.id ? updated : p)));
+      triggerToast(`Updated material details: ${formName}`);
     } else {
-      const newPart: PartItem = {
+      const newPart: MaterialItem = {
         id: `PRT-${Math.floor(100 + Math.random() * 900)}`,
         sku: formSku.trim(),
         name: formName.trim(),
@@ -198,21 +198,21 @@ export default function AdminPartsPage() {
         compatibleVehicles: formCompatibleVehicles.trim() || "Universal"
       };
 
-      setParts([newPart, ...parts]);
-      triggerToast(`Added new part to inventory: ${formName}`);
+      setMaterials([newPart, ...materials]);
+      triggerToast(`Added new material to inventory: ${formName}`);
     }
 
-    setIsAddPartModalOpen(false);
-    setSelectedPart(null);
+    setIsAddMaterialModalOpen(false);
+    setSelectedMaterial(null);
   };
 
   // Stock Adjustment Handler
   const handleStockAdjustment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPart || !adjustQty) return;
+    if (!selectedMaterial || !adjustQty) return;
 
     const qtyVal = parseInt(adjustQty) || 0;
-    let newQty = selectedPart.stockQty;
+    let newQty = selectedMaterial.stockQty;
 
     if (adjustMode === "ADD") {
       newQty += qtyVal;
@@ -222,94 +222,94 @@ export default function AdminPartsPage() {
       newQty = Math.max(0, qtyVal);
     }
 
-    setParts(
-      parts.map((p) => (p.id === selectedPart.id ? { ...p, stockQty: newQty } : p))
+    setMaterials(
+      materials.map((p) => (p.id === selectedMaterial.id ? { ...p, stockQty: newQty } : p))
     );
 
-    triggerToast(`Adjusted stock for ${selectedPart.name} to ${newQty} ${selectedPart.unitOfMeasure}`);
+    triggerToast(`Adjusted stock for ${selectedMaterial.name} to ${newQty} ${selectedMaterial.unitOfMeasure}`);
     setIsStockAdjustModalOpen(false);
-    setSelectedPart(null);
+    setSelectedMaterial(null);
     setAdjustQty("");
     setAdjustNote("");
   };
 
-  // Delete Part
-  const handleDeletePart = (id: string, name: string) => {
-    setParts(parts.filter((p) => p.id !== id));
-    setIsAddPartModalOpen(false);
-    setSelectedPart(null);
-    triggerToast(`Removed part: ${name}`);
+  // Delete Material
+  const handleDeleteMaterial = (id: string, name: string) => {
+    setMaterials(materials.filter((p) => p.id !== id));
+    setIsAddMaterialModalOpen(false);
+    setSelectedMaterial(null);
+    triggerToast(`Removed material: ${name}`);
   };
 
-  // Filtered Parts
-  const filteredParts = useMemo(() => {
-    return parts.filter((part) => {
+  // Filtered Materials
+  const filteredMaterials = useMemo(() => {
+    return materials.filter((material) => {
       const matchesSearch =
-        part.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        part.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        part.compatibleVehicles.toLowerCase().includes(searchTerm.toLowerCase());
+        material.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        material.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        material.compatibleVehicles.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesCategory = categoryFilter === "ALL" || part.category === categoryFilter;
+      const matchesCategory = categoryFilter === "ALL" || material.category === categoryFilter;
 
       let matchesStatus = true;
       if (stockStatusFilter === "IN_STOCK") {
-        matchesStatus = part.stockQty > part.criticalThreshold;
+        matchesStatus = material.stockQty > material.criticalThreshold;
       } else if (stockStatusFilter === "LOW_STOCK") {
-        matchesStatus = part.stockQty > 0 && part.stockQty <= part.criticalThreshold;
+        matchesStatus = material.stockQty > 0 && material.stockQty <= material.criticalThreshold;
       } else if (stockStatusFilter === "OUT_OF_STOCK") {
-        matchesStatus = part.stockQty === 0;
+        matchesStatus = material.stockQty === 0;
       }
 
       return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [parts, searchTerm, categoryFilter, stockStatusFilter]);
+  }, [materials, searchTerm, categoryFilter, stockStatusFilter]);
 
   // Statistics Computations
   const totalValuation = useMemo(() => {
-    return parts.reduce((sum, p) => {
+    return materials.reduce((sum, p) => {
       const cost = parseFloat(p.costPrice.replace(/[^\d.]/g, "")) || 0;
       return sum + cost * p.stockQty;
     }, 0);
-  }, [parts]);
+  }, [materials]);
 
   const criticalCount = useMemo(() => {
-    return parts.filter((p) => p.stockQty <= p.criticalThreshold).length;
-  }, [parts]);
+    return materials.filter((p) => p.stockQty <= p.criticalThreshold).length;
+  }, [materials]);
 
   // Options for Category Select
   const categoryOptions: SelectOption[] = useMemo(() => {
     return [
-      { value: "ALL", label: "All Categories", count: parts.length },
+      { value: "ALL", label: "All Categories", count: materials.length },
       ...categoriesList.map((cat) => ({
         value: cat,
         label: cat,
-        count: parts.filter((p) => p.category === cat).length
+        count: materials.filter((p) => p.category === cat).length
       }))
     ];
-  }, [parts, categoriesList]);
+  }, [materials, categoriesList]);
 
   // Options for Stock Status Select
   const stockStatusOptions: SelectOption[] = useMemo(() => {
     return [
-      { value: "ALL", label: "All Stock Levels", count: parts.length },
+      { value: "ALL", label: "All Stock Levels", count: materials.length },
       {
         value: "IN_STOCK",
         label: "🟢 In Stock",
-        count: parts.filter((p) => p.stockQty > p.criticalThreshold).length
+        count: materials.filter((p) => p.stockQty > p.criticalThreshold).length
       },
       {
         value: "LOW_STOCK",
         label: "🟡 Low Stock Warning",
-        count: parts.filter((p) => p.stockQty > 0 && p.stockQty <= p.criticalThreshold).length
+        count: materials.filter((p) => p.stockQty > 0 && p.stockQty <= p.criticalThreshold).length
       },
       {
         value: "OUT_OF_STOCK",
         label: "🔴 Out of Stock",
-        count: parts.filter((p) => p.stockQty === 0).length
+        count: materials.filter((p) => p.stockQty === 0).length
       }
     ];
-  }, [parts]);
+  }, [materials]);
 
   const devContext = useDevRole();
 
@@ -356,7 +356,7 @@ export default function AdminPartsPage() {
               </div>
               <div>
                 <div className="text-[10px] text-slate-400 font-bold uppercase">Total Materials</div>
-                <div className="text-sm font-extrabold text-slate-900">{parts.length} Materials</div>
+                <div className="text-sm font-extrabold text-slate-900">{materials.length} Materials</div>
               </div>
             </div>
 
@@ -406,7 +406,7 @@ export default function AdminPartsPage() {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search SKU, Part Name, Brand, Car..."
+                  placeholder="Search SKU, Material Name, Brand, Car..."
                   className="bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-600 transition-all w-52 sm:w-64 shadow-2xs"
                 />
               </div>
@@ -429,13 +429,13 @@ export default function AdminPartsPage() {
             </div>
 
             <div className="text-xs text-slate-500 font-semibold">
-              Showing <span className="font-extrabold text-slate-900">{filteredParts.length}</span> of {parts.length} parts
+              Showing <span className="font-extrabold text-slate-900">{filteredMaterials.length}</span> of {materials.length} materials
             </div>
           </div>
 
           {/* TABLE COLUMN HEADERS */}
           <div className="bg-slate-100/90 text-slate-500 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 grid grid-cols-12 py-3 px-5 items-center mt-2 rounded-t-xl">
-            <div className="col-span-3 sm:col-span-3">Part SKU & Name</div>
+            <div className="col-span-3 sm:col-span-3">Material SKU & Name</div>
             <div className="col-span-2 sm:col-span-2">Brand & Category</div>
             <div className="col-span-2 sm:col-span-2">Location Code</div>
             <div className="col-span-2 sm:col-span-2 text-right">Cost / Selling (₱)</div>
@@ -447,53 +447,53 @@ export default function AdminPartsPage() {
         {/* 3. MASTER PARTS DATA ROWS */}
         <section className="bg-white rounded-b-2xl border border-slate-200 border-t-0 shadow-2xs">
           <div className="divide-y divide-slate-100 text-xs">
-            {filteredParts.length === 0 ? (
+            {filteredMaterials.length === 0 ? (
               <div className="py-16 text-center text-slate-400 space-y-2">
                 <Package className="w-10 h-10 mx-auto text-slate-300 stroke-[1.5]" />
                 <div className="text-sm font-bold text-slate-700">No materials added yet</div>
                 <p className="text-xs text-slate-400 font-normal">Click "Add New Material" above to add items to your materials catalog.</p>
               </div>
             ) : (
-              filteredParts.map((part) => {
-              const isOut = part.stockQty === 0;
-              const isLow = part.stockQty > 0 && part.stockQty <= part.criticalThreshold;
+              filteredMaterials.map((material) => {
+              const isOut = material.stockQty === 0;
+              const isLow = material.stockQty > 0 && material.stockQty <= material.criticalThreshold;
 
               return (
                 <div
-                  key={part.id}
-                  onClick={() => openEditModal(part)}
+                  key={material.id}
+                  onClick={() => openEditModal(material)}
                   className="grid grid-cols-12 py-3.5 px-5 items-center hover:bg-emerald-50/60 cursor-pointer transition-colors group"
                 >
                   {/* SKU & Name */}
                   <div className="col-span-3 sm:col-span-3 pr-2">
                     <div className="font-extrabold text-slate-950 text-xs group-hover:text-emerald-700 transition-colors">
-                      {part.name}
+                      {material.name}
                     </div>
                     <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono mt-0.5">
                       <span className="bg-slate-100 text-slate-700 font-bold px-1.5 py-0.2 rounded border border-slate-200">
-                        {part.sku}
+                        {material.sku}
                       </span>
-                      <span className="truncate">{part.unitOfMeasure}</span>
+                      <span className="truncate">{material.unitOfMeasure}</span>
                     </div>
                   </div>
 
                   {/* Brand & Category */}
                   <div className="col-span-2 sm:col-span-2 pr-2">
-                    <div className="font-bold text-slate-800 text-xs">{part.brand}</div>
-                    <div className="text-[10px] text-slate-500 font-medium truncate">{part.category}</div>
+                    <div className="font-bold text-slate-800 text-xs">{material.brand}</div>
+                    <div className="text-[10px] text-slate-500 font-medium truncate">{material.category}</div>
                   </div>
 
                   {/* Location Code */}
                   <div className="col-span-2 sm:col-span-2">
                     <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg">
-                      {part.cabinetCode}
+                      {material.cabinetCode}
                     </span>
                   </div>
 
                   {/* Cost & Selling Price */}
                   <div className="col-span-2 sm:col-span-2 text-right">
-                    <div className="font-extrabold text-emerald-800 text-xs">{part.sellingPrice}</div>
-                    <div className="text-[10px] text-slate-400 font-medium">Cost: {part.costPrice}</div>
+                    <div className="font-extrabold text-emerald-800 text-xs">{material.sellingPrice}</div>
+                    <div className="text-[10px] text-slate-400 font-medium">Cost: {material.costPrice}</div>
                   </div>
 
                   {/* Stock Qty & Status Badge */}
@@ -508,7 +508,7 @@ export default function AdminPartsPage() {
                       }`}
                     >
                       <span>
-                        {part.stockQty} {part.unitOfMeasure}
+                        {material.stockQty} {material.unitOfMeasure}
                       </span>
                       {isOut && <span className="text-[9px] uppercase font-black">Out</span>}
                       {isLow && <span className="text-[9px] uppercase font-black">Low</span>}
@@ -519,7 +519,7 @@ export default function AdminPartsPage() {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedPart(part);
+                        setSelectedMaterial(material);
                         setIsStockAdjustModalOpen(true);
                       }}
                       className="px-2 py-1 bg-slate-100 hover:bg-emerald-100 text-slate-700 hover:text-emerald-900 font-bold text-[11px] rounded-lg border border-slate-200 transition-all shrink-0"
@@ -538,7 +538,7 @@ export default function AdminPartsPage() {
 
       {/* 🟢 ADD / EDIT PART MODAL */}
       <AnimatePresence>
-        {isAddPartModalOpen && (
+        {isAddMaterialModalOpen && (
           <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
@@ -550,22 +550,22 @@ export default function AdminPartsPage() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
                 <h2 className="text-base font-extrabold text-slate-950 flex items-center gap-2">
                   <Package className="w-5 h-5 text-emerald-700" />
-                  <span>{selectedPart ? "Edit Part Details" : "Add New Auto Part"}</span>
+                  <span>{selectedMaterial ? "Edit Material Details" : "Add New Auto Material"}</span>
                 </h2>
                 <button
-                  onClick={() => setIsAddPartModalOpen(false)}
+                  onClick={() => setIsAddMaterialModalOpen(false)}
                   className="text-slate-400 hover:text-slate-600 p-1 rounded-full"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSavePart} className="space-y-3 flex-1 overflow-y-auto pr-1">
+              <form onSubmit={handleSaveMaterial} className="space-y-3 flex-1 overflow-y-auto pr-1">
                 
                 {/* SKU & Name */}
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Part SKU / OEM #</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Material SKU / OEM #</label>
                     <input
                       type="text"
                       required
@@ -577,7 +577,7 @@ export default function AdminPartsPage() {
                   </div>
 
                   <div className="col-span-2">
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Part Name / Description</label>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Material Name / Description</label>
                     <input
                       type="text"
                       required
@@ -720,10 +720,10 @@ export default function AdminPartsPage() {
 
                 {/* Modal Footer Buttons */}
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100 shrink-0">
-                  {selectedPart ? (
+                  {selectedMaterial ? (
                     <button
                       type="button"
-                      onClick={() => handleDeletePart(selectedPart.id, selectedPart.name)}
+                      onClick={() => handleDeleteMaterial(selectedMaterial.id, selectedMaterial.name)}
                       className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-xs rounded-xl border border-rose-200 transition-all flex items-center gap-1"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -734,7 +734,7 @@ export default function AdminPartsPage() {
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setIsAddPartModalOpen(false)}
+                      onClick={() => setIsAddMaterialModalOpen(false)}
                       className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
                     >
                       Cancel
@@ -744,7 +744,7 @@ export default function AdminPartsPage() {
                       className="px-5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5"
                     >
                       <Save className="w-4 h-4" />
-                      <span>{selectedPart ? "Save Changes" : "Save Part"}</span>
+                      <span>{selectedMaterial ? "Save Changes" : "Save Material"}</span>
                     </button>
                   </div>
                 </div>
@@ -757,7 +757,7 @@ export default function AdminPartsPage() {
 
       {/* 📦 QUICK STOCK ADJUSTMENT MODAL */}
       <AnimatePresence>
-        {isStockAdjustModalOpen && selectedPart && (
+        {isStockAdjustModalOpen && selectedMaterial && (
           <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0, scale: 0.96 }}
@@ -769,7 +769,7 @@ export default function AdminPartsPage() {
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div>
                   <h2 className="text-base font-extrabold text-slate-950">Quick Stock Adjustment</h2>
-                  <p className="text-xs text-slate-500 font-bold mt-0.5">{selectedPart.name}</p>
+                  <p className="text-xs text-slate-500 font-bold mt-0.5">{selectedMaterial.name}</p>
                 </div>
                 <button
                   onClick={() => setIsStockAdjustModalOpen(false)}
@@ -816,7 +816,7 @@ export default function AdminPartsPage() {
                 <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex items-center justify-between text-xs">
                   <span className="text-slate-500 font-bold">Current Stock Level:</span>
                   <span className="font-extrabold text-slate-900 text-sm">
-                    {selectedPart.stockQty} {selectedPart.unitOfMeasure}
+                    {selectedMaterial.stockQty} {selectedMaterial.unitOfMeasure}
                   </span>
                 </div>
 

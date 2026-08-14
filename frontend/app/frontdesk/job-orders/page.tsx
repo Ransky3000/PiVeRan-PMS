@@ -427,7 +427,6 @@ export default function JobOrdersPage() {
     const newItem: EstimateLineItem = {
       id: `E-${Date.now()}`,
       description: "",
-      type: "PART",
       qty: 1,
       unitPrice: 0,
       customerApproved: null

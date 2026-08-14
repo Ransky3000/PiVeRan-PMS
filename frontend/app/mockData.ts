@@ -31,7 +31,6 @@ export interface InspectionItem {
 export interface EstimateLineItem {
   id: string;
   description: string;
-  type: "PART" | "LABOR";
   qty: number;
   unitPrice: number;
   customerApproved: boolean | null; // null = not yet decided
@@ -120,12 +119,10 @@ export interface JobOrder {
       ],
       mechanicFindings: "Brake pads worn at 20%, recommend replacement. Minor oil leak near valve cover gasket. Spark plugs misfiring on cylinder 3. Transmission fluid burnt — full flush recommended.",
       estimateItems: [
-        { id: "E1", description: "Spark Plugs (NGK Iridium)", type: "PART", qty: 4, unitPrice: 350, customerApproved: true },
-        { id: "E2", description: "Brake Fluid (DOT4 1L)", type: "PART", qty: 1, unitPrice: 450, customerApproved: true },
-        { id: "E3", description: "Transmission Fluid (ATF)", type: "PART", qty: 3, unitPrice: 800, customerApproved: null },
-        { id: "E4", description: "EGR Valve Cleaning Kit", type: "PART", qty: 1, unitPrice: 1200, customerApproved: null },
-        { id: "E5", description: "Labor — Full PMS Service", type: "LABOR", qty: 1, unitPrice: 3500, customerApproved: true },
-        { id: "E6", description: "Labor — Transmission Flush", type: "LABOR", qty: 1, unitPrice: 1500, customerApproved: null }
+        { id: "E1", description: "Spark Plugs (NGK Iridium)", qty: 4, unitPrice: 350, customerApproved: true },
+        { id: "E2", description: "Brake Fluid (DOT4 1L)", qty: 1, unitPrice: 450, customerApproved: true },
+        { id: "E3", description: "Transmission Fluid (ATF)", qty: 3, unitPrice: 800, customerApproved: null },
+        { id: "E4", description: "EGR Valve Cleaning Kit", qty: 1, unitPrice: 1200, customerApproved: null }
       ],
       discount: 500
     },
@@ -197,8 +194,7 @@ export interface JobOrder {
       ],
       mechanicFindings: "All inspection items passed. Engine running smooth, brake pads at 85%.",
       estimateItems: [
-        { id: "E101", description: "Engine Oil & Filter Change", type: "PART", qty: 1, unitPrice: 1800, customerApproved: true },
-        { id: "E102", description: "Labor — Basic PMS", type: "LABOR", qty: 1, unitPrice: 1200, customerApproved: true }
+        { id: "E101", description: "Engine Oil & Filter Change", qty: 1, unitPrice: 1800, customerApproved: true }
       ]
     },
     {
@@ -222,9 +218,8 @@ export interface JobOrder {
       ],
       mechanicFindings: "Oil and filter replaced. Brake fluid level topped up.",
       estimateItems: [
-        { id: "E201", description: "Fully Synthetic Diesel Oil (7L)", type: "PART", qty: 7, unitPrice: 450, customerApproved: true },
-        { id: "E202", description: "Oil Filter Assembly", type: "PART", qty: 1, unitPrice: 650, customerApproved: true },
-        { id: "E203", description: "Labor — Change Oil & Brake Service", type: "LABOR", qty: 1, unitPrice: 1500, customerApproved: true }
+        { id: "E201", description: "Fully Synthetic Diesel Oil (7L)", qty: 7, unitPrice: 450, customerApproved: true },
+        { id: "E202", description: "Oil Filter Assembly", qty: 1, unitPrice: 650, customerApproved: true }
       ]
     },
     // JOB COMPLETED MOCKUPS
@@ -249,8 +244,7 @@ export interface JobOrder {
       ],
       mechanicFindings: "Heavy PMS completed successfully. All suspension bushings replaced and aircon servicing done.",
       estimateItems: [
-        { id: "E301", description: "Heavy PMS Overhaul Package", type: "PART", qty: 1, unitPrice: 12500, customerApproved: true },
-        { id: "E302", description: "Labor — Heavy PMS Service", type: "LABOR", qty: 1, unitPrice: 4500, customerApproved: true }
+        { id: "E301", description: "Heavy PMS Overhaul Package", qty: 1, unitPrice: 12500, customerApproved: true }
       ]
     },
     {
@@ -274,7 +268,7 @@ export interface JobOrder {
       ],
       mechanicFindings: "Basic PMS completed. Vehicle picked up by owner.",
       estimateItems: [
-        { id: "E401", description: "Basic PMS Package", type: "PART", qty: 1, unitPrice: 3850, customerApproved: true }
+        { id: "E401", description: "Basic PMS Package", qty: 1, unitPrice: 3850, customerApproved: true }
       ]
     }
   ];

@@ -90,9 +90,9 @@ const navItems: NavItem[] = [
   },
   {
     label: "Materials",
-    href: "/admin/parts",
+    href: "/materials",
     icon: Package,
-    roles: ["FrontDesk"]
+    roles: ["Admin", "FrontDesk"]
   },
 
   // MECHANIC NAV ITEMS
