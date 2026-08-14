@@ -28,9 +28,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-/* ───────────────────────────────────────────
-   TYPE DEFINITIONS
-   ─────────────────────────────────────────── */
+import { JobOrder, InspectionItem, EstimateLineItem, DEFAULT_JOB_ORDERS, JOStatus } from "../../mockData";
 
 interface RegisteredOwner {
   id: string;
@@ -40,49 +38,7 @@ interface RegisteredOwner {
   vehicles: { model: string; plate: string; engine: string }[];
 }
 
-type JOStatus = "FOR_INSPECTION" | "AWAITING_ESTIMATE" | "IN_REPAIR" | "READY_FOR_PICKUP" | "COMPLETED";
-
-interface InspectionItem {
-  name: string;
-  status: "PASS" | "FAIL" | "NEEDS_ATTENTION" | "PENDING";
-  mechanicNote?: string;
-  photoUrl?: string;
-  photos?: string[];
-  requiredMaterials?: (string | { name: string; qty: number })[];
-}
-
-interface EstimateLineItem {
-  id: string;
-  description: string;
-  type: "PART" | "LABOR";
-  qty: number;
-  unitPrice: number;
-  customerApproved: boolean | null; // null = not yet decided
-}
-
-interface JobOrder {
-  id: string;
-  ownerName: string;
-  ownerPhone: string;
-  ownerFb: string;
-  vehicleModel: string;
-  plateNumber: string;
-  engineType: string;
-  odometer: string;
-  serviceType: string;
-  serviceDescription?: string;
-  inchargeMechanics: string[];
-  status: JOStatus;
-  createdAt: string;
-  vehiclePhotoUrl?: string;
-  // Post-inspection data
-  inspectionItems?: InspectionItem[];
-  mechanicFindings?: string;
-  estimateItems?: EstimateLineItem[];
-  discount?: number;
-  estimateComment?: string;
-  mechanicMarkedReady?: boolean;
-}
+export 
 
 /* ───────────────────────────────────────────
    SERVICE DESCRIPTIONS & STATUS HELPERS
@@ -148,23 +104,23 @@ const getEstimateCalculations = (jo: JobOrder) => {
   };
 };
 
-const INSPECTION_STATUS_ICON: Record<InspectionItem["status"], React.ReactNode> = {
-  PASS: <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />,
-  FAIL: <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />,
-  NEEDS_ATTENTION: <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />,
+const INSPECTION_STATUS_ICON: Record<string, React.ReactNode> = {
+  GOOD: <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />,
+  ISSUE: <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />,
+  MONITOR: <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />,
   PENDING: <span className="w-3.5 h-3.5 rounded border border-slate-300 bg-white block shrink-0 mt-0.5" />
 };
 
 const getItemPhotos = (item: Partial<InspectionItem>): string[] => {
   if (item.photos && item.photos.length > 0) return item.photos;
   if (item.photoUrl) return [item.photoUrl];
-  if (item.status === "FAIL") {
+  if (item.status === "ISSUE") {
     return [
       "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&auto=format&fit=crop&q=80"
     ];
   }
-  if (item.status === "NEEDS_ATTENTION") {
+  if (item.status === "MONITOR") {
     return [
       "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=600&auto=format&fit=crop&q=80"
     ];
@@ -285,221 +241,7 @@ export default function JobOrdersPage() {
   };
   const activeServiceInfo = serviceChecklists[formServiceType] || serviceChecklists["Major / Full PMS"];
 
-  /* ─── MOCK JOB ORDERS CONSTANT ─── */
-  const DEFAULT_JOB_ORDERS: JobOrder[] = [
-    {
-      id: "JO-1041",
-      ownerName: "Maria Santos",
-      ownerPhone: "0918-444-5678",
-      ownerFb: "@mariasantos",
-      vehicleModel: "Mitsubishi Montero 2020",
-      plateNumber: "XYZ 8888",
-      engineType: "Diesel",
-      odometer: "62,400 KM",
-      serviceType: "Major / Full PMS",
-      inchargeMechanics: ["Mark Rey", "John Uy"],
-      status: "AWAITING_ESTIMATE",
-      createdAt: "Today, 11:30 AM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        {
-          name: "Air Filter",
-          status: "FAIL",
-          mechanicNote: "Air filter clogged with dirt, needs replacement",
-          requiredMaterials: [{ name: "Air Filter", qty: 2 }]
-        },
-        {
-          name: "Replace spark plugs",
-          status: "FAIL",
-          mechanicNote: "Worn out, misfiring on cylinder 3",
-          requiredMaterials: [{ name: "Spark Plugs (NGK Iridium)", qty: 4 }]
-        },
-        {
-          name: "Replace brake fluid",
-          status: "NEEDS_ATTENTION",
-          mechanicNote: "Fluid dark, contaminated",
-          requiredMaterials: [{ name: "Brake Fluid (DOT4 1L)", qty: 1 }]
-        },
-        {
-          name: "Replace transmission fluid (manual/AT/CVT)",
-          status: "FAIL",
-          mechanicNote: "Burnt smell, needs full flush",
-          requiredMaterials: [{ name: "Transmission Fluid (ATF 1L)", qty: 3 }]
-        },
-        { name: "Replace coolant (radiator flush)", status: "PASS" },
-        { name: "Replace fuel filter (if applicable)", status: "PASS" },
-        { name: "Check timing belt or chain condition", status: "NEEDS_ATTENTION", mechanicNote: "Minor fraying, replace within 10k km" },
-        {
-          name: "Clean EGR valve/intake manifold (diesel cars)",
-          status: "FAIL",
-          mechanicNote: "Heavy carbon buildup",
-          requiredMaterials: [{ name: "EGR Cleaner Spray", qty: 1 }]
-        },
-        { name: "Deep diagnostic scan", status: "PASS" },
-        { name: "Test battery load capacity", status: "PASS" },
-        { name: "Full vehicle road test", status: "PASS" }
-      ],
-      mechanicFindings: "Brake pads worn at 20%, recommend replacement. Minor oil leak near valve cover gasket. Spark plugs misfiring on cylinder 3. Transmission fluid burnt — full flush recommended.",
-      estimateItems: [
-        { id: "E1", description: "Spark Plugs (NGK Iridium)", type: "PART", qty: 4, unitPrice: 350, customerApproved: true },
-        { id: "E2", description: "Brake Fluid (DOT4 1L)", type: "PART", qty: 1, unitPrice: 450, customerApproved: true },
-        { id: "E3", description: "Transmission Fluid (ATF)", type: "PART", qty: 3, unitPrice: 800, customerApproved: null },
-        { id: "E4", description: "EGR Valve Cleaning Kit", type: "PART", qty: 1, unitPrice: 1200, customerApproved: null },
-        { id: "E5", description: "Labor — Full PMS Service", type: "LABOR", qty: 1, unitPrice: 3500, customerApproved: true },
-        { id: "E6", description: "Labor — Transmission Flush", type: "LABOR", qty: 1, unitPrice: 1500, customerApproved: null }
-      ],
-      discount: 500
-    },
-    {
-      id: "JO-1042",
-      ownerName: "Juan Dela Cruz",
-      ownerPhone: "0917-555-1234",
-      ownerFb: "@juandelacruz",
-      vehicleModel: "Toyota Vios 2018",
-      plateNumber: "ABC 1234",
-      engineType: "Gasoline",
-      odometer: "45,210 KM",
-      serviceType: "Basic PMS",
-      inchargeMechanics: ["Rodel Santos"],
-      status: "FOR_INSPECTION",
-      createdAt: "Today, 10:15 AM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Change engine oil & filter", status: "PENDING" },
-        { name: "Inspect air filter & cabin filter", status: "PENDING" },
-        { name: "Check brake pads & fluid levels", status: "PENDING" },
-        { name: "Tire pressure & tread inspection", status: "PENDING" },
-        { name: "Battery load test & terminal cleaning", status: "PENDING" }
-      ]
-    },
-    {
-      id: "JO-1045",
-      ownerName: "Cedrick Tan",
-      ownerPhone: "0917-777-8888",
-      ownerFb: "@cedricktan",
-      vehicleModel: "Nissan Navara 2022",
-      plateNumber: "NBD 4421",
-      engineType: "Diesel",
-      odometer: "28,600 KM",
-      serviceType: "Major / Full PMS",
-      inchargeMechanics: ["Bernard Caermare"],
-      status: "FOR_INSPECTION",
-      createdAt: "Today, 8:30 AM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1563720223185-11003d516935?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Includes everything from Basic and Intermediate Services", status: "PENDING" },
-        { name: "Replace spark plugs", status: "PENDING" },
-        { name: "Replace brake fluid", status: "PENDING" },
-        { name: "Replace transmission fluid (manual/AT/CVT)", status: "PENDING" },
-        { name: "Replace coolant (radiator flush)", status: "PENDING" }
-      ]
-    },
-    // READY FOR PICKUP MOCKUPS
-    {
-      id: "JO-1038",
-      ownerName: "Carlos Reyes",
-      ownerPhone: "0920-333-9999",
-      ownerFb: "@carlosreyes",
-      vehicleModel: "Honda Civic 2019",
-      plateNumber: "NMO 5678",
-      engineType: "Gasoline",
-      odometer: "54,200 KM",
-      serviceType: "Basic PMS",
-      inchargeMechanics: ["Mark Rey", "Rey Duran"],
-      status: "READY_FOR_PICKUP",
-      createdAt: "Today, 9:15 AM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Change engine oil & filter", status: "PASS" },
-        { name: "Inspect air filter & cabin filter", status: "PASS" },
-        { name: "Check brake pads & fluid levels", status: "PASS" },
-        { name: "Tire pressure & tread inspection", status: "PASS" },
-        { name: "Battery load test & terminal cleaning", status: "PASS" }
-      ],
-      mechanicFindings: "All inspection items passed. Engine running smooth, brake pads at 85%.",
-      estimateItems: [
-        { id: "E101", description: "Engine Oil & Filter Change", type: "PART", qty: 1, unitPrice: 1800, customerApproved: true },
-        { id: "E102", description: "Labor — Basic PMS", type: "LABOR", qty: 1, unitPrice: 1200, customerApproved: true }
-      ]
-    },
-    {
-      id: "JO-1037",
-      ownerName: "Ana Lim",
-      ownerPhone: "0917-111-2222",
-      ownerFb: "@analim",
-      vehicleModel: "Ford Ranger 2021",
-      plateNumber: "RNG 9988",
-      engineType: "Diesel",
-      odometer: "38,500 KM",
-      serviceType: "Change Oil & Brake Check",
-      inchargeMechanics: ["John Uy"],
-      status: "READY_FOR_PICKUP",
-      createdAt: "Yesterday, 2:45 PM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Change engine oil & filter", status: "PASS" },
-        { name: "Inspect air filter & cabin filter", status: "PASS" },
-        { name: "Check brake pads & fluid levels", status: "PASS" }
-      ],
-      mechanicFindings: "Oil and filter replaced. Brake fluid level topped up.",
-      estimateItems: [
-        { id: "E201", description: "Fully Synthetic Diesel Oil (7L)", type: "PART", qty: 7, unitPrice: 450, customerApproved: true },
-        { id: "E202", description: "Oil Filter Assembly", type: "PART", qty: 1, unitPrice: 650, customerApproved: true },
-        { id: "E203", description: "Labor — Change Oil & Brake Service", type: "LABOR", qty: 1, unitPrice: 1500, customerApproved: true }
-      ]
-    },
-    // JOB COMPLETED MOCKUPS
-    {
-      id: "JO-1036",
-      ownerName: "Bong Go",
-      ownerPhone: "0919-888-7777",
-      ownerFb: "@bonggo",
-      vehicleModel: "Toyota Fortuner 2021",
-      plateNumber: "NKN 9999",
-      engineType: "Diesel",
-      odometer: "68,400 KM",
-      serviceType: "Heavy PMS Refresh",
-      inchargeMechanics: ["Bernard Caermare", "Roderick Omisol"],
-      status: "COMPLETED",
-      createdAt: "Yesterday, 10:00 AM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Complete engine overhaul inspection", status: "PASS" },
-        { name: "Suspension & underchassis bushing overhaul", status: "PASS" },
-        { name: "Aircon system deep clean & freon recharge", status: "PASS" }
-      ],
-      mechanicFindings: "Heavy PMS completed successfully. All suspension bushings replaced and aircon servicing done.",
-      estimateItems: [
-        { id: "E301", description: "Heavy PMS Overhaul Package", type: "PART", qty: 1, unitPrice: 12500, customerApproved: true },
-        { id: "E302", description: "Labor — Heavy PMS Service", type: "LABOR", qty: 1, unitPrice: 4500, customerApproved: true }
-      ]
-    },
-    {
-      id: "JO-1035",
-      ownerName: "Vicente Sotto",
-      ownerPhone: "0919-222-3333",
-      ownerFb: "@vicesotto",
-      vehicleModel: "Toyota Wigo 2021",
-      plateNumber: "NGA 5521",
-      engineType: "Gasoline",
-      odometer: "22,100 KM",
-      serviceType: "Basic PMS",
-      inchargeMechanics: ["Rodel Santos"],
-      status: "COMPLETED",
-      createdAt: "2 days ago",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Change engine oil & filter", status: "PASS" },
-        { name: "Inspect air filter & cabin filter", status: "PASS" },
-        { name: "Check brake pads & fluid levels", status: "PASS" }
-      ],
-      mechanicFindings: "Basic PMS completed. Vehicle picked up by owner.",
-      estimateItems: [
-        { id: "E401", description: "Basic PMS Package", type: "PART", qty: 1, unitPrice: 3850, customerApproved: true }
-      ]
-    }
-  ];
-
+  
   const [jobOrders, setJobOrders] = useState<JobOrder[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -510,17 +252,27 @@ export default function JobOrdersPage() {
 
     let listToUse: JobOrder[] = DEFAULT_JOB_ORDERS;
 
-    if (saved) {
+    if (saved && saved !== "[]") {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const cleaned = parsed.filter((j: any) => !idsToRemove.has(j.id));
+          const normalized = parsed.map((jo: any) => ({
+            ...jo,
+            inspectionItems: (jo.inspectionItems || []).map((item: any) => {
+              let status = item.status;
+              if (status === "PASS") status = "GOOD";
+              else if (status === "FAIL") status = "ISSUE";
+              else if (status === "NEEDS_ATTENTION") status = "MONITOR";
+              return { ...item, status };
+            })
+          }));
+          const cleaned = normalized.filter((j: any) => !idsToRemove.has(j.id));
           const existingIds = new Set(cleaned.map((j: any) => j.id));
           const missingDefaults = DEFAULT_JOB_ORDERS.filter((d) => !existingIds.has(d.id));
           listToUse = [...cleaned, ...missingDefaults];
         }
       } catch (e) {
-        listToUse = DEFAULT_JOB_ORDERS;
+        console.warn("localStorage parsing failed, falling back to defaults", e);
       }
     }
 
@@ -629,7 +381,8 @@ export default function JobOrdersPage() {
           FOR_INSPECTION: "AWAITING_ESTIMATE",
           AWAITING_ESTIMATE: "IN_REPAIR",
           IN_REPAIR: "READY_FOR_PICKUP",
-          READY_FOR_PICKUP: null
+          READY_FOR_PICKUP: null,
+          COMPLETED: null
         };
         const nextStatus = next[jo.status];
         if (!nextStatus) return jo;
@@ -663,8 +416,8 @@ export default function JobOrdersPage() {
   const getInspectionProgress = (jo: JobOrder) => {
     const items = jo.inspectionItems || [];
     const total = items.length;
-    // Both PASS (Good) AND NEEDS_ATTENTION (Monitor) count as completed!
-    const completed = items.filter((i) => i.status === "PASS" || i.status === "NEEDS_ATTENTION").length;
+    // Both GOOD (Good) AND MONITOR (Monitor) count as completed!
+    const completed = items.filter((i) => i.status === "GOOD" || i.status === "MONITOR").length;
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { completed, total, percent };
   };
@@ -1047,19 +800,19 @@ export default function JobOrdersPage() {
                         const photos = getItemPhotos(item);
 
                         const statusLabel =
-                          effectiveStatus === "PASS" ? "Good" :
-                          effectiveStatus === "FAIL" ? "Issue" :
-                          effectiveStatus === "NEEDS_ATTENTION" ? "Monitor" : "Pending";
+                          effectiveStatus === "GOOD" ? "Good" :
+                          effectiveStatus === "ISSUE" ? "Issue" :
+                          effectiveStatus === "MONITOR" ? "Monitor" : "Pending";
 
                         const statusColorClass =
-                          effectiveStatus === "PASS" ? "text-emerald-600" :
-                          effectiveStatus === "FAIL" ? "text-red-600" :
-                          effectiveStatus === "NEEDS_ATTENTION" ? "text-amber-600" : "text-slate-500";
+                          effectiveStatus === "GOOD" ? "text-emerald-600" :
+                          effectiveStatus === "ISSUE" ? "text-red-600" :
+                          effectiveStatus === "MONITOR" ? "text-amber-600" : "text-slate-500";
 
                         const badgeBgClass =
-                          effectiveStatus === "PASS" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-                          effectiveStatus === "FAIL" ? "bg-red-50 text-red-600 border-red-200" :
-                          effectiveStatus === "NEEDS_ATTENTION" ? "bg-amber-50 text-amber-600 border-amber-200" :
+                          effectiveStatus === "GOOD" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                          effectiveStatus === "ISSUE" ? "bg-red-50 text-red-600 border-red-200" :
+                          effectiveStatus === "MONITOR" ? "bg-amber-50 text-amber-600 border-amber-200" :
                           "bg-slate-100 text-slate-500 border-slate-200";
 
                         return (
@@ -1081,7 +834,7 @@ export default function JobOrdersPage() {
                               }`}
                             >
                               <div className="flex items-center gap-2.5 min-w-0">
-                                <div className="shrink-0">{INSPECTION_STATUS_ICON[effectiveStatus]}</div>
+                                <div className="shrink-0">{INSPECTION_STATUS_ICON[effectiveStatus || "PENDING"]}</div>
                                 <span className="font-bold text-slate-800 text-xs truncate">{item.name}</span>
                               </div>
                               <ChevronRight className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
@@ -1162,9 +915,9 @@ export default function JobOrdersPage() {
                                 )}
 
                                 {/* 4. MATERIALS NEEDED / APPLIED (Excalidraw Cases 1, 2, 3, 4) */}
-                                {item.requiredMaterials && item.requiredMaterials.length > 0 && (effectiveStatus === "FAIL" || effectiveStatus === "PASS") && (
+                                {item.requiredMaterials && item.requiredMaterials.length > 0 && (effectiveStatus === "ISSUE" || effectiveStatus === "GOOD") && (
                                   <div>
-                                    {effectiveStatus === "FAIL" ? (
+                                    {effectiveStatus === "ISSUE" ? (
                                       /* CASE 1: Issue -> MATERIALS NEEDED & QUANTITY */
                                       <>
                                         <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-0.5">
@@ -1408,7 +1161,7 @@ export default function JobOrdersPage() {
                           );
                           setDrawerJobOrder(updated);
                           try {
-                            const key = "piveran_job_orders_v9";
+                            const key = "piveran_job_orders_v11";
                             const currentSaved = localStorage.getItem(key);
                             const parsed = currentSaved ? JSON.parse(currentSaved) : [];
                             const newSaved = parsed.map((j: any) => (j.id === updated.id ? { ...j, status: "READY_FOR_PICKUP" } : j));

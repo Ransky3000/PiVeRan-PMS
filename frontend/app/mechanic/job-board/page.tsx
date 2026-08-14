@@ -26,67 +26,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-/* ───────────────────────────────────────────
-   TYPE DEFINITIONS
-   ─────────────────────────────────────────── */
+import { JobOrder, InspectionItem, EstimateLineItem, DEFAULT_JOB_ORDERS, JOStatus, MaterialRequirement } from "../../mockData";
 
-type JOStatus = "FOR_INSPECTION" | "AWAITING_ESTIMATE" | "IN_REPAIR" | "READY_FOR_PICKUP";
 
-interface MaterialRequirement {
-  name: string;
-  qty: number;
-}
 
-interface InspectionItem {
-  name: string;
-  status: "PASS" | "FAIL" | "NEEDS_ATTENTION" | "PENDING";
-  mechanicNote?: string;
-  photoUrl?: string;
-  photos?: string[];
-  statusPhotos?: {
-    PASS?: string[];
-    FAIL?: string[];
-    NEEDS_ATTENTION?: string[];
-  };
-  statusNotes?: {
-    PASS?: string;
-    FAIL?: string;
-    NEEDS_ATTENTION?: string;
-  };
-  requiredMaterials?: (string | MaterialRequirement)[];
-}
-
-interface EstimateLineItem {
-  id: string;
-  description: string;
-  type: "PART" | "LABOR";
-  qty: number;
-  unitPrice: number;
-  customerApproved: boolean | null;
-}
-
-interface JobOrder {
-  id: string;
-  ownerName: string;
-  ownerPhone: string;
-  ownerFb: string;
-  vehicleModel: string;
-  plateNumber: string;
-  engineType: string;
-  odometer: string;
-  serviceType: string;
-  serviceDescription?: string;
-  inchargeMechanics: string[];
-  status: JOStatus;
-  createdAt: string;
-  vehiclePhotoUrl?: string;
-  inspectionItems?: InspectionItem[];
-  mechanicFindings?: string;
-  estimateItems?: EstimateLineItem[];
-  discount?: number;
-  inspectionStarted?: boolean; // Track if tech clicked "Start Inspection"
-  mechanicMarkedReady?: boolean;
-}
 
 /* ───────────────────────────────────────────
    SERVICE DESCRIPTIONS
@@ -153,10 +96,10 @@ const getJobBadgeConfig = (jo: JobOrder) => {
   return { label: jo.status, color: "text-slate-700", bg: "bg-slate-100", border: "border-slate-200" };
 };
 
-const INSPECTION_STATUS_ICON: Record<InspectionItem["status"], React.ReactNode> = {
-  PASS: <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />,
-  FAIL: <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />,
-  NEEDS_ATTENTION: <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />,
+const INSPECTION_STATUS_ICON: Record<string, React.ReactNode> = {
+  GOOD: <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />,
+  ISSUE: <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />,
+  MONITOR: <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />,
   PENDING: <span className="w-3.5 h-3.5 rounded border border-slate-300 bg-white block shrink-0 mt-0.5" />
 };
 
@@ -164,11 +107,9 @@ const getInspectionProgress = (jo: JobOrder | null) => {
   if (!jo) return { completed: 0, total: 0, isAllCompleted: false, text: "0/0 Completed" };
   const items = jo.inspectionItems || [];
   const total = items.length;
-  // ONLY PASS (Good) and NEEDS_ATTENTION (Monitor) count as completed.
-  // PENDING and FAIL (Issue) are NOT considered completed!
-  const completed = items.filter(
-    (i) => i.status === "PASS" || i.status === "NEEDS_ATTENTION"
-  ).length;
+  // ONLY GOOD (Good) and MONITOR (Monitor) count as completed.
+  // PENDING and ISSUE (Issue) are NOT considered completed!
+  const completed = items.filter((i) => i.status === "GOOD" || i.status === "MONITOR").length;
   const isAllCompleted = total > 0 && completed === total;
   return {
     completed,
@@ -221,16 +162,16 @@ export default function MechanicJobBoardPage() {
       createdAt: "Today, 10:15 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
-        { name: "Change engine oil & filter", status: "PASS" },
+        { name: "Change engine oil & filter", status: "GOOD" },
         {
           name: "Inspect air filter & cabin filter",
-          status: "FAIL",
+          status: "ISSUE",
           mechanicNote: "Air filter clogged with dirt, needs replacement",
           requiredMaterials: ["Air Filter", "Cabin Air Filter"]
         },
         {
           name: "Check brake pads & fluid levels",
-          status: "NEEDS_ATTENTION",
+          status: "MONITOR",
           mechanicNote: "Front brake pads at 30% wear, monitor next 5k km"
         },
         { name: "Tire pressure & tread inspection", status: "PENDING" },
@@ -327,11 +268,11 @@ export default function MechanicJobBoardPage() {
       createdAt: "Today, 9:15 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
-        { name: "Change engine oil & filter", status: "PASS" },
-        { name: "Inspect air filter & cabin filter", status: "PASS" },
-        { name: "Check brake pads & fluid levels", status: "PASS" },
-        { name: "Tire pressure & tread inspection", status: "PASS" },
-        { name: "Battery load test & terminal cleaning", status: "PASS" }
+        { name: "Change engine oil & filter", status: "GOOD" },
+        { name: "Inspect air filter & cabin filter", status: "GOOD" },
+        { name: "Check brake pads & fluid levels", status: "GOOD" },
+        { name: "Tire pressure & tread inspection", status: "GOOD" },
+        { name: "Battery load test & terminal cleaning", status: "GOOD" }
       ],
       inspectionStarted: true,
       mechanicMarkedReady: true
@@ -351,9 +292,9 @@ export default function MechanicJobBoardPage() {
       createdAt: "Yesterday, 2:45 PM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
-        { name: "Change engine oil & filter", status: "PASS" },
-        { name: "Inspect air filter & cabin filter", status: "PASS" },
-        { name: "Check brake pads & fluid levels", status: "PASS" }
+        { name: "Change engine oil & filter", status: "GOOD" },
+        { name: "Inspect air filter & cabin filter", status: "GOOD" },
+        { name: "Check brake pads & fluid levels", status: "GOOD" }
       ],
       inspectionStarted: true,
       mechanicMarkedReady: true
@@ -374,9 +315,9 @@ export default function MechanicJobBoardPage() {
       createdAt: "Yesterday, 10:00 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
-        { name: "Complete engine overhaul inspection", status: "PASS" },
-        { name: "Suspension & underchassis bushing overhaul", status: "PASS" },
-        { name: "Aircon system deep clean & freon recharge", status: "PASS" }
+        { name: "Complete engine overhaul inspection", status: "GOOD" },
+        { name: "Suspension & underchassis bushing overhaul", status: "GOOD" },
+        { name: "Aircon system deep clean & freon recharge", status: "GOOD" }
       ],
       inspectionStarted: true,
       mechanicMarkedReady: true
@@ -396,9 +337,9 @@ export default function MechanicJobBoardPage() {
       createdAt: "2 days ago",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
-        { name: "Change engine oil & filter", status: "PASS" },
-        { name: "Inspect air filter & cabin filter", status: "PASS" },
-        { name: "Check brake pads & fluid levels", status: "PASS" }
+        { name: "Change engine oil & filter", status: "GOOD" },
+        { name: "Inspect air filter & cabin filter", status: "GOOD" },
+        { name: "Check brake pads & fluid levels", status: "GOOD" }
       ],
       inspectionStarted: true,
       mechanicMarkedReady: true
@@ -415,9 +356,19 @@ export default function MechanicJobBoardPage() {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          const existingIds = new Set(parsed.map((j: any) => j.id));
+          const normalized = parsed.map((jo: any) => ({
+            ...jo,
+            inspectionItems: (jo.inspectionItems || []).map((item: any) => {
+              let status = item.status;
+              if (status === "PASS") status = "GOOD";
+              else if (status === "FAIL") status = "ISSUE";
+              else if (status === "NEEDS_ATTENTION") status = "MONITOR";
+              return { ...item, status };
+            })
+          }));
+          const existingIds = new Set(normalized.map((j: any) => j.id));
           const missingDefaults = DEFAULT_JOB_ORDERS.filter((d) => !existingIds.has(d.id));
-          listToUse = [...parsed, ...missingDefaults];
+          listToUse = [...normalized, ...missingDefaults];
         }
       } catch (e) {
         listToUse = DEFAULT_JOB_ORDERS;
@@ -543,7 +494,7 @@ export default function MechanicJobBoardPage() {
     const items = drawerJobOrder?.inspectionItems || [];
     const updatedItems = [...items];
     const targetItem = updatedItems[idx];
-    const activeStatus = targetItem.status !== "PENDING" ? targetItem.status : "PASS";
+    const activeStatus = targetItem.status !== "PENDING" ? targetItem.status : "GOOD";
 
     const currentStatusNotes = targetItem.statusNotes || {};
     const updatedStatusNotes = {
@@ -610,7 +561,7 @@ export default function MechanicJobBoardPage() {
 
           const currentItems = drawerJobOrder.inspectionItems || [];
           const targetItem = currentItems[itemIdx];
-          const activeStatus = targetItem.status !== "PENDING" ? targetItem.status : "PASS";
+          const activeStatus = targetItem.status !== "PENDING" ? targetItem.status : "GOOD";
 
           const currentStatusPhotos = targetItem.statusPhotos || {};
           const existingPhotosForStatus = getItemPhotos(targetItem, activeStatus);
@@ -642,7 +593,7 @@ export default function MechanicJobBoardPage() {
     if (!drawerJobOrder) return;
     const currentItems = drawerJobOrder.inspectionItems || [];
     const targetItem = currentItems[itemIdx];
-    const activeStatus = targetItem.status !== "PENDING" ? targetItem.status : "PASS";
+    const activeStatus = targetItem.status !== "PENDING" ? targetItem.status : "GOOD";
 
     const currentStatusPhotos = targetItem.statusPhotos || {};
     const existingPhotosForStatus = getItemPhotos(targetItem, activeStatus);
@@ -889,7 +840,7 @@ export default function MechanicJobBoardPage() {
                         <span className="font-semibold text-slate-900">{jo.serviceType}</span>
                       </div>
 
-                      {/* Status / Progress indicators (Both PASS & NEEDS_ATTENTION count as completed) */}
+                      {/* Status / Progress indicators (Both GOOD & MONITOR count as completed) */}
                       {jo.status === "FOR_INSPECTION" && !jo.inspectionStarted && (
                         <div className="space-y-1 pt-0.5">
                           <div className="flex items-center justify-between text-[10px] text-slate-500">
@@ -1063,7 +1014,7 @@ export default function MechanicJobBoardPage() {
                                 }`}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className="shrink-0">{INSPECTION_STATUS_ICON[item.status]}</div>
+                                  <div className="shrink-0">{INSPECTION_STATUS_ICON[item.status || "PENDING"]}</div>
                                   <span className="font-bold text-slate-800 text-xs truncate">{item.name}</span>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
@@ -1078,13 +1029,13 @@ export default function MechanicJobBoardPage() {
                                   <div>
                                     <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Status</div>
                                     <div className="flex flex-wrap gap-1.5">
-                                      {(["PASS", "FAIL", "NEEDS_ATTENTION", "PENDING"] as const).map((st) => {
+                                      {(["GOOD", "ISSUE", "MONITOR", "PENDING"] as const).map((st) => {
                                         const isSel = item.status === st;
-                                        const label = st === "PASS" ? "Good" : st === "FAIL" ? "Issue" : st === "NEEDS_ATTENTION" ? "Monitor" : "Pending";
+                                        const label = st === "GOOD" ? "Good" : st === "ISSUE" ? "Issue" : st === "MONITOR" ? "Monitor" : "Pending";
                                         const activeStyles =
-                                          st === "PASS" ? "bg-emerald-700 text-white shadow-2xs border-emerald-700 font-semibold" :
-                                          st === "FAIL" ? "bg-red-600 text-white shadow-2xs border-red-600 font-semibold" :
-                                          st === "NEEDS_ATTENTION" ? "bg-amber-500 text-white shadow-2xs border-amber-500 font-semibold" :
+                                          st === "GOOD" ? "bg-emerald-700 text-white shadow-2xs border-emerald-700 font-semibold" :
+                                          st === "ISSUE" ? "bg-red-600 text-white shadow-2xs border-red-600 font-semibold" :
+                                          st === "MONITOR" ? "bg-amber-500 text-white shadow-2xs border-amber-500 font-semibold" :
                                           "bg-slate-700 text-white shadow-2xs border-slate-700 font-semibold";
                                         const inactiveStyles = "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 font-normal";
 
@@ -1104,15 +1055,15 @@ export default function MechanicJobBoardPage() {
                                     </div>
                                   </div>
 
-                                  {/* Materials Section (Only display for status FAIL or PASS with applied materials) */}
-                                  {(item.status === "FAIL" || (item.status === "PASS" && (item.requiredMaterials || []).length > 0)) && (
+                                  {/* Materials Section (Only display for status ISSUE or GOOD with applied materials) */}
+                                  {(item.status === "ISSUE" || (item.status === "GOOD" && (item.requiredMaterials || []).length > 0)) && (
                                     <div className="space-y-2 pt-1">
                                       {/* Summary List of Added Materials / Applied Parts */}
                                       {(item.requiredMaterials || []).length > 0 && activeAddMaterialItemIdx !== idx && (
                                         <div className="space-y-1.5">
                                           <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400 uppercase tracking-wider px-1 pb-0.5">
-                                            <span>{item.status === "PASS" ? "Materials Applied" : "Materials"}</span>
-                                            {item.status !== "PASS" && <span className="pr-4">Quantity</span>}
+                                            <span>{item.status === "GOOD" ? "Materials Applied" : "Materials"}</span>
+                                            {item.status !== "GOOD" && <span className="pr-4">Quantity</span>}
                                           </div>
 
                                               <div className="space-y-1">
@@ -1120,7 +1071,7 @@ export default function MechanicJobBoardPage() {
                                                   const name = typeof m === "object" ? m.name : m;
                                                   const qty = typeof m === "object" ? m.qty : 1;
 
-                                                  if (item.status === "PASS") {
+                                                  if (item.status === "GOOD") {
                                                     return (
                                                       <div key={name} className="flex items-center gap-2.5 py-1 px-1 text-xs">
                                                         <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
@@ -1304,8 +1255,8 @@ export default function MechanicJobBoardPage() {
                                                 </div>
                                               )}
                                             </div>
-                                          ) : item.status !== "PASS" ? (
-                                            /* STEP 1: + add button (Only for FAIL / Repair needed) */
+                                          ) : item.status !== "GOOD" ? (
+                                            /* STEP 1: + add button (Only for ISSUE / Repair needed) */
                                             <button
                                               type="button"
                                               onClick={() => {
@@ -1330,9 +1281,9 @@ export default function MechanicJobBoardPage() {
                                       {/* Visual Proof Section (Matching User Sketch 1 & 2) */}
                                       {(() => {
                                         const dropStyle =
-                                          item.status === "FAIL"
+                                          item.status === "ISSUE"
                                             ? { bg: "hover:bg-red-50/80", border: "hover:border-red-500/80", iconBg: "group-hover:bg-red-100", iconText: "group-hover:text-red-700", text: "group-hover:text-red-700", imgHoverBorder: "hover:border-red-500 hover:ring-2 hover:ring-red-200/80", focusBorder: "focus:border-red-500 focus:ring-1 focus:ring-red-500/30" }
-                                            : item.status === "PASS"
+                                            : item.status === "GOOD"
                                             ? { bg: "hover:bg-emerald-50/80", border: "hover:border-emerald-500/80", iconBg: "group-hover:bg-emerald-100", iconText: "group-hover:text-emerald-700", text: "group-hover:text-emerald-700", imgHoverBorder: "hover:border-emerald-500 hover:ring-2 hover:ring-emerald-200/80", focusBorder: "focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500/30" }
                                             : { bg: "hover:bg-amber-50/80", border: "hover:border-amber-500/80", iconBg: "group-hover:bg-amber-100", iconText: "group-hover:text-amber-700", text: "group-hover:text-amber-700", imgHoverBorder: "hover:border-amber-500 hover:ring-2 hover:ring-amber-200/80", focusBorder: "focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30" };
 
@@ -1425,8 +1376,8 @@ export default function MechanicJobBoardPage() {
                                           onChange={(e) => updateInspectionItemNote(idx, e.target.value)}
                                           placeholder="Add diagnostic comments or wear levels..."
                                           className={`w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[11px] font-normal text-slate-800 outline-none ${(() => {
-                                            if (item.status === "FAIL") return "focus:border-red-500 focus:ring-1 focus:ring-red-500/30";
-                                            if (item.status === "PASS") return "focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500/30";
+                                            if (item.status === "ISSUE") return "focus:border-red-500 focus:ring-1 focus:ring-red-500/30";
+                                            if (item.status === "GOOD") return "focus:border-emerald-600 focus:ring-1 focus:ring-emerald-500/30";
                                             return "focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30";
                                           })()} transition-all`}
                                         />
@@ -1457,7 +1408,7 @@ export default function MechanicJobBoardPage() {
                                 className={`px-4 py-2.5 flex items-center justify-between gap-3 ${hasDetails ? "cursor-pointer hover:bg-slate-100/60" : "select-text"}`}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className="shrink-0">{INSPECTION_STATUS_ICON[item.status]}</div>
+                                  <div className="shrink-0">{INSPECTION_STATUS_ICON[item.status || "PENDING"]}</div>
                                   <span className="font-semibold text-slate-800 text-xs truncate">{item.name}</span>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
@@ -1575,13 +1526,13 @@ export default function MechanicJobBoardPage() {
                 const currentItem = drawerJobOrder.inspectionItems?.[lightboxData.itemIdx];
                 const photos = currentItem ? getItemPhotos(currentItem) : [];
                 const lightboxStyle =
-                  currentItem?.status === "FAIL"
+                  currentItem?.status === "ISSUE"
                     ? {
                         activeBorder: "border-red-500 ring-2 ring-red-500/50 scale-102",
                         addHoverBorder: "hover:border-red-500/80",
                         addHoverText: "hover:text-red-400"
                       }
-                    : currentItem?.status === "PASS"
+                    : currentItem?.status === "GOOD"
                     ? {
                         activeBorder: "border-emerald-500 ring-2 ring-emerald-500/50 scale-102",
                         addHoverBorder: "hover:border-emerald-500/80",
