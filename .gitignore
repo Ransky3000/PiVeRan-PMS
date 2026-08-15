@@ -42,3 +42,12 @@ coverage/
 Thumbs.db
 .vscode/
 .idea/
+
+# Python cache & databases
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
