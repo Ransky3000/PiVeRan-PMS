@@ -41,9 +41,4 @@ def login_user(credentials: UserLogin, db: Session = Depends(get_db)):
     if not user or not verify_password(credentials.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password.")
     
-    if user.status != AccountStatus.APPROVED:
-        raise HTTPException(
-            status_code=403,
-            detail=f"Account is currently {user.status.value}. Please wait for System Owner approval."
-        )
     return user

@@ -28,3 +28,18 @@ class UserResponse(BaseModel):
 
 class UserStatusUpdate(BaseModel):
     status: AccountStatus
+
+class UserAdminCreate(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+    phone_number: str
+    role: UserRole
+    status: AccountStatus = AccountStatus.APPROVED
+
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    phone_number: Optional[str] = None
+    role: Optional[UserRole] = None
+    status: Optional[AccountStatus] = None

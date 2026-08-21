@@ -1,27 +1,95 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Flame, Clock, AlertTriangle, CheckCircle, RotateCw, ArrowLeft } from "lucide-react";
+import { apiService, authService } from "../apiService";
 
 export default function PendingApprovalPage() {
-  const [status, setStatus] = useState<"PENDING" | "NEEDS_REVISION">("PENDING");
-  const [adminComment, setAdminComment] = useState("Please verify your 11-digit mobile phone number.");
-  const [fullName, setFullName] = useState("Cedrick Santos");
-  const [email, setEmail] = useState("cedrick@reyauto.com");
-  const [phone, setPhone] = useState("0917123456");
-  const [role, setRole] = useState("Front desk");
+  const router = useRouter();
+  const [status, setStatus] = useState<"PENDING" | "REJECTED">("PENDING");
+  const [adminComment, setAdminComment] = useState("Your registration is pending review. Please verify your details.");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleResubmit = (e: React.FormEvent) => {
+  // Load pending user details on mount
+  useEffect(() => {
+    const pending = authService.getPendingUser();
+    if (!pending || !pending.user_id) {
+      router.replace("/login");
+      return;
+    }
+    setUserId(pending.user_id);
+    setFullName(pending.name);
+    setEmail(pending.email);
+    setPhone(pending.phone_number);
+    setRole(pending.role);
+    setStatus(pending.status === "REJECTED" ? "REJECTED" : "PENDING");
+  }, [router]);
+
+  // Status Polling Loop (every 5 seconds)
+  useEffect(() => {
+    if (!userId) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const user = await apiService.getUser(userId);
+        
+        // Update details if they changed in DB
+        setFullName(user.name);
+        setPhone(user.phone_number);
+        setRole(user.role);
+
+        if (user.status === "APPROVED") {
+          clearInterval(interval);
+          authService.setCurrentUser(user);
+          authService.setPendingUser(null);
+          triggerToast("Your account has been approved! Redirecting...");
+          setTimeout(() => {
+            if (user.role === "Admin") {
+              router.push("/admin/analytics");
+            } else if (user.role === "Front Desk") {
+              router.push("/frontdesk/dashboard");
+            } else if (user.role === "Mechanic") {
+              router.push("/mechanic/job-board");
+            }
+          }, 1500);
+        } else if (user.status === "REJECTED") {
+          setStatus("REJECTED");
+          setAdminComment("Your request has been declined. Please adjust your information or contact support.");
+        } else {
+          setStatus("PENDING");
+        }
+      } catch (err) {
+        console.error("Polling user status failed:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [userId, router]);
+
+  const handleResubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus("PENDING");
-    triggerToast("Application details updated & re-submitted to Admin!");
+    if (!userId) return;
+
+    try {
+      // Re-submit simply updates backend status back to PENDING
+      await apiService.updateUserStatus(userId, "PENDING");
+      setStatus("PENDING");
+      triggerToast("Application details re-submitted to Admin!");
+    } catch (err: any) {
+      triggerToast(err.message || "Failed to re-submit application.");
+    }
   };
 
   return (
@@ -46,7 +114,7 @@ export default function PendingApprovalPage() {
             </div>
           </div>
 
-          {/* Hero Welcome Text (Updated to Admin) */}
+          {/* Hero Welcome Text */}
           <div className="relative z-10 my-4 max-w-xs">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3 tracking-tight">
               Application Status
@@ -95,7 +163,7 @@ export default function PendingApprovalPage() {
             )}
 
             {/* Admin Revision Feedback Alert Box */}
-            {status === "NEEDS_REVISION" && (
+            {status === "REJECTED" && (
               <div className="mb-6 p-4 bg-amber-50/80 border border-amber-200 rounded-2xl">
                 <div className="flex items-center gap-2 text-amber-900 font-bold text-xs mb-1">
                   <AlertTriangle className="w-4 h-4 text-amber-600" />
@@ -156,34 +224,15 @@ export default function PendingApprovalPage() {
               </form>
             )}
 
-            {/* Interactive State Toggle Demo for Testing */}
-            <div className="mt-6 pt-4 border-t border-slate-100 text-center">
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-                ⚡ TOGGLE ADMIN FEEDBACK STATE DEMO
-              </div>
-              <div className="flex gap-2 justify-center">
-                <button
-                  type="button"
-                  onClick={() => setStatus("PENDING")}
-                  className={`text-[11px] font-semibold px-3 py-1 rounded-full border transition-all ${status === "PENDING" ? "bg-amber-100 border-amber-300 text-amber-800" : "bg-slate-100 border-slate-200 text-slate-600"}`}
-                >
-                  🟡 Pending State
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStatus("NEEDS_REVISION")}
-                  className={`text-[11px] font-semibold px-3 py-1 rounded-full border transition-all ${status === "NEEDS_REVISION" ? "bg-rose-100 border-rose-300 text-rose-800" : "bg-slate-100 border-slate-200 text-slate-600"}`}
-                >
-                  ⚠️ Needs Revision Loop
-                </button>
-              </div>
-            </div>
-
           </div>
 
           {/* Footer Back Link */}
           <div className="text-center pt-4 border-t border-slate-100">
-            <Link href="/login" className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-emerald-700 font-semibold transition-colors">
+            <Link 
+              href="/login" 
+              onClick={() => authService.clearSession()}
+              className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-emerald-700 font-semibold transition-colors"
+            >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Return to Sign In</span>
             </Link>

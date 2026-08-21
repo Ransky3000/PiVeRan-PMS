@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useDevRole, RoleType } from "@/context/DevRoleContext";
+import { useDevRole, RoleType, ROLE_PROFILES } from "@/context/DevRoleContext";
+import { authService } from "@/app/apiService";
 import {
   Flame,
   LayoutDashboard,
@@ -58,7 +59,7 @@ const navItems: NavItem[] = [
     roles: ["FrontDesk"]
   },
   {
-    label: "Vehicle Owners",
+    label: "Owner",
     href: "/frontdesk/owners",
     icon: User,
     roles: ["FrontDesk"]
@@ -107,10 +108,25 @@ export function TailAdminLayout({
   const pathname = usePathname();
   const router = useRouter();
   const devContext = useDevRole();
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
-  const activeRole = propRole || devContext.activeRole;
-  const userName = propName || devContext.currentProfile.name;
-  const userEmail = propEmail || devContext.currentProfile.email;
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, []);
+
+  const activeRole = propRole || devContext.activeRole || (currentUser
+    ? (currentUser.role === "Front Desk" ? "FrontDesk" : currentUser.role)
+    : "Public");
+
+  const profile = ROLE_PROFILES[activeRole] || devContext.currentProfile;
+
+  const userName = profile?.name || (currentUser ? currentUser.name : propName);
+  const userEmail = profile?.email || (currentUser ? currentUser.email : propEmail);
+  const userTitle = profile?.title || (currentUser ? (currentUser.role === "Front Desk" ? "Front Desk Manager" : currentUser.role === "Mechanic" ? "Service Technician" : "System Owner") : "");
+  const avatarBadge = profile?.avatarBadge || "";
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -170,7 +186,7 @@ export function TailAdminLayout({
             <div className="p-3 mx-3 my-3 bg-slate-800/80 rounded-xl border border-slate-700/60">
               <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">ACTIVE ROLE</div>
               <div className="text-xs font-bold text-white truncate mt-0.5">
-                {devContext.currentProfile.title}
+                {userTitle}
               </div>
             </div>
           )}
@@ -181,7 +197,7 @@ export function TailAdminLayout({
           <nav className="p-3 space-y-1">
             {allowedNavItems.length === 0 && !isSidebarCollapsed && (
               <div className="p-3 text-[11px] text-slate-400 bg-slate-800/40 rounded-xl border border-slate-800 text-center leading-relaxed">
-                No internal sidebar views for <strong>{devContext.currentProfile.avatarBadge}</strong>. Use the top Dev Controller bar to switch role perspectives.
+                No internal sidebar views for <strong>{avatarBadge}</strong>. Use the top Dev Controller bar to switch role perspectives.
               </div>
             )}
             {allowedNavItems.map((item) => {
@@ -235,7 +251,10 @@ export function TailAdminLayout({
             )}
 
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => {
+                authService.clearSession();
+                router.push("/login");
+              }}
               className="p-2 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-lg transition-all"
               title="Sign Out"
             >

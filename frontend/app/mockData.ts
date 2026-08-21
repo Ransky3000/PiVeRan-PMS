@@ -2,7 +2,7 @@
    TYPE DEFINITIONS
    ─────────────────────────────────────────── */
 
-export type JOStatus = "FOR_INSPECTION" | "AWAITING_ESTIMATE" | "IN_REPAIR" | "READY_FOR_PICKUP" | "COMPLETED";
+export type JOStatus = "New" | "Work in progress" | "Job completed";
 
 export interface MaterialRequirement {
   name: string;
@@ -76,7 +76,7 @@ export interface JobOrder {
       odometer: "62,400 KM",
       serviceType: "Major / Full PMS",
       inchargeMechanics: ["Mark Rey", "John Uy"],
-      status: "AWAITING_ESTIMATE",
+      status: "Work in progress",
       createdAt: "Today, 11:30 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -137,7 +137,7 @@ export interface JobOrder {
       odometer: "45,210 KM",
       serviceType: "Basic PMS",
       inchargeMechanics: ["Rodel Santos"],
-      status: "FOR_INSPECTION",
+      status: "New",
       createdAt: "Today, 10:15 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -159,7 +159,7 @@ export interface JobOrder {
       odometer: "28,600 KM",
       serviceType: "Major / Full PMS",
       inchargeMechanics: ["Bernard Caermare"],
-      status: "FOR_INSPECTION",
+      status: "New",
       createdAt: "Today, 8:30 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1563720223185-11003d516935?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -182,7 +182,7 @@ export interface JobOrder {
       odometer: "54,200 KM",
       serviceType: "Basic PMS",
       inchargeMechanics: ["Mark Rey", "Rey Duran"],
-      status: "READY_FOR_PICKUP",
+      status: "Job completed",
       createdAt: "Today, 9:15 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -208,7 +208,7 @@ export interface JobOrder {
       odometer: "38,500 KM",
       serviceType: "Change Oil & Brake Check",
       inchargeMechanics: ["John Uy"],
-      status: "READY_FOR_PICKUP",
+      status: "Job completed",
       createdAt: "Yesterday, 2:45 PM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -234,7 +234,7 @@ export interface JobOrder {
       odometer: "68,400 KM",
       serviceType: "Heavy PMS Refresh",
       inchargeMechanics: ["Bernard Caermare", "Roderick Omisol"],
-      status: "COMPLETED",
+      status: "Job completed",
       createdAt: "Yesterday, 10:00 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -258,7 +258,7 @@ export interface JobOrder {
       odometer: "22,100 KM",
       serviceType: "Basic PMS",
       inchargeMechanics: ["Rodel Santos"],
-      status: "COMPLETED",
+      status: "Job completed",
       createdAt: "2 days ago",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [

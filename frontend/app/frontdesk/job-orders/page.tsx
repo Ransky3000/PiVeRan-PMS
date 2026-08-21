@@ -63,11 +63,9 @@ const getServiceDescription = (serviceType: string, customDesc?: string): string
 };
 
 const STATUS_CONFIG: Record<JOStatus, { label: string; color: string; bg: string; border: string }> = {
-  FOR_INSPECTION: { label: "New", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" },
-  AWAITING_ESTIMATE: { label: "Awaiting Estimate", color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200" },
-  IN_REPAIR: { label: "In Repair", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200" },
-  READY_FOR_PICKUP: { label: "Ready for Pickup", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
-  COMPLETED: { label: "Job Completed", color: "text-emerald-800", bg: "bg-emerald-100", border: "border-emerald-300" }
+  New: { label: "New", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" },
+  "Work in progress": { label: "Work in progress", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200" },
+  "Job completed": { label: "Job Completed", color: "text-emerald-800", bg: "bg-emerald-100", border: "border-emerald-300" }
 };
 
 const SERVICE_FEE_MAP: Record<string, number> = {
@@ -134,7 +132,7 @@ const getItemPhotos = (item: Partial<InspectionItem>): string[] => {
    ─────────────────────────────────────────── */
 
 export default function JobOrdersPage() {
-  const [activeTab, setActiveTab] = useState<"FOR_INSPECTION" | "WORK_IN_PROGRESS" | "READY_FOR_PICKUP" | "JOB_COMPLETED">("WORK_IN_PROGRESS");
+  const [activeTab, setActiveTab] = useState<"New" | "Work in progress" | "Job completed">("Work in progress");
   const [searchTerm, setSearchTerm] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -147,12 +145,23 @@ export default function JobOrdersPage() {
   // Quick "Add New" Modal State
   const [addNewModalType, setAddNewModalType] = useState<"OWNER" | "VEHICLE" | "MECHANIC" | null>(null);
   const [newInputName, setNewInputName] = useState("");
+  // Additional states for new Owner
+  const [newOwnerPhone, setNewOwnerPhone] = useState("");
+  const [newOwnerFb, setNewOwnerFb] = useState("");
+  // Additional states for new Vehicle
+  const [newMake, setNewMake] = useState("");
+  const [newModel, setNewModel] = useState("");
+  const [newYear, setNewYear] = useState("");
+  const [newColor, setNewColor] = useState("");
+  const [newPlateNumber, setNewPlateNumber] = useState("");
+  const [newPhotoUrl, setNewPhotoUrl] = useState("");
 
   // Master Data
   const [registeredOwnersDatabase, setRegisteredOwnersDatabase] = useState<any[]>([]);
   
   const [allVehicles, setAllVehicles] = useState<any[]>([]);
   const [availableMechanicsList, setAvailableMechanicsList] = useState<string[]>([]);
+  const [allBundles, setAllBundles] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -163,6 +172,10 @@ export default function JobOrdersPage() {
         
         // Map backend models to UI expected structure for now
         setRegisteredOwnersDatabase(ownersData);
+        if (apiService.getBundles) {
+          const bundles = await apiService.getBundles();
+          setAllBundles(bundles);
+        }
         setAvailableMechanicsList(mechanicsData.map((m: any) => m.name));
         setAllVehicles(vehiclesData);
       } catch (err) {
@@ -181,16 +194,94 @@ export default function JobOrdersPage() {
   const [selectedPlateNumber, setSelectedPlateNumber] = useState("XYZ 8888");
   const [formEngineType, setFormEngineType] = useState("Diesel");
   const [formOdometerKm, setFormOdometerKm] = useState("62400");
-  const [formServiceType, setFormServiceType] = useState("Major / Full PMS");
+  const [formServiceType, setFormServiceType] = useState("Basic PMS");
   const [formMechanics, setFormMechanics] = useState<string[]>(["Mark Rey", "John Uy"]);
   const [formVehiclePhotoUrl, setFormVehiclePhotoUrl] = useState<string>("");
+
+  const [isEditingDrawer, setIsEditingDrawer] = useState(false);
+  const [editOdometer, setEditOdometer] = useState("");
+  const [editServiceType, setEditServiceType] = useState("");
+  const [editMechanics, setEditMechanics] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!drawerJobOrder) {
+      setIsEditingDrawer(false);
+    }
+  }, [drawerJobOrder]);
+
+  const handleStartEditDrawer = () => {
+    if (!drawerJobOrder) return;
+    setIsEditingDrawer(true);
+    const rawOdo = parseInt(drawerJobOrder.odometer.replace(/[^0-9]/g, "")) || 0;
+    setEditOdometer(rawOdo.toString());
+    setEditServiceType(drawerJobOrder.serviceType);
+    setEditMechanics(drawerJobOrder.inchargeMechanics || []);
+  };
+
+  const handleSaveEditDrawer = async () => {
+    if (!drawerJobOrder) return;
+    
+    const activeBundle = allBundles.find((b: any) => b.packageName === editServiceType) || allBundles[0];
+    if (!activeBundle) {
+      triggerToast("Error: No bundle selected.");
+      return;
+    }
+    
+    try {
+      const updated = await apiService.updateJobOrder(drawerJobOrder.id, {
+        odometer: parseInt(editOdometer || "0") || 0,
+        bundle_id: activeBundle.id,
+        mechanic_names: editMechanics
+      });
+      const data = await apiService.getJobOrders();
+      setJobOrders(data);
+      setDrawerJobOrder(updated);
+      setIsEditingDrawer(false);
+      triggerToast(`Job Order ${drawerJobOrder.id} updated successfully!`);
+    } catch (err) {
+      console.error(err);
+      triggerToast("Failed to save changes.");
+    }
+  };
+
+  const handleDeleteDrawer = () => {
+    if (!drawerJobOrder) return;
+    if (confirm(`Are you sure you want to delete Job Order ${drawerJobOrder.id}?`)) {
+      apiService.deleteJobOrder(drawerJobOrder.id).then(() => {
+        setJobOrders(prev => prev.filter(j => j.id !== drawerJobOrder.id));
+        setDrawerJobOrder(null);
+        triggerToast("Job Order deleted successfully!");
+      }).catch(err => {
+        console.error(err);
+        triggerToast("Failed to delete Job Order.");
+      });
+    }
+  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setFormVehiclePhotoUrl(url);
-      triggerToast("Vehicle photo uploaded!");
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const photoDataUrl = reader.result as string;
+        setFormVehiclePhotoUrl(photoDataUrl);
+        triggerToast("Vehicle photo uploaded!");
+
+        if (selectedPlateNumber) {
+          const activeVehicle = currentOwnerObj?.vehicles?.find((v: any) => (v.plate_number || v.plate) === selectedPlateNumber) ||
+                                allVehicles?.find((v: any) => (v.plate_number || v.plate) === selectedPlateNumber);
+          if (activeVehicle && activeVehicle.id) {
+            try {
+              await apiService.updateVehicle(activeVehicle.id, { photo_url: photoDataUrl });
+              const freshOwners = await apiService.getOwners();
+              setRegisteredOwnersDatabase(freshOwners);
+            } catch (err) {
+              console.error("Failed to update vehicle photo in DB", err);
+            }
+          }
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -199,17 +290,26 @@ export default function JobOrdersPage() {
   }, [selectedOwnerId, registeredOwnersDatabase]);
 
   const ownerOptions: SelectOption[] = useMemo(() => registeredOwnersDatabase.map((o: any) => ({ value: o.id, label: o.name })), [registeredOwnersDatabase]);
-  const vehicleOptions: SelectOption[] = useMemo(() => currentOwnerObj?.vehicles?.map((v: any) => ({ value: v.plate, label: `${v.model} (${v.plate})` })) || [], [currentOwnerObj]);
+  const vehicleOptions: SelectOption[] = useMemo(() => currentOwnerObj?.vehicles?.map((v: any) => {
+    const plate = v.plate_number || v.plate || "No Plate";
+    const model = v.model || v.make || "Unknown Model";
+    return { value: plate, label: `${model} (${plate})` };
+  }) || [], [currentOwnerObj]);
   const engineOptions: SelectOption[] = [
     { value: "Gasoline", label: "Gasoline" },
     { value: "Diesel", label: "Diesel" },
     { value: "Hybrid / EV", label: "Hybrid / EV" }
   ];
-  const serviceTypeOptions: SelectOption[] = [
-    { value: "Basic PMS", label: "Basic PMS (Level 1)" },
-    { value: "Major / Full PMS", label: "Major / Full PMS (Level 2)" },
-    { value: "Heavy PMS Refresh", label: "Heavy PMS Refresh (Level 3)" }
-  ];
+  const serviceTypeOptions: SelectOption[] = useMemo(() => {
+    if (allBundles.length > 0) {
+      return allBundles.map(b => ({ value: b.packageName, label: b.packageName }));
+    }
+    return [
+      { value: "Basic PMS", label: "Basic PMS" },
+      { value: "Full PMS", label: "Full PMS" },
+      { value: "Heavy PMS", label: "Heavy PMS" }
+    ];
+  }, [allBundles]);
   const mechanicOptions: SelectOption[] = useMemo(() => availableMechanicsList.map((m) => ({ value: m, label: m })), [availableMechanicsList]);
 
   // Service Checklists
@@ -227,7 +327,15 @@ export default function JobOrdersPage() {
       items: ["Includes everything from Major Full PMS", "Complete engine overhaul inspection", "Suspension & underchassis bushing overhaul", "Aircon system deep clean & freon recharge"]
     }
   };
-  const activeServiceInfo = serviceChecklists[formServiceType] || serviceChecklists["Major / Full PMS"];
+  const activeServiceInfo = useMemo(() => {
+    if (allBundles.length > 0) {
+      const b = allBundles.find(x => x.packageName === formServiceType);
+      if (b) {
+        return { interval: b.targetInterval || b.description || "N/A", items: b.servicesIncluded || [] };
+      }
+    }
+    return serviceChecklists[formServiceType] || serviceChecklists["Major / Full PMS"];
+  }, [allBundles, formServiceType]);
 
   
   const [jobOrders, setJobOrders] = useState<JobOrder[]>([]);
@@ -249,9 +357,13 @@ export default function JobOrdersPage() {
   }, []);
 
   useEffect(() => {
-    // Optionally auto-sync or let specific action handlers update the API.
-    // For now, we rely on the specific update functions (e.g. handleUpdateStatus) to call the API.
-  }, [jobOrders, isLoaded]);
+    if (!selectedPlateNumber) return;
+    const match = currentOwnerObj?.vehicles?.find((v: any) => (v.plate_number || v.plate) === selectedPlateNumber) ||
+                  allVehicles?.find((v: any) => (v.plate_number || v.plate) === selectedPlateNumber);
+    if (match && (match.photo_url || match.photoUrl)) {
+      setFormVehiclePhotoUrl(match.photo_url || match.photoUrl);
+    }
+  }, [selectedPlateNumber, currentOwnerObj, allVehicles]);
 
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
@@ -262,64 +374,120 @@ export default function JobOrdersPage() {
     setSelectedOwnerId(ownerId);
     const ownerObj = registeredOwnersDatabase.find((o) => o.id === ownerId);
     if (ownerObj) {
-      setFormOwnerPhone(ownerObj.phone);
-      setFormOwnerFb(ownerObj.fbHandle);
-      if (ownerObj.vehicles.length > 0) {
-        setSelectedPlateNumber(ownerObj.vehicles[0].plate);
-        setFormEngineType(ownerObj.vehicles[0].engine);
+      setFormOwnerPhone(ownerObj.phone || "");
+      setFormOwnerFb(ownerObj.fb_handle || ownerObj.fbHandle || "");
+      if (ownerObj.vehicles && ownerObj.vehicles.length > 0) {
+        const firstV = ownerObj.vehicles[0];
+        const plate = firstV.plate_number || firstV.plate || "";
+        setSelectedPlateNumber(plate);
+        setFormVehiclePhotoUrl(firstV.photo_url || firstV.photoUrl || "");
+      } else {
+        setSelectedPlateNumber("");
+        setFormVehiclePhotoUrl("");
       }
     }
   };
 
   const handleSaveAddNew = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newInputName.trim()) return;
+    if (addNewModalType === "MECHANIC" || addNewModalType === "OWNER") {
+      if (!newInputName.trim()) return;
+    } else if (addNewModalType === "VEHICLE") {
+      if (!newPlateNumber.trim() || !newModel.trim()) return;
+    }
     if (addNewModalType === "MECHANIC") {
       setAvailableMechanicsList([...availableMechanicsList, newInputName.trim()]);
       setFormMechanics([...formMechanics, newInputName.trim()]);
       triggerToast(`Added mechanic: ${newInputName.trim()}`);
     } else if (addNewModalType === "OWNER") {
-      const newOwner: RegisteredOwner = {
-        id: `OWN-${Math.floor(105 + Math.random() * 90)}`,
+      apiService.createOwner({
         name: newInputName.trim(),
-        phone: "0917-000-0000",
-        fbHandle: `@${newInputName.trim().toLowerCase().replace(/\s+/g, "")}`,
-        vehicles: [{ model: "New Vehicle", plate: "NEW 123", engine: "Gasoline" }]
-      };
-      setRegisteredOwnersDatabase([...registeredOwnersDatabase, newOwner]);
-      setSelectedOwnerId(newOwner.id);
-      triggerToast(`Added owner: ${newInputName.trim()}`);
+        phone: newOwnerPhone.trim() || "0917-000-0000",
+        fb_handle: newOwnerFb.trim(),
+        vehicle_ids: []
+      }).then(newOwner => {
+        setRegisteredOwnersDatabase(prev => [...prev, newOwner]);
+        setSelectedOwnerId(newOwner.id);
+        triggerToast(`Added owner: ${newOwner.name}`);
+      });
+    } else if (addNewModalType === "VEHICLE") {
+      const ownerIdSnapshot = selectedOwnerId;
+      apiService.createVehicle({
+        make: newMake,
+        model: newModel,
+        year: parseInt(newYear) || 2020,
+        color: newColor || "Black",
+        plate_number: newPlateNumber,
+        photo_url: newPhotoUrl,
+        owner_id: ownerIdSnapshot
+      }).then(async (newVehicle) => {
+        setAllVehicles(prev => [...prev, newVehicle]);
+        // Refetch full owners list from API so DB relationship is reflected
+        try {
+          const freshOwners = await apiService.getOwners();
+          setRegisteredOwnersDatabase(freshOwners);
+        } catch (e) {
+          setRegisteredOwnersDatabase(prev =>
+            prev.map(o =>
+              o.id === ownerIdSnapshot
+                ? { ...o, vehicles: [...(o.vehicles || []), newVehicle] }
+                : o
+            )
+          );
+        }
+        setSelectedPlateNumber(newVehicle.plate_number);
+        triggerToast(`Added vehicle: ${newVehicle.plate_number}`);
+      });
     }
     setAddNewModalType(null);
     setNewInputName("");
+    setNewOwnerPhone("");
+    setNewOwnerFb("");
+    setNewMake("");
+    setNewModel("");
+    setNewYear("");
+    setNewColor("");
+    setNewPlateNumber("");
+    setNewPhotoUrl("");
   };
 
   const handleSubmitNewJobOrder = (e: React.FormEvent) => {
     e.preventDefault();
-    const activeVehicle = currentOwnerObj.vehicles?.find((v: any) => v.plate === selectedPlateNumber) || currentOwnerObj.vehicles[0];
-    const checklist = serviceChecklists[formServiceType];
-    const newJO: JobOrder = {
-      id: `JO-${Math.floor(1045 + Math.random() * 90)}`,
-      ownerName: currentOwnerObj.name,
-      ownerPhone: formOwnerPhone,
-      ownerFb: formOwnerFb,
-      vehicleModel: activeVehicle.model,
-      plateNumber: activeVehicle.plate,
-      engineType: formEngineType,
-      odometer: `${parseInt(formOdometerKm || "0").toLocaleString()} KM`,
-      serviceType: formServiceType,
-      inchargeMechanics: formMechanics,
-      status: "FOR_INSPECTION",
-      createdAt: "Just now",
-      vehiclePhotoUrl: formVehiclePhotoUrl || "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: checklist
-        ? checklist.items.map((item) => ({ name: item, status: "PENDING" as const }))
-        : []
-    };
-    setJobOrders([newJO, ...jobOrders]);
-    setFormVehiclePhotoUrl("");
-    triggerToast(`Submitted Job Order ${newJO.id} for Inspection!`);
-    setIsCreateModalOpen(false);
+    const activeVehicle = currentOwnerObj?.vehicles?.find(
+      (v: any) => (v.plate_number || v.plate) === selectedPlateNumber
+    ) || currentOwnerObj?.vehicles?.[0];
+
+    if (!activeVehicle) {
+      triggerToast("Error: No vehicle found for the owner.");
+      return;
+    }
+
+    const activeBundle = allBundles.find((b: any) => b.packageName === formServiceType) || allBundles[0];
+    if (!activeBundle) {
+      triggerToast("Error: No bundle selected.");
+      return;
+    }
+
+    apiService.createJobOrder({
+      owner_id: selectedOwnerId,
+      vehicle_id: activeVehicle.id,
+      bundle_id: activeBundle.id,
+      odometer: parseInt(formOdometerKm || "0") || 0,
+      mechanic_names: formMechanics
+    }).then(async (newJO) => {
+      try {
+        const data = await apiService.getJobOrders();
+        setJobOrders(data);
+      } catch (err) {
+        setJobOrders(prev => [newJO, ...prev]);
+      }
+      setFormVehiclePhotoUrl("");
+      triggerToast(`Submitted Job Order ${newJO.id} for Inspection!`);
+      setIsCreateModalOpen(false);
+    }).catch(err => {
+      console.error("Failed to create job order on backend", err);
+      triggerToast("Failed to submit Job Order to server.");
+    });
   };
 
   /* ─── STATUS PROGRESSION ─── */
@@ -328,11 +496,9 @@ export default function JobOrdersPage() {
       prev.map((jo) => {
         if (jo.id !== joId) return jo;
         const next: Record<JOStatus, JOStatus | null> = {
-          FOR_INSPECTION: "AWAITING_ESTIMATE",
-          AWAITING_ESTIMATE: "IN_REPAIR",
-          IN_REPAIR: "READY_FOR_PICKUP",
-          READY_FOR_PICKUP: null,
-          COMPLETED: null
+          New: "Work in progress",
+          "Work in progress": "Job completed",
+          "Job completed": null
         };
         const nextStatus = next[jo.status];
         if (!nextStatus) return jo;
@@ -415,14 +581,7 @@ export default function JobOrdersPage() {
         jo.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         jo.vehicleModel.toLowerCase().includes(searchTerm.toLowerCase()) ||
         jo.plateNumber.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesTab =
-        activeTab === "FOR_INSPECTION"
-          ? jo.status === "FOR_INSPECTION"
-          : activeTab === "WORK_IN_PROGRESS"
-          ? (jo.status === "AWAITING_ESTIMATE" || jo.status === "IN_REPAIR")
-          : activeTab === "READY_FOR_PICKUP"
-          ? jo.status === "READY_FOR_PICKUP"
-          : jo.status === "COMPLETED";
+      const matchesTab = jo.status === activeTab;
       return matchesSearch && matchesTab;
     });
   }, [jobOrders, searchTerm, activeTab]);
@@ -441,20 +600,18 @@ export default function JobOrdersPage() {
     return drawerEstimateSubtotal - (drawerJobOrder?.discount || 0);
   }, [drawerEstimateSubtotal, drawerJobOrder?.discount]);
 
-  /* ─── TAB DEFINITIONS (NEW, WORK IN PROGRESS, READY FOR PICKUP, JOB COMPLETED) ─── */
-  const tabDefs: { id: "FOR_INSPECTION" | "WORK_IN_PROGRESS" | "READY_FOR_PICKUP" | "JOB_COMPLETED"; label: string }[] = [
-    { id: "FOR_INSPECTION", label: "New" },
-    { id: "WORK_IN_PROGRESS", label: "Work in progress" },
-    { id: "READY_FOR_PICKUP", label: "Ready for pickup" },
-    { id: "JOB_COMPLETED", label: "Job completed" }
+  /* ─── TAB DEFINITIONS (NEW, WORK IN PROGRESS, JOB COMPLETED) ─── */
+  const tabDefs: { id: "New" | "Work in progress" | "Job completed"; label: string }[] = [
+    { id: "New", label: "New" },
+    { id: "Work in progress", label: "Work in progress" },
+    { id: "Job completed", label: "Job completed" }
   ];
 
   const tabCounts = useMemo(() => {
     return {
-      FOR_INSPECTION: jobOrders.filter((j) => j.status === "FOR_INSPECTION").length,
-      WORK_IN_PROGRESS: jobOrders.filter((j) => j.status === "AWAITING_ESTIMATE" || j.status === "IN_REPAIR").length,
-      READY_FOR_PICKUP: jobOrders.filter((j) => j.status === "READY_FOR_PICKUP").length,
-      JOB_COMPLETED: jobOrders.filter((j) => j.status === "COMPLETED").length
+      New: jobOrders.filter((j) => j.status === "New").length,
+      "Work in progress": jobOrders.filter((j) => j.status === "Work in progress").length,
+      "Job completed": jobOrders.filter((j) => j.status === "Job completed").length
     };
   }, [jobOrders]);
 
@@ -534,12 +691,7 @@ export default function JobOrdersPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredJobOrders.map((jo) => {
             const sc = STATUS_CONFIG[jo.status];
-            const badgeLabel =
-              activeTab === "WORK_IN_PROGRESS"
-                ? "Work in progress"
-                : activeTab === "READY_FOR_PICKUP"
-                ? "Ready for pickup"
-                : sc.label;
+            const badgeLabel = sc.label;
             return (
               <div
                 key={jo.id}
@@ -547,10 +699,6 @@ export default function JobOrdersPage() {
                 onClick={() => setDrawerJobOrder({ ...jo })}
               >
                 <div className="h-40 bg-slate-100 relative flex items-center justify-center border-b border-slate-200 overflow-hidden">
-                  <div className={`absolute top-3 left-3 ${sc.bg} ${sc.color} ${sc.border} border backdrop-blur-md font-medium text-xs px-3 py-1 rounded-xl shadow-xs`}>
-                    {badgeLabel}
-                  </div>
-
                   {jo.vehiclePhotoUrl ? (
                     <img
                       src={jo.vehiclePhotoUrl}
@@ -598,7 +746,7 @@ export default function JobOrdersPage() {
                     </div>
 
                     {/* Inspection Checklist Progress Bar (Matching user mockup) */}
-                    {jo.inspectionItems && jo.inspectionItems.length > 0 && jo.status !== "FOR_INSPECTION" && (
+                    {jo.inspectionItems && jo.inspectionItems.length > 0 && jo.status !== "New" && (
                       <div className="space-y-1.5 pt-2 border-t border-slate-100">
                         <div className="flex items-center justify-between text-xs">
                           <span className="text-slate-500 font-normal">Inspection Checklist</span>
@@ -680,15 +828,38 @@ export default function JobOrdersPage() {
                     <div><span className="text-slate-500">Owner</span><div className="font-medium text-slate-900">{drawerJobOrder.ownerName}</div></div>
                     <div><span className="text-slate-500">Phone</span><div className="font-medium text-slate-900">{drawerJobOrder.ownerPhone}</div></div>
                     <div><span className="text-slate-500">Plate</span><div className="font-medium text-slate-900">{drawerJobOrder.plateNumber}</div></div>
-                    <div><span className="text-slate-500">Engine</span><div className="font-medium text-slate-900">{drawerJobOrder.engineType}</div></div>
-                    <div><span className="text-slate-500">Odometer</span><div className="font-medium text-slate-900">{drawerJobOrder.odometer}</div></div>
-                    <div><span className="text-slate-500">Service Category</span><div className="font-medium text-slate-900">{drawerJobOrder.serviceType}</div></div>
+                    <div>
+                      <span className="text-slate-500">Odometer</span>
+                      {isEditingDrawer ? (
+                        <input
+                          type="number"
+                          value={editOdometer}
+                          onChange={(e) => setEditOdometer(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1 text-xs outline-none focus:border-slate-400 mt-0.5"
+                        />
+                      ) : (
+                        <div className="font-medium text-slate-900">{drawerJobOrder.odometer}</div>
+                      )}
+                    </div>
+                    <div>
+                      <span className="text-slate-500">Service Category</span>
+                      {isEditingDrawer ? (
+                        <CustomSelect
+                          value={editServiceType}
+                          onChange={setEditServiceType}
+                          options={serviceTypeOptions}
+                          className="w-full mt-0.5"
+                        />
+                      ) : (
+                        <div className="font-medium text-slate-900">{drawerJobOrder.serviceType}</div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="pt-2 border-t border-slate-100/80">
                     <span className="text-slate-500 font-medium text-xs block">Service Description</span>
                     <div className="font-semibold text-slate-800 text-xs mt-0.5">
-                      {getServiceDescription(drawerJobOrder.serviceType, drawerJobOrder.serviceDescription)}
+                      {getServiceDescription(isEditingDrawer ? editServiceType : drawerJobOrder.serviceType, drawerJobOrder.serviceDescription)}
                     </div>
                   </div>
 
@@ -696,21 +867,31 @@ export default function JobOrdersPage() {
                     <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[10px] tracking-wide uppercase mb-1.5">
                       <Wrench className="w-3.5 h-3.5 text-slate-400" /> Incharge Mechanics
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {drawerJobOrder.inchargeMechanics && drawerJobOrder.inchargeMechanics.length > 0 ? (
-                        drawerJobOrder.inchargeMechanics.map((m, i) => (
-                          <span
-                            key={i}
-                            className="bg-slate-100 text-slate-800 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                            {m}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-slate-400 italic text-[11px]">Unassigned</span>
-                      )}
-                    </div>
+                    {isEditingDrawer ? (
+                      <CustomSelect
+                        value={editMechanics}
+                        onChange={setEditMechanics}
+                        options={mechanicOptions}
+                        isMultiSelect={true}
+                        className="w-full mt-0.5"
+                      />
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {drawerJobOrder.inchargeMechanics && drawerJobOrder.inchargeMechanics.length > 0 ? (
+                          drawerJobOrder.inchargeMechanics.map((m, i) => (
+                            <span
+                              key={i}
+                              className="bg-slate-100 text-slate-800 text-[11px] font-medium px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5"
+                            >
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                              {m}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-slate-400 italic text-[11px]">Unassigned</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -724,13 +905,13 @@ export default function JobOrdersPage() {
                         <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[10px] tracking-wide uppercase">
                           <ClipboardCheck className="w-3.5 h-3.5" /> Inspection Checklist
                         </div>
-                        {drawerJobOrder.status !== "FOR_INSPECTION" && (
+                        {drawerJobOrder.status !== "New" && (
                           <span className="font-bold text-purple-600 text-xs">
                             {getInspectionProgress(drawerJobOrder).completed}/{getInspectionProgress(drawerJobOrder).total} Completed
                           </span>
                         )}
                       </div>
-                      {drawerJobOrder.status !== "FOR_INSPECTION" && (
+                      {drawerJobOrder.status !== "New" && (
                         <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
                           <div
                             className="bg-emerald-600 h-full rounded-full transition-all duration-300"
@@ -743,7 +924,7 @@ export default function JobOrdersPage() {
                     {/* ACCORDION CHECKLIST STACK (Excalidraw sketch layout) */}
                     <div className="space-y-2.5">
                       {drawerJobOrder.inspectionItems.map((item, idx) => {
-                        const isNewJob = drawerJobOrder.status === "FOR_INSPECTION";
+                        const isNewJob = drawerJobOrder.status === "New";
                         const effectiveStatus = isNewJob ? "PENDING" : item.status;
                         const isExpanded = expandedIndex === idx;
                         const photos = getItemPhotos(item);
@@ -918,7 +1099,7 @@ export default function JobOrdersPage() {
                 )}
 
                 {/* SECTION 3: ESTIMATE (EXACT MATCH FOR USER EXCALIDRAW MOCKUP) */}
-                {drawerJobOrder && drawerJobOrder.status !== "FOR_INSPECTION" && (
+                {drawerJobOrder && drawerJobOrder.status !== "New" && (
                   <div className="px-5 py-4 border-b border-slate-100 space-y-3.5 text-xs">
                     {/* Header with Title & Buy All master toggle */}
                     <div className="flex items-center justify-between">
@@ -1065,7 +1246,7 @@ export default function JobOrdersPage() {
                           <div className="border-t border-dashed border-slate-300/80 pt-2 space-y-1.5">
                             <div className="flex items-center justify-between gap-2 text-[11px] text-slate-500">
                               <span className="shrink-0 font-normal text-slate-600">Comment</span>
-                              <input
+                                          <input
                                 type="text"
                                 value={drawerJobOrder.estimateComment !== undefined ? drawerJobOrder.estimateComment : calc.commentText}
                                 onChange={(e) => updateDrawerJO({ estimateComment: e.target.value })}
@@ -1088,80 +1269,90 @@ export default function JobOrdersPage() {
 
               {/* ── DRAWER FOOTER (FIXED) ── */}
               <div className="shrink-0 px-5 py-3.5 border-t border-slate-200 bg-white flex items-center justify-end gap-2">
-                <button
-                  onClick={() => setDrawerJobOrder(null)}
-                  className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-all"
-                >
-                  Close
-                </button>
-
-
-
-                {drawerJobOrder.status !== "READY_FOR_PICKUP" && drawerJobOrder.status !== "COMPLETED" && (
-                  (() => {
-                    const progress = getInspectionProgress(drawerJobOrder);
-                    const isCompleted = (progress.total > 0 && progress.completed === progress.total) || drawerJobOrder.mechanicMarkedReady;
-                    return isCompleted ? (
+                {drawerJobOrder.status === "New" ? (
+                  isEditingDrawer ? (
+                    <>
                       <button
-                        onClick={() => {
-                          const updated = { ...drawerJobOrder, status: "READY_FOR_PICKUP" as JOStatus };
-                          setJobOrders((prev) =>
-                            prev.map((jo) => (jo.id === drawerJobOrder.id ? updated : jo))
-                          );
-                          setDrawerJobOrder(updated);
-                          try {
-                            const key = "piveran_job_orders_v11";
-                            const currentSaved = localStorage.getItem(key);
-                            const parsed = currentSaved ? JSON.parse(currentSaved) : [];
-                            const newSaved = parsed.map((j: any) => (j.id === updated.id ? { ...j, status: "READY_FOR_PICKUP" } : j));
-                            localStorage.setItem(key, JSON.stringify(newSaved));
-                          } catch (e) {}
-                          triggerToast(`${drawerJobOrder.id} → Moved to Ready for pickup`);
-                        }}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                        onClick={() => setIsEditingDrawer(false)}
+                        className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
                       >
-                        <ArrowRight className="w-4 h-4" />
-                        <span>Ready for pickup</span>
+                        Cancel
                       </button>
-                    ) : (
                       <button
-                        disabled
-                        className="px-4 py-2 bg-slate-200 text-slate-400 font-medium text-xs rounded-xl shadow-2xs flex items-center gap-1.5 cursor-not-allowed opacity-70"
-                        title="Unlocks once mechanics complete the inspection checklist items (100% completed)"
+                        onClick={handleSaveEditDrawer}
+                        className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs transition-all cursor-pointer"
                       >
-                        <ArrowRight className="w-4 h-4" />
-                        <span>Ready for pickup</span>
+                        Save Changes
                       </button>
-                    );
-                  })()
-                )}
-
-                {drawerJobOrder.status === "READY_FOR_PICKUP" && (
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleDeleteDrawer}
+                        className="px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium text-xs rounded-xl transition-all cursor-pointer mr-auto"
+                      >
+                        Delete Job Order
+                      </button>
+                      <button
+                        onClick={() => setDrawerJobOrder(null)}
+                        className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                      >
+                        Close
+                      </button>
+                      <button
+                        onClick={handleStartEditDrawer}
+                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-medium text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                      >
+                        Edit Job Order
+                      </button>
+                    </>
+                  )
+                ) : (
                   <>
                     <button
-                      onClick={() => {
-                        setJobOrders((prev) =>
-                          prev.map((jo) => (jo.id === drawerJobOrder.id ? { ...jo, status: "AWAITING_ESTIMATE" } : jo))
+                      onClick={() => setDrawerJobOrder(null)}
+                      className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
+                    >
+                      Close
+                    </button>
+                    {drawerJobOrder.status !== "Job completed" && (
+                      (() => {
+                        const progress = getInspectionProgress(drawerJobOrder);
+                        const isCompleted = (progress.total > 0 && progress.completed === progress.total) || drawerJobOrder.mechanicMarkedReady;
+                        return isCompleted ? (
+                          <button
+                            onClick={() => {
+                              const updated = { ...drawerJobOrder, status: "Job completed" as JOStatus };
+                              setJobOrders((prev) =>
+                                prev.map((jo) => (jo.id === drawerJobOrder.id ? updated : jo))
+                              );
+                              setDrawerJobOrder(null);
+                              try {
+                                const key = "piveran_job_orders_v11";
+                                const currentSaved = localStorage.getItem(key);
+                                const parsed = currentSaved ? JSON.parse(currentSaved) : [];
+                                const newSaved = parsed.map((j: any) => (j.id === updated.id ? { ...j, status: "COMPLETED" } : j));
+                                localStorage.setItem(key, JSON.stringify(newSaved));
+                              } catch (e) {}
+                              triggerToast(`${drawerJobOrder.id} → Completed & Receipt Printed`);
+                            }}
+                            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Complete & Print Receipt</span>
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="px-4 py-2 bg-slate-200 text-slate-400 font-medium text-xs rounded-xl shadow-2xs flex items-center gap-1.5 cursor-not-allowed opacity-70"
+                            title="Unlocks once mechanics complete the inspection checklist items (100% completed)"
+                          >
+                            <FileText className="w-4 h-4" />
+                            <span>Complete & Print Receipt</span>
+                          </button>
                         );
-                        setDrawerJobOrder({ ...drawerJobOrder, status: "AWAITING_ESTIMATE" });
-                        triggerToast(`${drawerJobOrder.id} → Moved back to Work in progress`);
-                      }}
-                      className="px-3.5 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 font-medium text-xs rounded-xl shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
-                    >
-                      <RotateCcw className="w-3.5 h-3.5" />
-                      Move to work
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        triggerToast(`${drawerJobOrder.id} — Printing receipt...`);
-                        setDrawerJobOrder(null);
-                      }}
-                      className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-                    >
-                      <FileText className="w-4 h-4" />
-                      Complete & Print Receipt
-                    </button>
+                      })()
+                    )}
                   </>
                 )}
               </div>
@@ -1197,7 +1388,15 @@ export default function JobOrdersPage() {
                 </div>
                 <div>
                   <label className="block text-slate-600 font-medium mb-1">Select Vehicle</label>
-                  <CustomSelect value={selectedPlateNumber} onChange={(val) => { setSelectedPlateNumber(val); const match = currentOwnerObj.vehicles?.find((v: any) => v.plate === val); if (match) setFormEngineType(match.engine); }} options={vehicleOptions} onAddNew={() => triggerToast("Opening Add New Vehicle modal...")} addNewLabel="New Vehicle" className="w-full" />
+                  <CustomSelect value={selectedPlateNumber} onChange={(val) => { 
+                    setSelectedPlateNumber(val); 
+                    const match = currentOwnerObj?.vehicles?.find((v: any) => (v.plate_number || v.plate) === val) || allVehicles?.find((v: any) => (v.plate_number || v.plate) === val);
+                    if (match && (match.photo_url || match.photoUrl)) {
+                      setFormVehiclePhotoUrl(match.photo_url || match.photoUrl);
+                    } else {
+                      setFormVehiclePhotoUrl("");
+                    }
+                  }} options={vehicleOptions} onAddNew={() => { setAddNewModalType("VEHICLE"); setNewPlateNumber(""); setNewModel(""); }} addNewLabel="New Vehicle" className="w-full" />
                 </div>
 
                 {/* Vehicle Photo Upload Card (Redesigned with Camera Icon & Dashed Border) */}
@@ -1221,7 +1420,7 @@ export default function JobOrdersPage() {
                         <Camera className="w-5 h-5" />
                       </div>
                       <span className="text-[11px] text-slate-400 group-hover:text-emerald-700 font-normal transition-colors">
-                        Click to open camera or browse image
+                        Click to open camera
                       </span>
                     </label>
                   )}
@@ -1229,22 +1428,16 @@ export default function JobOrdersPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-slate-500 font-medium mb-1">FB Contact</label>
-                    <input type="text" value={formOwnerFb} onChange={(e) => setFormOwnerFb(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-normal text-slate-800 outline-none focus:border-emerald-600" />
+                    <input type="text" value={formOwnerFb || ""} onChange={(e) => setFormOwnerFb(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-normal text-slate-800 outline-none focus:border-emerald-600" />
                   </div>
                   <div>
                     <label className="block text-slate-500 font-medium mb-1">Phone Number</label>
-                    <input type="text" value={formOwnerPhone} onChange={(e) => setFormOwnerPhone(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-normal text-slate-800 outline-none focus:border-emerald-600" />
+                    <input type="text" value={formOwnerPhone || ""} onChange={(e) => setFormOwnerPhone(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-normal text-slate-800 outline-none focus:border-emerald-600" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-500 font-medium mb-1">Engine Type</label>
-                    <CustomSelect value={formEngineType} onChange={setFormEngineType} options={engineOptions} searchable={false} className="w-full" />
-                  </div>
-                  <div>
-                    <label className="block text-slate-500 font-medium mb-1">Odometer (Km)</label>
-                    <input type="number" required value={formOdometerKm} onChange={(e) => setFormOdometerKm(e.target.value)} placeholder="62400" className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-normal text-slate-800 outline-none focus:border-emerald-600" />
-                  </div>
+                <div>
+                  <label className="block text-slate-500 font-medium mb-1">Odometer (Km)</label>
+                  <input type="number" required value={formOdometerKm || ""} onChange={(e) => setFormOdometerKm(e.target.value)} placeholder="62400" className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-normal text-slate-800 outline-none focus:border-emerald-600" />
                 </div>
                 <div>
                   <label className="block text-slate-600 font-medium mb-1">Service Type</label>
@@ -1259,7 +1452,7 @@ export default function JobOrdersPage() {
                     <div className="grid grid-cols-3 gap-2">
                       <span className="text-slate-500 font-medium">Checklist:</span>
                       <div className="col-span-2 space-y-1.5">
-                        {activeServiceInfo.items.map((item, idx) => (
+                        {activeServiceInfo.items.map((item: any, idx: number) => (
                           <div key={idx} className="flex items-start gap-2 text-slate-700">
                             <span className="w-3.5 h-3.5 rounded border border-slate-300 bg-white shrink-0 mt-0.5" />
                             <span>{item}</span>
@@ -1271,7 +1464,7 @@ export default function JobOrdersPage() {
                 )}
                 <div>
                   <label className="block text-slate-600 font-medium mb-1">Mechanics Involve</label>
-                  <CustomSelect value={formMechanics} onChange={setFormMechanics} options={mechanicOptions} isMultiSelect={true} dropUp={true} onAddNew={() => { setAddNewModalType("MECHANIC"); setNewInputName(""); }} addNewLabel="New Mechanic" placeholder="Select mechanics..." className="w-full" />
+                  <CustomSelect value={formMechanics} onChange={setFormMechanics} options={mechanicOptions} isMultiSelect={true} dropUp={true} placeholder="Select mechanics..." className="w-full" />
                 </div>
                 <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 shrink-0">
                   <button type="button" onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 font-medium text-xs text-slate-600 hover:bg-slate-100 rounded-xl transition-all">Cancel</button>
@@ -1294,16 +1487,106 @@ export default function JobOrdersPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.1 }}
-              className="bg-white rounded-xl max-w-xs w-full p-4 shadow-xl space-y-3 border border-slate-200 text-slate-900"
+              className="bg-white rounded-xl max-w-md w-full p-5 shadow-xl space-y-4 border border-slate-200 text-slate-900"
             >
-              <form onSubmit={handleSaveAddNew} className="space-y-3 text-xs">
-                <div>
-                  <label className="block text-slate-500 font-medium mb-1">{addNewModalType === "MECHANIC" ? "Mechanic Name" : "Owner Name"}</label>
-                  <input type="text" required value={newInputName} onChange={(e) => setNewInputName(e.target.value)} placeholder={addNewModalType === "MECHANIC" ? "Hitler Gaitera" : "Pedro Penduko"} className="w-full bg-white border border-slate-200 rounded-lg p-2 font-normal text-slate-800 outline-none focus:border-emerald-600" autoFocus />
+              <form onSubmit={handleSaveAddNew} className="space-y-4 text-xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <h3 className="text-sm font-bold">Add New {addNewModalType === "OWNER" ? "Owner" : addNewModalType === "VEHICLE" ? "Vehicle" : "Mechanic"}</h3>
                 </div>
+
+                {addNewModalType === "OWNER" && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-slate-500 font-medium mb-1">Full Name</label>
+                      <input type="text" required value={newInputName} onChange={(e) => setNewInputName(e.target.value)} placeholder="Juan Dela Cruz" className="w-full bg-white border border-slate-200 rounded-lg p-2 font-normal text-slate-800 outline-none focus:border-emerald-600" autoFocus />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-500 font-medium mb-1">Phone Number</label>
+                        <input type="text" value={newOwnerPhone} onChange={(e) => setNewOwnerPhone(e.target.value)} placeholder="09XX-XXX-XXXX" className="w-full bg-white border border-slate-200 rounded-lg p-2 font-normal text-slate-800 outline-none focus:border-emerald-600" />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 font-medium mb-1">FB Handle / Link</label>
+                        <input type="text" value={newOwnerFb} onChange={(e) => setNewOwnerFb(e.target.value)} placeholder="@juan.delacruz" className="w-full bg-white border border-slate-200 rounded-lg p-2 font-normal text-slate-800 outline-none focus:border-emerald-600" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {addNewModalType === "VEHICLE" && (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-slate-500 font-medium mb-1">Plate Number</label>
+                      <input type="text" required value={newPlateNumber} onChange={(e) => setNewPlateNumber(e.target.value)} placeholder="ABC 1234" className="w-full bg-white border border-slate-200 rounded-lg p-2 font-bold uppercase text-slate-800 outline-none focus:border-emerald-600" autoFocus />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-500 font-medium mb-1">Make</label>
+                        <input type="text" value={newMake} onChange={(e) => setNewMake(e.target.value)} placeholder="Toyota" className="w-full bg-white border border-slate-200 rounded-lg p-2 font-normal text-slate-800 outline-none focus:border-emerald-600" />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 font-medium mb-1">Model</label>
+                        <input type="text" required value={newModel} onChange={(e) => setNewModel(e.target.value)} placeholder="Wigo" className="w-full bg-white border border-slate-200 rounded-lg p-2 font-normal text-slate-800 outline-none focus:border-emerald-600" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-slate-500 font-medium mb-1">Year</label>
+                        <input type="text" value={newYear} onChange={(e) => setNewYear(e.target.value)} placeholder="2022" className="w-full bg-white border border-slate-200 rounded-lg p-2 font-normal text-slate-800 outline-none focus:border-emerald-600" />
+                      </div>
+                      <div>
+                        <label className="block text-slate-500 font-medium mb-1">Color</label>
+                        <input type="text" value={newColor} onChange={(e) => setNewColor(e.target.value)} placeholder="Red" className="w-full bg-white border border-slate-200 rounded-lg p-2 font-normal text-slate-800 outline-none focus:border-emerald-600" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-slate-500 font-medium mb-1">Vehicle Photo</label>
+                      {newPhotoUrl ? (
+                        <div className="relative w-full h-24 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 group">
+                          <img src={newPhotoUrl} alt="Vehicle preview" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setNewPhotoUrl("")}
+                            className="absolute top-1.5 right-1.5 p-1 bg-slate-900/70 hover:bg-slate-900 text-white rounded-full transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="bg-slate-50 border border-dashed border-slate-300 hover:border-emerald-500/80 rounded-xl p-3 flex flex-col items-center justify-center cursor-pointer transition-colors group">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => setNewPhotoUrl(reader.result as string);
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                          <Camera className="w-4 h-4 text-slate-400 group-hover:text-emerald-700 mb-1" />
+                          <span className="text-[11px] text-slate-400 group-hover:text-emerald-700 font-normal">
+                            Click to open camera or browse photo
+                          </span>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {addNewModalType === "MECHANIC" && (
+                  <div>
+                    <label className="block text-slate-500 font-medium mb-1">Mechanic Name</label>
+                    <input type="text" required value={newInputName} onChange={(e) => setNewInputName(e.target.value)} placeholder="Hitler Gaitera" className="w-full bg-white border border-slate-200 rounded-lg p-2 font-normal text-slate-800 outline-none focus:border-emerald-600" autoFocus />
+                  </div>
+                )}
+
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                   <button type="button" onClick={() => setAddNewModalType(null)} className="px-3 py-1.5 text-slate-600 font-medium text-xs rounded-lg hover:bg-slate-100">Cancel</button>
-                  <button type="submit" className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-lg shadow-xs">Save</button>
+                  <button type="submit" className="px-4 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg shadow-xs">Save</button>
                 </div>
               </form>
             </motion.div>

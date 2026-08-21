@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Flame, Eye, EyeOff, Check, X, ArrowLeft, ArrowRight, ShieldCheck, Wrench, CheckCircle } from "lucide-react";
 import { CustomSelect } from "@/components/CustomSelect";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiService, authService } from "../apiService";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState("frontdesk");
+  const [role, setRole] = useState("Front Desk");
 
   // UI States
   const [showPassword, setShowPassword] = useState(false);
@@ -60,7 +61,7 @@ export default function SignUpPage() {
   };
 
   // Final Form Submission -> Submit Application & Route to Pending Approval
-  const handleFinalSubmit = (e: React.FormEvent) => {
+  const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
@@ -71,10 +72,21 @@ export default function SignUpPage() {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const user = await apiService.signup({
+        email,
+        password,
+        name: fullName,
+        phone_number: phone,
+        role: role
+      });
+      authService.setPendingUser(user);
       router.push("/pending-approval");
-    }, 1200);
+    } catch (err: any) {
+      setErrorMsg(err.message || "An error occurred during sign up.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -325,8 +337,8 @@ export default function SignUpPage() {
                     value={role}
                     onChange={setRole}
                     options={[
-                      { value: "frontdesk", label: "Front desk" },
-                      { value: "mechanic", label: "Mechanic" }
+                      { value: "Front Desk", label: "Front desk" },
+                      { value: "Mechanic", label: "Mechanic" }
                     ]}
                     className="w-full"
                     buttonClassName="py-2.5 px-3.5 text-sm font-medium"

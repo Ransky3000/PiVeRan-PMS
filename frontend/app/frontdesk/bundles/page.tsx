@@ -36,6 +36,7 @@ interface LaborItem {
   description: string;
   status: "Active" | "Archived";
   isPackageItem?: boolean;
+  recommendedMaterials?: string[];
 }
 
 interface PackageBundle {
@@ -83,130 +84,42 @@ export default function AdminServicesPage() {
     return () => mainElement.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const categoryDisplayNames: Record<string, string> = {
+    "PMS": "🛠️ PMS",
+    "AIRCON SERVICES": "❄️ AIRCON SERVICES",
+    "MAJOR WORK": "⚙️ MAJOR WORK",
+    "UNDER CHASSIS": "🚗 UNDER CHASSIS",
+    "COOLING SYSTEM RESTORATION": "🌡️ COOLING SYSTEM RESTORATION"
+  };
+
   // Dynamic Categories List
   const [categoriesList, setCategoriesList] = useState<string[]>([
-    "🛠️ PREVENTIVE MAINTENANCE SERVICE",
-    "❄️ AIRCON SERVICES",
-    "⚙️ MAJOR WORK",
-    "🚗 UNDER CHASSIS",
-    "🌡️ COOLING SYSTEM RESTORATION"
+    "PMS",
+    "AIRCON SERVICES",
+    "MAJOR WORK",
+    "UNDER CHASSIS",
+    "COOLING SYSTEM RESTORATION"
   ]);
 
   // Modals & Detail Drawers
   const [isAddLaborModalOpen, setIsAddLaborModalOpen] = useState(false);
   const [isAddPackageModalOpen, setIsAddPackageModalOpen] = useState(false);
   const [isAddLaborsSubModalOpen, setIsAddLaborsSubModalOpen] = useState(false);
-  const [isManageCategoriesModalOpen, setIsManageCategoriesModalOpen] = useState(false);
   const [selectedLaborDetail, setSelectedLaborDetail] = useState<LaborItem | null>(null);
   const [selectedPackageDetail, setSelectedPackageDetail] = useState<PackageBundle | null>(null);
-
-  // Category Renaming State
-  const [editingCategoryName, setEditingCategoryName] = useState<string | null>(null);
-  const [renamingInput, setRenamingInput] = useState("");
-  const [newCategoryModalInput, setNewCategoryModalInput] = useState("");
 
   // Labor Detail Modal Editable State
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [customEditCategoryInput, setCustomEditCategoryInput] = useState("");
-  const [isCustomEditCategory, setIsCustomEditCategory] = useState(false);
+
 
   // 📋 MASTER LABOR CATALOG ITEMS
-  const [laborItems, setLaborItems] = useState<LaborItem[]>([
-    // Category 1: 🛠️ PREVENTIVE MAINTENANCE SERVICE
-    { id: "PMS-001", name: "Change Oil", price: "₱650.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Drain old engine oil, replace sealing washer, and refill fresh engine oil.", status: "Active" },
-    { id: "PMS-002", name: "Replace Oil Filter", price: "₱250.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Spin-off old oil filter and install new OEM oil filter element.", status: "Active" },
-    { id: "PMS-003", name: "Replace Air Filter", price: "₱350.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Inspect air intake box and replace engine air filter element.", status: "Active" },
-    { id: "PMS-004", name: "Replace Fuel Filter", price: "₱550.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Replace inline fuel filter to prevent injector clogging.", status: "Active" },
-    { id: "PMS-005", name: "Replace Sparkplug", price: "₱450.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Inspect spark plug electrode gap and replace set of spark plugs.", status: "Active" },
-    { id: "PMS-006", name: "Replace Cabin Filter", price: "₱350.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Replace interior AC cabin pollen hygiene filter.", status: "Active" },
-    { id: "PMS-007", name: "Replace Transmission Oil", price: "₱950.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Drain and refill automatic/manual transmission fluid.", status: "Active" },
-    { id: "PMS-008", name: "Replace Differential Oil", price: "₱850.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Drain and refill front/rear differential gear oil.", status: "Active" },
-    { id: "PMS-009", name: "Throttle Body Inspection", price: "₱450.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Inspect throttle valve plate for carbon deposits.", status: "Active" },
-    { id: "PMS-010", name: "Inspect and Clean brake lining and drum", price: "₱1,200.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Remove rear drums, blow out dust, sand lining, and adjust clearance.", status: "Active" },
-    { id: "PMS-011", name: "Inspect/Replace Brake pads and disk", price: "₱1,800.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Inspect front disc pads, measure rotor thickness, and fit new pads.", status: "Active" },
-    { id: "PMS-012", name: "Inspect Steering wheel, linkage and gear box", price: "₱650.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Check steering play, tie rods, pitman arm, and gear box boots.", status: "Active" },
-    { id: "PMS-013", name: "Inspect Front and rear suspension", price: "₱750.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Inspect struts, coil springs, control arm bushings, and sway links.", status: "Active" },
-    { id: "PMS-014", name: "Inspect Battery", price: "₱250.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Digital battery CCA load test, terminal cleaning, and electrolyte check.", status: "Active" },
-    { id: "PMS-015", name: "Inspect Clutch System", price: "₱550.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Check clutch pedal freeplay, master/slave cylinder fluid, and slippage.", status: "Active" },
-    { id: "PMS-016", name: "Inspect Airconditioning", price: "₱450.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Check manifold pressure gauge, vent temp output, and compressor clutch.", status: "Active" },
-    { id: "PMS-017", name: "Inspect/Replace Drivebelt", price: "₱600.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Inspect serpentine belt for cracks, tensioner alignment, or replace belt.", status: "Active" },
-    { id: "PMS-018", name: "Engine Detailing", price: "₱1,500.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Degrease engine bay, steam clean, and apply protective dressing.", status: "Active" },
-    { id: "PMS-019", name: "Fluid Flushing", price: "₱750.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Flush power steering or brake hydraulic fluid system.", status: "Active" },
-    { id: "PMS-020", name: "Full ECU Scanning", price: "₱800.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Plug OBD2 scanner, perform full module scan, and log fault codes.", status: "Active" },
-    { id: "PMS-021", name: "Diagnose", price: "₱650.00", category: "🛠️ PREVENTIVE MAINTENANCE SERVICE", description: "Systematic engine noise or driveability symptom troubleshooting.", status: "Active" },
-
-    // Category 2: ❄️ AIRCON SERVICES
-    { id: "AC-001", name: "Aircon Cleaning", price: "₱2,800.00", category: "❄️ AIRCON SERVICES", description: "Full dashboard pull-out evaporator coil cleaning & chemical treatment.", status: "Active" },
-    { id: "AC-002", name: "Replace Compressor", price: "₱3,500.00", category: "❄️ AIRCON SERVICES", description: "Remove faulty AC compressor assembly, install replacement, and vacuum system.", status: "Active" },
-    { id: "AC-003", name: "Replace Evaporator", price: "₱2,200.00", category: "❄️ AIRCON SERVICES", description: "Replace leaking evaporator cooling coil inside dashboard.", status: "Active" },
-
-    // Category 3: ⚙️ MAJOR WORK
-    { id: "MJ-001", name: "EGR and Intake Manifold Cleaning", price: "₱3,500.00", category: "⚙️ MAJOR WORK", description: "Decarbonize EGR valve, cooler passages, and intake manifold ports.", status: "Active" },
-    { id: "MJ-004", name: "Replace Timing Belt", price: "₱4,200.00", category: "⚙️ MAJOR WORK", description: "Replace rubber timing belt and calibrate engine camshaft timing.", status: "Active" },
-
-    // Category 4: 🚗 UNDER CHASSIS
-    { id: "UC-003", name: "Replace Shock Absorber", price: "₱2,800.00", category: "🚗 UNDER CHASSIS", description: "Replace front strut / rear shock absorbers and compress coil springs.", status: "Active" },
-    { id: "UC-007", name: "Replace Rack and Pinion", price: "₱3,200.00", category: "🚗 UNDER CHASSIS", description: "Replace leaking hydraulic or electric steering rack & pinion assembly.", status: "Active" },
-
-    // Category 5: 🌡️ COOLING SYSTEM RESTORATION
-    { id: "CS-001", name: "Radiator Cleaning", price: "₱1,800.00", category: "🌡️ COOLING SYSTEM RESTORATION", description: "Dismantle radiator tanks, chemical flush fins, and leak pressure test.", status: "Active" },
-    { id: "CS-002", name: "Coolant Flushing", price: "₱850.00", category: "🌡️ COOLING SYSTEM RESTORATION", description: "Flush old engine coolant and refill high-performance glycol coolant.", status: "Active" }
-  ]);
+  const [laborItems, setLaborItems] = useState<LaborItem[]>([]);
 
   // Master PMS Package Bundles
-  const [packages, setPackages] = useState<PackageBundle[]>([
-    {
-      id: "PKG-LVL1",
-      packageName: "Level 1: Basic PMS Package",
-      targetInterval: "Every 10,000 KM or 6 Months",
-      description: "Essential routine maintenance including 3-Stage inspection, Change Oil & Filter, Air & Cabin filters, Sparkplug, and Full ECU Scanning.",
-      servicesIncluded: [
-        "Change Oil",
-        "Replace Oil Filter",
-        "Replace Air Filter",
-        "Replace Cabin Filter",
-        "Replace Sparkplug",
-        "Full ECU Scanning",
-        "Inspect/Replace Brake pads and disk"
-      ],
-      standaloneSum: "₱4,800.00",
-      packagePrice: "₱3,850.00",
-      popularBadge: true
-    },
-    {
-      id: "PKG-LVL2",
-      packageName: "Level 2: Full PMS Package (Diesel/Gasoline)",
-      targetInterval: "Every 50,000 KM or 5 Years",
-      description: "Complete maintenance including Level 1 Basic PMS + EGR & Intake Manifold Cleaning, Replace Fuel Filter, Throttle Body & Radiator Cleaning.",
-      servicesIncluded: [
-        "Everything included in Level 1 Basic PMS",
-        "Replace Fuel Filter",
-        "EGR and Intake Manifold Cleaning",
-        "Aircon Cleaning",
-        "Inspect and Clean brake lining and drum"
-      ],
-      standaloneSum: "₱9,400.00",
-      packagePrice: "₱7,500.00"
-    },
-    {
-      id: "PKG-LVL3",
-      packageName: "Level 3: Heavy PMS Package (Engine Refresh)",
-      targetInterval: "Every 80,000 KM and Up",
-      description: "Major engine refresh including Level 2 Full PMS + Replace Timing Belt, Tensioner Bearing, Valve Clearance Setting, Shock Absorber & Rack and Pinion.",
-      servicesIncluded: [
-        "Everything included in Level 2 Full PMS",
-        "Replace Timing Belt",
-        "Replace Tensioner Bearing",
-        "Replace Shock Absorber",
-        "Replace Rack and Pinion"
-      ],
-      standaloneSum: "₱17,600.00",
-      packagePrice: "₱14,200.00"
-    }
-  ]);
+  const [packages, setPackages] = useState<PackageBundle[]>([]);
 
   // Combined Selectable Items for Package Picker Sub-Modal
   const selectableItemsForPackagePicker = useMemo(() => {
@@ -226,9 +139,7 @@ export default function AdminServicesPage() {
   // New Labor Form State
   const [newLaborName, setNewLaborName] = useState("");
   const [newLaborPrice, setNewLaborPrice] = useState("");
-  const [newLaborCategory, setNewLaborCategory] = useState("🛠️ PREVENTIVE MAINTENANCE SERVICE");
-  const [customNewCategoryInput, setCustomNewCategoryInput] = useState("");
-  const [isCustomNewCategory, setIsCustomNewCategory] = useState(false);
+  const [newLaborCategory, setNewLaborCategory] = useState("PMS");
   const [newLaborDescription, setNewLaborDescription] = useState("");
 
   // 📹 YOUTUBE STUDIO EXACT PACKAGE CREATION & DETAILS STATE
@@ -264,65 +175,6 @@ export default function AdminServicesPage() {
       }))
     ];
   }, [categoriesList, packages, selectableItemsForPackagePicker]);
-
-  // 🔄 SMART CASCADING CATEGORY RENAME HANDLER
-  const handleSaveCategoryRename = (oldName: string) => {
-    const trimmed = renamingInput.trim();
-    if (!trimmed || trimmed === oldName) {
-      setEditingCategoryName(null);
-      return;
-    }
-
-    // 1. Update Master Categories Array
-    setCategoriesList(categoriesList.map((cat) => (cat === oldName ? trimmed : cat)));
-
-    // 2. Cascade update to all assigned labor items
-    const updatedCount = laborItems.filter((item) => item.category === oldName).length;
-    setLaborItems(
-      laborItems.map((item) => (item.category === oldName ? { ...item, category: trimmed } : item))
-    );
-
-    // 3. Update Category Filter if active
-    if (categoryFilter === oldName) {
-      setCategoryFilter(trimmed);
-    }
-    if (pkgSubModalCategoryFilter === oldName) {
-      setPkgSubModalCategoryFilter(trimmed);
-    }
-
-    triggerToast(`Renamed category to "${trimmed}" (${updatedCount} labor items updated)`);
-    setEditingCategoryName(null);
-    setRenamingInput("");
-  };
-
-  // 🗑️ DELETE CATEGORY HANDLER
-  const handleDeleteCategory = (catName: string) => {
-    const assignedCount = laborItems.filter((item) => item.category === catName).length;
-    if (assignedCount > 0) {
-      alert(`Cannot delete category "${catName}" because ${assignedCount} labor items are assigned to it. Please reassign those items first.`);
-      return;
-    }
-
-    setCategoriesList(categoriesList.filter((cat) => cat !== catName));
-    if (categoryFilter === catName) setCategoryFilter("ALL");
-    triggerToast(`Deleted category "${catName}"`);
-  };
-
-  // ➕ ADD NEW CATEGORY FROM MODAL HANDLER
-  const handleAddNewCategoryFromModal = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmed = newCategoryModalInput.trim();
-    if (!trimmed) return;
-
-    if (categoriesList.includes(trimmed)) {
-      alert(`Category "${trimmed}" already exists.`);
-      return;
-    }
-
-    setCategoriesList([...categoriesList, trimmed]);
-    triggerToast(`Added new category: "${trimmed}"`);
-    setNewCategoryModalInput("");
-  };
 
   // Sync edit state when package detail card is clicked
   const openPackageDetailsModal = (pkg: PackageBundle) => {
@@ -360,8 +212,9 @@ export default function AdminServicesPage() {
       try {
         const labor = await apiService.getLabor();
         if (labor && labor.length > 0) {
-          setLaborItems(labor);
-          const uniqueCats = Array.from(new Set(labor.map((l: any) => l.category))) as string[];
+          const realLabor = labor.filter((l: any) => !l.id.startsWith("PKG-REF-") && l.category !== "📦 EXISTING PMS PACKAGES") as LaborItem[];
+          setLaborItems(realLabor);
+          const uniqueCats = Array.from(new Set(realLabor.map((l: any) => l.category))) as string[];
           setCategoriesList(uniqueCats);
         }
         const bundles = await apiService.getBundles();
@@ -382,8 +235,6 @@ export default function AdminServicesPage() {
       setEditPrice(selectedLaborDetail.price.replace(/[^\d.]/g, ""));
       setEditCategory(selectedLaborDetail.category);
       setEditDescription(selectedLaborDetail.description);
-      setIsCustomEditCategory(false);
-      setCustomEditCategoryInput("");
     }
   }, [selectedLaborDetail]);
 
@@ -391,7 +242,7 @@ export default function AdminServicesPage() {
     selectedLaborDetail &&
     (editName !== selectedLaborDetail.name ||
       editPrice !== selectedLaborDetail.price.replace(/[^\d.]/g, "") ||
-      (isCustomEditCategory ? customEditCategoryInput.trim() !== "" : editCategory !== selectedLaborDetail.category) ||
+      editCategory !== selectedLaborDetail.category ||
       editDescription !== selectedLaborDetail.description);
 
   const triggerToast = (msg: string) => {
@@ -410,26 +261,23 @@ export default function AdminServicesPage() {
   }, [selectedLaborIdsForPkg, selectableItemsForPackagePicker]);
 
   // Save Labor Inline Edits Handler
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
     if (!selectedLaborDetail || !editName.trim() || !editPrice.trim()) return;
 
-    const finalCat = isCustomEditCategory ? customEditCategoryInput.trim() : editCategory;
-    if (!finalCat) return;
-
-    if (!categoriesList.includes(finalCat)) {
-      setCategoriesList([...categoriesList, finalCat]);
+    try {
+      const updated = await apiService.updateLabor(selectedLaborDetail.id, {
+        labor_name: editName,
+        price: parseFloat(editPrice),
+        category: editCategory,
+        description: editDescription
+      });
+      if (updated) {
+        setLaborItems(laborItems.map((item) => (item.id === selectedLaborDetail.id ? updated : item)));
+        triggerToast(`Saved changes for ${editName}`);
+      }
+    } catch (err) {
+      console.error("Failed to update labor", err);
     }
-
-    const updatedItem: LaborItem = {
-      ...selectedLaborDetail,
-      name: editName,
-      price: `₱${Number(editPrice).toLocaleString()}.00`,
-      category: finalCat,
-      description: editDescription
-    };
-
-    setLaborItems(laborItems.map((item) => (item.id === selectedLaborDetail.id ? updatedItem : item)));
-    triggerToast(`Saved changes for ${editName}`);
     setSelectedLaborDetail(null);
   };
 
@@ -438,18 +286,11 @@ export default function AdminServicesPage() {
     e.preventDefault();
     if (!newLaborName.trim() || !newLaborPrice.trim()) return;
 
-    const finalCat = isCustomNewCategory ? customNewCategoryInput.trim() : newLaborCategory;
-    if (!finalCat) return;
-
-    if (!categoriesList.includes(finalCat)) {
-      setCategoriesList([...categoriesList, finalCat]);
-    }
-
     try {
       const result = await apiService.createLabor({
         name: newLaborName,
         price: `₱${Number(newLaborPrice).toLocaleString()}.00`,
-        category: finalCat,
+        category: newLaborCategory,
         description: newLaborDescription || "Standard shop labor service."
       });
       setLaborItems([result, ...laborItems]);
@@ -462,8 +303,6 @@ export default function AdminServicesPage() {
     setNewLaborName("");
     setNewLaborPrice("");
     setNewLaborDescription("");
-    setIsCustomNewCategory(false);
-    setCustomNewCategoryInput("");
   };
 
   // Create or Update Package Handler
@@ -478,17 +317,23 @@ export default function AdminServicesPage() {
     const finalPrice = pkgFlatPrice ? `₱${Number(pkgFlatPrice).toLocaleString()}.00` : `₱${calculatedStandaloneSum.toLocaleString()}.00`;
 
     if (selectedPackageDetail) {
-      const updatedPkg: PackageBundle = {
-        ...selectedPackageDetail,
-        packageName: pkgTitle,
-        targetInterval: pkgInterval || selectedPackageDetail.targetInterval,
-        description: pkgDescription || selectedPackageDetail.description,
-        servicesIncluded: includedNames,
-        standaloneSum: `₱${calculatedStandaloneSum.toLocaleString()}.00`,
-        packagePrice: finalPrice
-      };
-      setPackages(packages.map((p) => (p.id === selectedPackageDetail.id ? updatedPkg : p)));
-      triggerToast(`Saved changes for package: ${pkgTitle}`);
+      // UPDATE existing package via API
+      try {
+        const updated = await apiService.updateBundle(selectedPackageDetail.id, {
+          bundle_name: pkgTitle,
+          interval: pkgInterval || selectedPackageDetail.targetInterval,
+          description: pkgDescription || selectedPackageDetail.description,
+          original_price: calculatedStandaloneSum,
+          discounted_price: pkgFlatPrice ? parseFloat(pkgFlatPrice) : calculatedStandaloneSum,
+          labor_ids: selectedLaborIdsForPkg
+        });
+        if (updated) {
+          setPackages(packages.map((p) => (p.id === selectedPackageDetail.id ? updated : p)));
+          triggerToast(`Saved changes for package: ${pkgTitle}`);
+        }
+      } catch (err) {
+        console.error("Failed to update bundle via API", err);
+      }
     } else {
       try {
         const result = await apiService.createBundle({
@@ -514,17 +359,27 @@ export default function AdminServicesPage() {
     setPkgFlatPrice("");
   };
 
-  const handleDeleteLabor = (id: string, name: string) => {
-    setLaborItems(laborItems.filter((item) => item.id !== id));
-    setSelectedLaborDetail(null);
-    triggerToast(`Removed labor service: ${name}`);
+  const handleDeleteLabor = async (id: string, name: string) => {
+    try {
+      await apiService.deleteLabor(id);
+      setLaborItems(laborItems.filter((item) => item.id !== id));
+      setSelectedLaborDetail(null);
+      triggerToast(`Removed labor service: ${name}`);
+    } catch (err) {
+      console.error("Failed to delete labor", err);
+    }
   };
 
-  const handleDeletePackage = (id: string, name: string) => {
-    setPackages(packages.filter((pkg) => pkg.id !== id));
-    setIsAddPackageModalOpen(false);
-    setSelectedPackageDetail(null);
-    triggerToast(`Removed package service: ${name}`);
+  const handleDeletePackage = async (id: string, name: string) => {
+    try {
+      await apiService.deleteBundle(id);
+      setPackages(packages.filter((pkg) => pkg.id !== id));
+      setIsAddPackageModalOpen(false);
+      setSelectedPackageDetail(null);
+      triggerToast(`Removed package service: ${name}`);
+    } catch (err) {
+      console.error("Failed to delete bundle", err);
+    }
   };
 
   const toggleLaborSelectionForPkg = (id: string) => {
@@ -662,8 +517,6 @@ export default function AdminServicesPage() {
                   value={categoryFilter}
                   onChange={setCategoryFilter}
                   options={stickyHeaderCategoryOptions}
-                  onManageClick={() => setIsManageCategoriesModalOpen(true)}
-                  manageLabel="⚙️ Manage Categories"
                   className="w-56"
                 />
               )}
@@ -823,8 +676,7 @@ export default function AdminServicesPage() {
                   )}
 
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">{pkg.id}</span>
+                    <div className="flex items-center justify-end">
                       <span className="text-[10px] text-emerald-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
                         <span>Click to view & edit</span>
                         <ChevronRight className="w-3 h-3" />
@@ -856,7 +708,7 @@ export default function AdminServicesPage() {
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-slate-100 space-y-3">
+                  <div className="pt-4 border-t border-slate-100">
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="text-[10px] text-slate-400 line-through">Standalone Sum: {pkg.standaloneSum}</div>
@@ -864,16 +716,6 @@ export default function AdminServicesPage() {
                       </div>
                       <div className="text-2xl font-extrabold text-emerald-800">{pkg.packagePrice}</div>
                     </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        triggerToast(`Package ${pkg.packageName} assigned to Front Desk!`);
-                      }}
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow-2xs flex items-center justify-center gap-2"
-                    >
-                      <span>Assign PMS Level Package</span>
-                    </button>
                   </div>
 
                 </div>
@@ -884,147 +726,6 @@ export default function AdminServicesPage() {
       )}
 
       </div>
-
-      {/* ⚙️ MANAGE & RENAME CATEGORIES CENTRAL MODAL */}
-      <AnimatePresence>
-        {isManageCategoriesModalOpen && (
-          <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              transition={{ duration: 0.15 }}
-              className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-5 border border-slate-100 text-slate-900 max-h-[85vh] flex flex-col"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
-                <div className="flex items-center gap-2 text-slate-900 font-bold text-base">
-                  <Settings className="w-5 h-5 text-emerald-700" />
-                  <span>Manage Categories</span>
-                </div>
-                <button
-                  onClick={() => {
-                    setIsManageCategoriesModalOpen(false);
-                    setEditingCategoryName(null);
-                  }}
-                  className="text-slate-400 hover:text-slate-600 p-1 rounded-full hover:bg-slate-100"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Add New Category Form inside Modal */}
-              <form onSubmit={handleAddNewCategoryFromModal} className="flex items-center gap-2 shrink-0">
-                <input
-                  type="text"
-                  value={newCategoryModalInput}
-                  onChange={(e) => setNewCategoryModalInput(e.target.value)}
-                  placeholder="➕ Type new category name..."
-                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs text-slate-900 outline-none focus:border-emerald-600"
-                />
-                <button
-                  type="submit"
-                  disabled={!newCategoryModalInput.trim()}
-                  className="bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shrink-0"
-                >
-                  Add
-                </button>
-              </form>
-
-              {/* Categories List with Inline Rename */}
-              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                  Active Categories ({categoriesList.length}):
-                </div>
-
-                {categoriesList.map((cat) => {
-                  const assignedCount = laborItems.filter((i) => i.category === cat).length;
-                  const isEditing = editingCategoryName === cat;
-
-                  return (
-                    <div
-                      key={cat}
-                      className="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between gap-3 text-xs shadow-2xs"
-                    >
-                      {isEditing ? (
-                        <div className="flex items-center gap-2 flex-1">
-                          <input
-                            type="text"
-                            value={renamingInput}
-                            onChange={(e) => setRenamingInput(e.target.value)}
-                            className="flex-1 bg-white border border-emerald-600 rounded-xl py-1.5 px-2.5 text-xs font-bold text-slate-950 outline-none"
-                            autoFocus
-                          />
-                          <button
-                            onClick={() => handleSaveCategoryRename(cat)}
-                            className="bg-emerald-700 hover:bg-emerald-800 text-white p-1.5 rounded-lg text-xs font-bold shrink-0 flex items-center gap-1"
-                            title="Save Rename"
-                          >
-                            <Check className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setEditingCategoryName(null)}
-                            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg shrink-0"
-                            title="Cancel"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-bold text-slate-900 text-xs truncate">{cat}</span>
-                            <span className="bg-emerald-100 text-emerald-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full shrink-0">
-                              {assignedCount} items
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              onClick={() => {
-                                setEditingCategoryName(cat);
-                                setRenamingInput(cat);
-                              }}
-                              className="px-2.5 py-1 bg-white hover:bg-emerald-50 text-emerald-800 font-bold text-[11px] rounded-lg border border-slate-200 transition-all flex items-center gap-1"
-                              title="Rename category"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                              <span>Rename</span>
-                            </button>
-
-                            <button
-                              onClick={() => handleDeleteCategory(cat)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
-                              title="Delete category"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Footer */}
-              <div className="flex items-center justify-end pt-3 border-t border-slate-100 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsManageCategoriesModalOpen(false);
-                    setEditingCategoryName(null);
-                  }}
-                  className="px-5 py-2 bg-slate-950 hover:bg-slate-800 text-white font-bold text-xs rounded-full transition-all shadow-xs"
-                >
-                  Done
-                </button>
-              </div>
-
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* 🔴 YOUTUBE STUDIO EXACT 2-STEP MODAL */}
       <AnimatePresence>
@@ -1450,40 +1151,12 @@ export default function AdminServicesPage() {
                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       Category:
                     </label>
-                    {!isCustomEditCategory ? (
-                      <CustomSelect
-                        value={editCategory}
-                        onChange={(val) => {
-                          if (val === "CUSTOM") {
-                            setIsCustomEditCategory(true);
-                          } else {
-                            setEditCategory(val);
-                          }
-                        }}
-                        options={[
-                          ...categoriesList.map((cat) => ({ value: cat, label: cat })),
-                          { value: "CUSTOM", label: "➕ Add Custom Category..." }
-                        ]}
-                        className="w-full"
-                      />
-                    ) : (
-                      <div className="relative flex items-center">
-                        <input
-                          type="text"
-                          value={customEditCategoryInput}
-                          onChange={(e) => setCustomEditCategoryInput(e.target.value)}
-                          placeholder="Type custom category..."
-                          className="w-full font-semibold text-xs text-slate-900 bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-8 outline-none focus:border-emerald-600"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setIsCustomEditCategory(false)}
-                          className="absolute right-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
+                    <CustomSelect
+                      value={editCategory}
+                      onChange={setEditCategory}
+                      options={categoriesList.map((cat) => ({ value: cat, label: categoryDisplayNames[cat] || cat }))}
+                      className="w-full"
+                    />
                   </div>
                 </div>
 
@@ -1498,6 +1171,24 @@ export default function AdminServicesPage() {
                     className="w-full text-xs text-slate-700 leading-relaxed font-normal bg-slate-50 border border-slate-200 rounded-xl p-3 outline-none focus:border-emerald-600 focus:bg-white transition-all"
                   />
                 </div>
+
+                {selectedLaborDetail.recommendedMaterials && selectedLaborDetail.recommendedMaterials.length > 0 && (
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                      Required Parts & Materials:
+                    </label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedLaborDetail.recommendedMaterials.map((mat: string, idx: number) => (
+                        <span
+                          key={idx}
+                          className="bg-emerald-50 text-emerald-800 text-[10px] font-semibold px-2.5 py-1 rounded-lg border border-emerald-200"
+                        >
+                          {mat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-between border-t border-slate-100 pt-4">
@@ -1585,41 +1276,12 @@ export default function AdminServicesPage() {
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">Category</label>
-                    {!isCustomNewCategory ? (
-                      <CustomSelect
-                        value={newLaborCategory}
-                        onChange={(val) => {
-                          if (val === "CUSTOM") {
-                            setIsCustomNewCategory(true);
-                          } else {
-                            setNewLaborCategory(val);
-                          }
-                        }}
-                        options={[
-                          ...categoriesList.map((cat) => ({ value: cat, label: cat })),
-                          { value: "CUSTOM", label: "➕ Add Custom Category..." }
-                        ]}
-                        className="w-full"
-                      />
-                    ) : (
-                      <div className="relative flex items-center">
-                        <input
-                          type="text"
-                          required
-                          value={customNewCategoryInput}
-                          onChange={(e) => setCustomNewCategoryInput(e.target.value)}
-                          placeholder="Type custom category..."
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-8 text-xs text-slate-900 outline-none focus:border-emerald-600"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setIsCustomNewCategory(false)}
-                          className="absolute right-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
+                    <CustomSelect
+                      value={newLaborCategory}
+                      onChange={setNewLaborCategory}
+                      options={categoriesList.map((cat) => ({ value: cat, label: categoryDisplayNames[cat] || cat }))}
+                      className="w-full"
+                    />
                   </div>
                 </div>
 

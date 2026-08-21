@@ -6,6 +6,7 @@ from backend.app.schemas.master import (
     LaborCreate, LaborResponse,
     BundleCreate, BundleResponse
 )
+from backend.app.schemas.job_order import JobOrderCreate, JobOrderResponse, JobOrderUpdate
 
 __all__ = [
     "UserCreate",
@@ -22,4 +23,7 @@ __all__ = [
     "LaborResponse",
     "BundleCreate",
     "BundleResponse",
+    "JobOrderCreate",
+    "JobOrderResponse",
+    "JobOrderUpdate",
 ]

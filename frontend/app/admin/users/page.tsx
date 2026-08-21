@@ -14,6 +14,7 @@ import {
   X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiService } from "../../apiService";
 
 interface UserAccount {
   id: string;
@@ -23,6 +24,22 @@ interface UserAccount {
   role: "Admin" | "Front Desk" | "Mechanic";
   status: "ACTIVE" | "PENDING";
   joinedDate: string;
+}
+
+function mapBackendUserToFrontend(user: any): UserAccount {
+  return {
+    id: user.user_id,
+    name: user.name,
+    email: user.email,
+    phone: user.phone_number,
+    role: user.role,
+    status: user.status === "APPROVED" ? "ACTIVE" : user.status,
+    joinedDate: new Date(user.created_at).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric"
+    })
+  };
 }
 
 export default function AdminUsersPage() {
@@ -38,53 +55,19 @@ export default function AdminUsersPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const [userList, setUserList] = useState<UserAccount[]>([
-    {
-      id: "USR-001",
-      name: "Sir Keith",
-      email: "admin@piveran.com",
-      phone: "0917000001",
-      role: "Admin",
-      status: "ACTIVE",
-      joinedDate: "Jan 10, 2026"
-    },
-    {
-      id: "USR-002",
-      name: "Sir Cedrick",
-      email: "cedrick.manager@reyauto.com",
-      phone: "0917111222",
-      role: "Front Desk",
-      status: "ACTIVE",
-      joinedDate: "Feb 01, 2026"
-    },
-    {
-      id: "USR-003",
-      name: "Master Mechanic Mark",
-      email: "mark.mechanic@reyauto.com",
-      phone: "0918333444",
-      role: "Mechanic",
-      status: "ACTIVE",
-      joinedDate: "Feb 15, 2026"
-    },
-    {
-      id: "USR-004",
-      name: "Ramon Garcia",
-      email: "ramon.garage@reyauto.com",
-      phone: "0918987654",
-      role: "Mechanic",
-      status: "ACTIVE",
-      joinedDate: "Mar 01, 2026"
-    },
-    {
-      id: "APP-101",
-      name: "Cedrick Santos",
-      email: "cedrick.new@gmail.com",
-      phone: "0917123456",
-      role: "Front Desk",
-      status: "PENDING",
-      joinedDate: "Submitted 10 mins ago"
+  const [userList, setUserList] = useState<UserAccount[]>([]);
+
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const users = await apiService.getUsers();
+        setUserList(users.map(mapBackendUserToFrontend));
+      } catch (err) {
+        console.error("Failed to load users from backend", err);
+      }
     }
-  ]);
+    loadUsers();
+  }, []);
 
   useEffect(() => {
     const mainElement = document.querySelector("main");
@@ -129,16 +112,26 @@ export default function AdminUsersPage() {
     });
   }, [mockDataState, userList, searchTerm, activeTab]);
 
-  const handleApprove = (id: string, name: string) => {
-    setUserList(
-      userList.map((i) => (i.id === id ? { ...i, status: "ACTIVE", joinedDate: "Just now" } : i))
-    );
-    triggerToast(`Approved account for ${name}`);
+  const handleApprove = async (id: string, name: string) => {
+    try {
+      await apiService.updateUserStatus(id, "APPROVED");
+      setUserList(
+        userList.map((i) => (i.id === id ? { ...i, status: "ACTIVE", joinedDate: "Just now" } : i))
+      );
+      triggerToast(`Approved account for ${name}`);
+    } catch (err: any) {
+      triggerToast(err.message || "Failed to approve user.");
+    }
   };
 
-  const handleDeactivate = (id: string, name: string) => {
-    setUserList(userList.filter((i) => i.id !== id));
-    triggerToast(`Deactivated account for ${name}`);
+  const handleDeactivate = async (id: string, name: string) => {
+    try {
+      await apiService.updateUserStatus(id, "REJECTED");
+      setUserList(userList.filter((i) => i.id !== id));
+      triggerToast(`Deactivated account for ${name}`);
+    } catch (err: any) {
+      triggerToast(err.message || "Failed to update user.");
+    }
   };
 
   return (

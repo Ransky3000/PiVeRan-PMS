@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, Float, Integer, Text, DateTime, ForeignKey, Enum
+from sqlalchemy import Column, String, Float, Integer, Text, DateTime, ForeignKey, Enum, Boolean
 import enum
 from sqlalchemy.orm import relationship
 from backend.app.database import Base
@@ -30,16 +30,24 @@ class JobOrder(Base):
     __tablename__ = "job_orders"
 
     jo_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    owner_id = Column(String, ForeignKey("owners.owner_id"), nullable=False)
+    owner_id = Column(String, ForeignKey("Owner.owner_id"), nullable=False)
     vehicle_id = Column(String, ForeignKey("vehicles.vehicle_id"), nullable=False)
     bundle_id = Column(String, ForeignKey("bundles.bundle_id"), nullable=False)
     odometer = Column(Integer, nullable=False)
     status = Column(Enum(JobOrderStatus), nullable=False, default=JobOrderStatus.NEW)
+    discount = Column(Float, nullable=False, default=0.0)
+    estimate_comment = Column(Text, nullable=True)
+    inspection_started = Column(Boolean, nullable=False, default=False)
+    mechanic_findings = Column(Text, nullable=True)
+    mechanic_marked_ready = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     checklist_items = relationship("ChecklistDetail", back_populates="job_order", cascade="all, delete-orphan")
     mechanics = relationship("UserAccount", secondary="job_order_mechanics")
+    owner = relationship("Owner")
+    vehicle = relationship("Vehicle")
+    bundle = relationship("Bundle")
 
 class ChecklistDetail(Base):
     __tablename__ = "checklist_details"
@@ -53,6 +61,7 @@ class ChecklistDetail(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     job_order = relationship("JobOrder", back_populates="checklist_items")
+    labor = relationship("Labor")
     cart_items = relationship("Cart", back_populates="checklist_item", cascade="all, delete-orphan")
 
 class Cart(Base):

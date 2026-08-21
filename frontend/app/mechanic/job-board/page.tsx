@@ -79,20 +79,17 @@ const INITIAL_MATERIAL_OPTIONS: SelectOption[] = [
    ─────────────────────────────────────────── */
 
 const getJobBadgeConfig = (jo: JobOrder) => {
-  if (jo.status === "FOR_INSPECTION") {
+  if (jo.status === "New") {
     if (jo.inspectionStarted) {
       return { label: "Work in progress", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200" };
     }
     return { label: "New", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" };
   }
-  if (jo.status === "IN_REPAIR") {
+  if (jo.status === "Work in progress") {
     return { label: "Work in progress", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200" };
   }
-  if (jo.status === "AWAITING_ESTIMATE") {
-    return { label: "Awaiting Estimate", color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-200" };
-  }
-  if (jo.status === "READY_FOR_PICKUP") {
-    return { label: "Ready for Pickup", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" };
+  if (jo.status === "Job completed") {
+    return { label: "Job completed", color: "text-emerald-800", bg: "bg-emerald-50", border: "border-emerald-200" };
   }
   return { label: jo.status, color: "text-slate-700", bg: "bg-slate-100", border: "border-slate-200" };
 };
@@ -126,7 +123,7 @@ const getInspectionProgress = (jo: JobOrder | null) => {
 
 export default function MechanicJobBoardPage() {
   const [jobOrders, setJobOrders] = useState<JobOrder[]>([]);
-  const [activeTab, setActiveTab] = useState<"NEW" | "WIP" | "FOR_VERIFICATION" | "JOB_COMPLETED">("WIP");
+  const [activeTab, setActiveTab] = useState<"NEW" | "WIP" | "JOB_COMPLETED">("WIP");
   const [searchTerm, setSearchTerm] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [drawerJobOrder, setDrawerJobOrder] = useState<JobOrder | null>(null);
@@ -159,7 +156,7 @@ export default function MechanicJobBoardPage() {
       odometer: "45,210 KM",
       serviceType: "Basic PMS",
       inchargeMechanics: ["Rodel Santos"],
-      status: "FOR_INSPECTION",
+      status: "New",
       createdAt: "Today, 10:15 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -193,7 +190,7 @@ export default function MechanicJobBoardPage() {
       odometer: "28,500 KM",
       serviceType: "Change Oil & Brake Check",
       inchargeMechanics: ["Mark Rey"],
-      status: "FOR_INSPECTION",
+      status: "New",
       createdAt: "Today, 1:45 PM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -217,7 +214,7 @@ export default function MechanicJobBoardPage() {
       odometer: "38,900 KM",
       serviceType: "Aircon & Electrical Check",
       inchargeMechanics: ["Rodel Santos"],
-      status: "FOR_INSPECTION",
+      status: "New",
       createdAt: "Today, 2:10 PM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -241,7 +238,7 @@ export default function MechanicJobBoardPage() {
       odometer: "51,200 KM",
       serviceType: "Suspension & Engine Tune-up",
       inchargeMechanics: ["Mark Rey", "Rodel Santos"],
-      status: "FOR_INSPECTION",
+      status: "New",
       createdAt: "Today, 2:30 PM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -265,7 +262,7 @@ export default function MechanicJobBoardPage() {
       odometer: "54,200 KM",
       serviceType: "Basic PMS",
       inchargeMechanics: ["Mark Rey", "Rey Duran"],
-      status: "READY_FOR_PICKUP",
+      status: "Job completed",
       createdAt: "Today, 9:15 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -289,7 +286,7 @@ export default function MechanicJobBoardPage() {
       odometer: "38,500 KM",
       serviceType: "Change Oil & Brake Check",
       inchargeMechanics: ["John Uy"],
-      status: "READY_FOR_PICKUP",
+      status: "Job completed",
       createdAt: "Yesterday, 2:45 PM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -312,7 +309,7 @@ export default function MechanicJobBoardPage() {
       odometer: "68,400 KM",
       serviceType: "Heavy PMS Refresh",
       inchargeMechanics: ["Bernard Caermare", "Roderick Omisol"],
-      status: "COMPLETED",
+      status: "Job completed",
       createdAt: "Yesterday, 10:00 AM",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -334,7 +331,7 @@ export default function MechanicJobBoardPage() {
       odometer: "22,100 KM",
       serviceType: "Basic PMS",
       inchargeMechanics: ["Rodel Santos"],
-      status: "COMPLETED",
+      status: "Job completed",
       createdAt: "2 days ago",
       vehiclePhotoUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80",
       inspectionItems: [
@@ -346,6 +343,8 @@ export default function MechanicJobBoardPage() {
       mechanicMarkedReady: true
     }
   ];
+
+  const [laborMaterialsMap, setLaborMaterialsMap] = useState<Record<string, string[]>>({});
 
   // Load from localStorage
   useEffect(() => {
@@ -360,6 +359,33 @@ export default function MechanicJobBoardPage() {
       }
     };
     loadJobOrders();
+  }, []);
+
+  // Load materials and labor mapping from DB
+  useEffect(() => {
+    const loadMaterialsAndLabor = async () => {
+      try {
+        const mats = await apiService.getMaterials();
+        if (mats && mats.length > 0) {
+          const opts = mats.map((m: any) => ({
+            value: m.name,
+            label: `${m.name} (₱${parseFloat(m.price).toLocaleString("en-US", { minimumFractionDigits: 2 })})`
+          }));
+          setMaterialsList(opts);
+        }
+        const labors = await apiService.getLabor();
+        if (labors && labors.length > 0) {
+          const mapping: Record<string, string[]> = {};
+          labors.forEach((l: any) => {
+            mapping[l.name] = l.recommendedMaterials || [];
+          });
+          setLaborMaterialsMap(mapping);
+        }
+      } catch (err) {
+        console.error("Failed to load materials or labors catalog on mount", err);
+      }
+    };
+    loadMaterialsAndLabor();
   }, []);
 
   // Save to localStorage in real-time with quota error handling
@@ -387,29 +413,21 @@ export default function MechanicJobBoardPage() {
   /* ─── COMPUTED STATE VALUES ─── */
   const newJobsList = useMemo(() => {
     return jobOrders.filter(
-      (j) => j.status === "FOR_INSPECTION" && !j.inspectionStarted
+      (j) => j.status === "New" && !j.inspectionStarted
     );
   }, [jobOrders]);
 
   const wipJobsList = useMemo(() => {
     return jobOrders.filter(
       (j) =>
-        ((j.status === "FOR_INSPECTION" && j.inspectionStarted) ||
-          j.status === "IN_REPAIR" ||
-          j.status === "AWAITING_ESTIMATE") &&
-        !j.mechanicMarkedReady
-    );
-  }, [jobOrders]);
-
-  const forVerificationJobsList = useMemo(() => {
-    return jobOrders.filter(
-      (j) => j.status === "READY_FOR_PICKUP" || (j.mechanicMarkedReady === true && j.status !== "COMPLETED")
+        (j.status === "New" && j.inspectionStarted) ||
+        j.status === "Work in progress"
     );
   }, [jobOrders]);
 
   const jobCompletedList = useMemo(() => {
     return jobOrders.filter(
-      (j) => j.status === "COMPLETED"
+      (j) => j.status === "Job completed"
     );
   }, [jobOrders]);
 
@@ -419,8 +437,6 @@ export default function MechanicJobBoardPage() {
         ? newJobsList
         : activeTab === "WIP"
         ? wipJobsList
-        : activeTab === "FOR_VERIFICATION"
-        ? forVerificationJobsList
         : jobCompletedList;
     return list.filter((j) => {
       const matchSearch =
@@ -430,7 +446,7 @@ export default function MechanicJobBoardPage() {
         j.plateNumber.toLowerCase().includes(searchTerm.toLowerCase());
       return matchSearch;
     });
-  }, [activeTab, newJobsList, wipJobsList, forVerificationJobsList, jobCompletedList, searchTerm]);
+  }, [activeTab, newJobsList, wipJobsList, jobCompletedList, searchTerm]);
 
   const updateDrawerJO = (updates: Partial<JobOrder>) => {
     if (!drawerJobOrder) return;
@@ -717,17 +733,6 @@ export default function MechanicJobBoardPage() {
               </span>
             </button>
             <button
-              onClick={() => setActiveTab("FOR_VERIFICATION")}
-              className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
-                activeTab === "FOR_VERIFICATION" ? "bg-slate-900 text-white font-semibold" : "text-slate-600 hover:bg-slate-100"
-              }`}
-            >
-              Ready for pickup
-              <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${activeTab === "FOR_VERIFICATION" ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-500"}`}>
-                {forVerificationJobsList.length}
-              </span>
-            </button>
-            <button
               onClick={() => setActiveTab("JOB_COMPLETED")}
               className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 activeTab === "JOB_COMPLETED" ? "bg-slate-900 text-white font-semibold" : "text-slate-600 hover:bg-slate-100"
@@ -769,10 +774,6 @@ export default function MechanicJobBoardPage() {
                   className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-all group max-w-xs w-full cursor-pointer"
                 >
                   <div className="h-40 bg-slate-100 relative flex items-center justify-center border-b border-slate-200 overflow-hidden shrink-0">
-                    <div className={`absolute top-3 left-3 ${sc.bg} ${sc.color} ${sc.border} border font-semibold text-[10px] px-2.5 py-0.5 rounded-lg`}>
-                      {sc.label}
-                    </div>
-
                     {jo.vehiclePhotoUrl ? (
                       <img
                         src={jo.vehiclePhotoUrl}
@@ -805,7 +806,7 @@ export default function MechanicJobBoardPage() {
                       </div>
 
                       {/* Status / Progress indicators (Both GOOD & MONITOR count as completed) */}
-                      {jo.status === "FOR_INSPECTION" && !jo.inspectionStarted && (
+                      {jo.status === "New" && !jo.inspectionStarted && (
                         <div className="space-y-1 pt-0.5">
                           <div className="flex items-center justify-between text-[10px] text-slate-500">
                             <span>Inspection Status</span>
@@ -817,7 +818,7 @@ export default function MechanicJobBoardPage() {
                         </div>
                       )}
 
-                      {jo.status === "FOR_INSPECTION" && jo.inspectionStarted && (
+                      {jo.status === "New" && jo.inspectionStarted && (
                         <div className="space-y-1 pt-0.5">
                           <div className="flex items-center justify-between text-[10px] text-slate-500">
                             <span>Inspection Checklist</span>
@@ -832,7 +833,7 @@ export default function MechanicJobBoardPage() {
                         </div>
                       )}
 
-                      {jo.status === "IN_REPAIR" && (
+                      {jo.status === "Work in progress" && (
                         <div className="space-y-1 pt-0.5">
                           <div className="flex items-center justify-between text-[10px] text-slate-500">
                             <span>Repair Progress</span>
@@ -844,7 +845,7 @@ export default function MechanicJobBoardPage() {
                         </div>
                       )}
 
-                      {(jo.status === "READY_FOR_PICKUP" || jo.status === "COMPLETED") && (
+                      {jo.status === "Job completed" && (
                         <div className="space-y-1 pt-0.5">
                           <div className="flex items-center justify-between text-[10px] text-slate-500">
                             <span>Inspection Checklist</span>
@@ -961,7 +962,7 @@ export default function MechanicJobBoardPage() {
                       </div>
                     </div>
 
-                    {drawerJobOrder.status !== "READY_FOR_PICKUP" && drawerJobOrder.status !== "COMPLETED" ? (
+                    {drawerJobOrder.status !== "Job completed" ? (
                       /* INTERACTIVE CHECKLIST FOR MECHANICS (ACCORDION) */
                       <div className="space-y-2.5">
                         {drawerJobOrder.inspectionItems.map((item, idx) => {
@@ -1129,33 +1130,89 @@ export default function MechanicJobBoardPage() {
                                                     </button>
                                                   </div>
 
-                                                  {/* Radio Button Options List (Light red hover background) */}
-                                                  <div className="max-h-48 overflow-y-auto space-y-1 pr-1">
-                                                    {materialsList
-                                                      .filter((opt) => opt.label.toLowerCase().includes(materialSearchQuery.toLowerCase()))
-                                                      .map((opt) => (
-                                                        <label
-                                                          key={opt.value}
-                                                          onClick={() => {
-                                                            setSelectedPartName(opt.value);
-                                                            setAddMaterialStep("SET_QUANTITY");
-                                                          }}
-                                                          className="flex items-center gap-2.5 py-2 px-3 hover:bg-red-50/80 bg-white rounded-xl cursor-pointer transition-colors border border-slate-100/80 hover:border-red-200 group/item"
-                                                        >
-                                                          <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
-                                                            selectedPartName === opt.value
-                                                              ? "border-red-600 bg-red-600"
-                                                              : "border-slate-300 bg-white group-hover/item:border-red-400"
-                                                          }`}>
-                                                            {selectedPartName === opt.value ? (
-                                                              <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                                                            ) : (
-                                                              <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover/item:bg-red-200/50" />
-                                                            )}
-                                                          </div>
-                                                          <span className="text-xs font-semibold text-slate-800 group-hover/item:text-red-950">{opt.label}</span>
-                                                        </label>
-                                                      ))}
+                                                  {/* Radio Button Options List (Groups recommended materials at the top) */}
+                                                  <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                                                    {(() => {
+                                                      const recommended = laborMaterialsMap[item.name] || [];
+                                                      const filteredList = materialsList.filter((opt) =>
+                                                        opt.label.toLowerCase().includes(materialSearchQuery.toLowerCase())
+                                                      );
+                                                      
+                                                      const recommendedOptions = filteredList.filter((opt) =>
+                                                        recommended.includes(opt.value)
+                                                      );
+                                                      const otherOptions = filteredList.filter((opt) =>
+                                                        !recommended.includes(opt.value)
+                                                      );
+
+                                                      return (
+                                                        <>
+                                                          {recommendedOptions.length > 0 && (
+                                                            <div className="space-y-1">
+                                                              <div className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded-md uppercase tracking-wider border border-emerald-200/50">
+                                                                Recommended for {item.name}
+                                                              </div>
+                                                              {recommendedOptions.map((opt) => (
+                                                                <label
+                                                                  key={opt.value}
+                                                                  onClick={() => {
+                                                                    setSelectedPartName(opt.value);
+                                                                    setAddMaterialStep("SET_QUANTITY");
+                                                                  }}
+                                                                  className="flex items-center gap-2.5 py-2 px-3 hover:bg-emerald-50 bg-white rounded-xl cursor-pointer transition-colors border border-emerald-100/50 group/item"
+                                                                >
+                                                                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                                                                    selectedPartName === opt.value
+                                                                      ? "border-emerald-600 bg-emerald-600"
+                                                                      : "border-slate-300 bg-white group-hover/item:border-emerald-400"
+                                                                  }`}>
+                                                                    {selectedPartName === opt.value ? (
+                                                                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                                                    ) : (
+                                                                      <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover/item:bg-emerald-200/50" />
+                                                                    )}
+                                                                  </div>
+                                                                  <span className="text-xs font-semibold text-slate-800 group-hover/item:text-emerald-950">{opt.label}</span>
+                                                                </label>
+                                                              ))}
+                                                            </div>
+                                                          )}
+
+                                                          {otherOptions.length > 0 && (
+                                                            <div className="space-y-1 pt-1.5">
+                                                              {recommendedOptions.length > 0 && (
+                                                                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider px-2 pb-0.5">
+                                                                  Other Materials
+                                                                </div>
+                                                              )}
+                                                              {otherOptions.map((opt) => (
+                                                                <label
+                                                                  key={opt.value}
+                                                                  onClick={() => {
+                                                                    setSelectedPartName(opt.value);
+                                                                    setAddMaterialStep("SET_QUANTITY");
+                                                                  }}
+                                                                  className="flex items-center gap-2.5 py-2 px-3 hover:bg-red-50/80 bg-white rounded-xl cursor-pointer transition-colors border border-slate-100/80 hover:border-red-200 group/item"
+                                                                >
+                                                                  <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                                                                    selectedPartName === opt.value
+                                                                      ? "border-red-600 bg-red-600"
+                                                                      : "border-slate-300 bg-white group-hover/item:border-red-400"
+                                                                  }`}>
+                                                                    {selectedPartName === opt.value ? (
+                                                                      <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                                                    ) : (
+                                                                      <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover/item:bg-red-200/50" />
+                                                                    )}
+                                                                  </div>
+                                                                  <span className="text-xs font-semibold text-slate-800 group-hover/item:text-red-950">{opt.label}</span>
+                                                                </label>
+                                                              ))}
+                                                            </div>
+                                                          )}
+                                                        </>
+                                                      );
+                                                    })()}
                                                   </div>
                                                 </div>
                                               ) : (
@@ -1439,7 +1496,7 @@ export default function MechanicJobBoardPage() {
                   Close
                 </button>
 
-                {drawerJobOrder.status === "FOR_INSPECTION" && !drawerJobOrder.inspectionStarted && (
+                {drawerJobOrder.status === "New" && !drawerJobOrder.inspectionStarted && (
                   <button
                     onClick={() => {
                       updateDrawerJO({ inspectionStarted: true });

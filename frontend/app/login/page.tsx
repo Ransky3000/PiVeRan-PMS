@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Flame, Eye, EyeOff, CheckCircle2 } from "lucide-react";
+import { apiService, authService } from "../apiService";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,22 +34,42 @@ export default function LoginPage() {
     triggerToast(`Auto-filled credentials for ${roleName}`);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
-      triggerToast(`Authenticated! Welcome back (${email})`);
+    try {
+      const user = await apiService.login({ email, password });
       
-      if (email.includes("admin")) {
-        router.push("/admin/analytics");
-      } else if (email.includes("cedrick")) {
-        router.push("/frontdesk/dashboard");
-      } else if (email.includes("mechanic")) {
-        router.push("/mechanic/job-board");
+      if (user.status === "PENDING") {
+        authService.setPendingUser(user);
+        triggerToast("Account pending approval. Redirecting...");
+        setTimeout(() => {
+          router.push("/pending-approval");
+        }, 1500);
+      } else if (user.status === "REJECTED") {
+        triggerToast("Your registration request was rejected by Admin.");
+      } else {
+        // APPROVED
+        authService.setCurrentUser(user);
+        authService.setPendingUser(null);
+        triggerToast(`Authenticated! Welcome back (${user.name})`);
+        
+        setTimeout(() => {
+          if (user.role === "Admin") {
+            router.push("/admin/analytics");
+          } else if (user.role === "Front Desk") {
+            router.push("/frontdesk/dashboard");
+          } else if (user.role === "Mechanic") {
+            router.push("/mechanic/job-board");
+          }
+        }, 1200);
       }
-    }, 1000);
+    } catch (err: any) {
+      triggerToast(err.message || "Invalid email or password.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
