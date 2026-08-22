@@ -37,9 +37,7 @@ class JobOrder(Base):
     status = Column(Enum(JobOrderStatus), nullable=False, default=JobOrderStatus.NEW)
     discount = Column(Float, nullable=False, default=0.0)
     estimate_comment = Column(Text, nullable=True)
-    inspection_started = Column(Boolean, nullable=False, default=False)
     mechanic_findings = Column(Text, nullable=True)
-    mechanic_marked_ready = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

@@ -750,7 +750,7 @@ export default function JobOrdersPage() {
                       const progress = getInspectionProgress(jo);
                       return (
                         <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                          {jo.status === "New" && !jo.inspectionStarted && (
+                          {jo.status === "New" && (
                             <div className="space-y-1 pt-0.5">
                               <div className="flex items-center justify-between text-[10px] text-slate-500">
                                 <span>Inspection Status</span>
@@ -762,7 +762,7 @@ export default function JobOrdersPage() {
                             </div>
                           )}
 
-                          {jo.status === "New" && jo.inspectionStarted && (
+                          {jo.status === "Work in progress" && (
                             <div className="space-y-1 pt-0.5">
                               <div className="flex items-center justify-between text-[10px] text-slate-500">
                                 <span>Inspection Checklist</span>
@@ -773,18 +773,6 @@ export default function JobOrdersPage() {
                                   className="h-full bg-emerald-600 transition-all duration-300"
                                   style={{ width: `${(progress.completed / (progress.total || 1)) * 100}%` }}
                                 />
-                              </div>
-                            </div>
-                          )}
-
-                          {jo.status === "Work in progress" && (
-                            <div className="space-y-1 pt-0.5">
-                              <div className="flex items-center justify-between text-[10px] text-slate-500">
-                                <span>Repair Progress</span>
-                                <span className="font-semibold text-violet-700">Repair in Progress</span>
-                              </div>
-                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                                <div className="h-full bg-violet-600 w-3/4 animate-pulse" />
                               </div>
                             </div>
                           )}
@@ -1359,7 +1347,7 @@ export default function JobOrdersPage() {
                     {drawerJobOrder.status !== "Job completed" && (
                       (() => {
                         const progress = getInspectionProgress(drawerJobOrder);
-                        const isCompleted = (progress.total > 0 && progress.completed === progress.total) || drawerJobOrder.mechanicMarkedReady;
+                        const isCompleted = (progress.total > 0 && progress.completed === progress.total);
                         return isCompleted ? (
                           <button
                             onClick={() => {

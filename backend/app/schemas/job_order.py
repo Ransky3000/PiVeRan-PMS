@@ -74,9 +74,7 @@ class JobOrderResponse(BaseModel):
     estimate_items: List[dict] = []
     discount: float = 0.0
     estimate_comment: Optional[str] = None
-    inspection_started: bool = False
     mechanic_findings: Optional[str] = None
-    mechanic_marked_ready: bool = False
 
     class Config:
         from_attributes = True

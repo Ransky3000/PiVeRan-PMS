@@ -57,8 +57,6 @@ export interface JobOrder {
   estimateItems?: EstimateLineItem[];
   discount?: number;
   estimateComment?: string;
-  inspectionStarted?: boolean;
-  mechanicMarkedReady?: boolean;
 }
 
 

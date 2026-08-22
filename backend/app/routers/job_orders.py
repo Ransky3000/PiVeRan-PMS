@@ -95,9 +95,7 @@ def map_job_order_to_response(jo: JobOrder) -> dict:
         "estimate_items": [],
         "discount": jo.discount or 0.0,
         "estimate_comment": jo.estimate_comment or "",
-        "inspection_started": jo.inspection_started or False,
-        "mechanic_findings": jo.mechanic_findings or "",
-        "mechanic_marked_ready": jo.mechanic_marked_ready or False
+        "mechanic_findings": jo.mechanic_findings or ""
     }
 
 @router.get("", response_model=List[JobOrderResponse])
@@ -167,9 +165,6 @@ def update_job_order_status(jo_id: str, payload: dict, db: Session = Depends(get
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid status value")
             
-    if "inspection_started" in payload:
-        jo.inspection_started = bool(payload["inspection_started"])
-        
     db.commit()
     db.refresh(jo)
     return map_job_order_to_response(jo)

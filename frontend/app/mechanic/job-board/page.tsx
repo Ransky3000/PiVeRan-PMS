@@ -80,9 +80,6 @@ const INITIAL_MATERIAL_OPTIONS: SelectOption[] = [
 
 const getJobBadgeConfig = (jo: JobOrder) => {
   if (jo.status === "New") {
-    if (jo.inspectionStarted) {
-      return { label: "Work in progress", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-200" };
-    }
     return { label: "New", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-200" };
   }
   if (jo.status === "Work in progress") {
@@ -175,8 +172,7 @@ export default function MechanicJobBoardPage() {
         { name: "Tire pressure & tread inspection", status: "PENDING" },
         { name: "Battery load test & terminal cleaning", status: "PENDING" }
       ],
-      mechanicFindings: "Engine oil changed cleanly. Air filter requires replacement. Front brake pads near wear limit.",
-      inspectionStarted: true
+      mechanicFindings: "Engine oil changed cleanly. Air filter requires replacement. Front brake pads near wear limit."
     },
     // 2. NEW MOCKUP #1
     {
@@ -199,8 +195,7 @@ export default function MechanicJobBoardPage() {
         { name: "Check brake pads & fluid levels", status: "PENDING" },
         { name: "Tire pressure & tread inspection", status: "PENDING" },
         { name: "Battery load test & terminal cleaning", status: "PENDING" }
-      ],
-      inspectionStarted: false
+      ]
     },
     // 3. NEW MOCKUP #2
     {
@@ -223,8 +218,7 @@ export default function MechanicJobBoardPage() {
         { name: "Inspect battery & alternator charging", status: "PENDING" },
         { name: "Check headlights, signals & brake lights", status: "PENDING" },
         { name: "Scan diagnostic trouble codes", status: "PENDING" }
-      ],
-      inspectionStarted: false
+      ]
     },
     // 4. NEW MOCKUP #3
     {
@@ -247,8 +241,7 @@ export default function MechanicJobBoardPage() {
         { name: "Clean diesel fuel injectors", status: "PENDING" },
         { name: "Inspect drive belt condition", status: "PENDING" },
         { name: "Full underchassis bolt torque check", status: "PENDING" }
-      ],
-      inspectionStarted: false
+      ]
     },
     // READY FOR PICKUP MOCKUPS
     {
@@ -271,9 +264,7 @@ export default function MechanicJobBoardPage() {
         { name: "Check brake pads & fluid levels", status: "GOOD" },
         { name: "Tire pressure & tread inspection", status: "GOOD" },
         { name: "Battery load test & terminal cleaning", status: "GOOD" }
-      ],
-      inspectionStarted: true,
-      mechanicMarkedReady: true
+      ]
     },
     {
       id: "JO-1037",
@@ -293,9 +284,7 @@ export default function MechanicJobBoardPage() {
         { name: "Change engine oil & filter", status: "GOOD" },
         { name: "Inspect air filter & cabin filter", status: "GOOD" },
         { name: "Check brake pads & fluid levels", status: "GOOD" }
-      ],
-      inspectionStarted: true,
-      mechanicMarkedReady: true
+      ]
     },
     // JOB COMPLETED MOCKUPS
     {
@@ -316,9 +305,7 @@ export default function MechanicJobBoardPage() {
         { name: "Complete engine overhaul inspection", status: "GOOD" },
         { name: "Suspension & underchassis bushing overhaul", status: "GOOD" },
         { name: "Aircon system deep clean & freon recharge", status: "GOOD" }
-      ],
-      inspectionStarted: true,
-      mechanicMarkedReady: true
+      ]
     },
     {
       id: "JO-1035",
@@ -338,9 +325,7 @@ export default function MechanicJobBoardPage() {
         { name: "Change engine oil & filter", status: "GOOD" },
         { name: "Inspect air filter & cabin filter", status: "GOOD" },
         { name: "Check brake pads & fluid levels", status: "GOOD" }
-      ],
-      inspectionStarted: true,
-      mechanicMarkedReady: true
+      ]
     }
   ];
 
@@ -412,17 +397,11 @@ export default function MechanicJobBoardPage() {
 
   /* ─── COMPUTED STATE VALUES ─── */
   const newJobsList = useMemo(() => {
-    return jobOrders.filter(
-      (j) => j.status === "New" && !j.inspectionStarted
-    );
+    return jobOrders.filter((j) => j.status === "New");
   }, [jobOrders]);
 
   const wipJobsList = useMemo(() => {
-    return jobOrders.filter(
-      (j) =>
-        (j.status === "New" && j.inspectionStarted) ||
-        j.status === "Work in progress"
-    );
+    return jobOrders.filter((j) => j.status === "Work in progress");
   }, [jobOrders]);
 
   const jobCompletedList = useMemo(() => {
@@ -805,7 +784,7 @@ export default function MechanicJobBoardPage() {
                       </div>
 
                       {/* Status / Progress indicators (Both GOOD & MONITOR count as completed) */}
-                      {jo.status === "New" && !jo.inspectionStarted && (
+                      {jo.status === "New" && (
                         <div className="space-y-1 pt-0.5">
                           <div className="flex items-center justify-between text-[10px] text-slate-500">
                             <span>Inspection Status</span>
@@ -817,7 +796,7 @@ export default function MechanicJobBoardPage() {
                         </div>
                       )}
 
-                      {jo.status === "New" && jo.inspectionStarted && (
+                      {jo.status === "Work in progress" && (
                         <div className="space-y-1 pt-0.5">
                           <div className="flex items-center justify-between text-[10px] text-slate-500">
                             <span>Inspection Checklist</span>
@@ -828,18 +807,6 @@ export default function MechanicJobBoardPage() {
                               className="h-full bg-emerald-600 transition-all duration-300"
                               style={{ width: `${(progress.completed / (progress.total || 1)) * 100}%` }}
                             />
-                          </div>
-                        </div>
-                      )}
-
-                      {jo.status === "Work in progress" && (
-                        <div className="space-y-1 pt-0.5">
-                          <div className="flex items-center justify-between text-[10px] text-slate-500">
-                            <span>Repair Progress</span>
-                            <span className="font-semibold text-violet-700">Repair in Progress</span>
-                          </div>
-                          <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                            <div className="h-full bg-violet-600 w-3/4 animate-pulse" />
                           </div>
                         </div>
                       )}
@@ -1494,11 +1461,20 @@ export default function MechanicJobBoardPage() {
                   Close
                 </button>
 
-                {drawerJobOrder.status === "New" && !drawerJobOrder.inspectionStarted && (
+                {drawerJobOrder.status === "New" && (
                   <button
-                    onClick={() => {
-                      updateDrawerJO({ inspectionStarted: true });
-                      triggerToast(`Started inspection for ${drawerJobOrder.id}`);
+                    onClick={async () => {
+                      try {
+                        const updated = await apiService.updateJobOrderStatus(drawerJobOrder.id, "Work in progress");
+                        setJobOrders((prev) => prev.map((jo) => (jo.id === updated.id ? updated : jo)));
+                        setDrawerJobOrder(updated);
+                        triggerToast(`Started inspection — Job Order is now Work in progress`);
+                      } catch (e) {
+                        const updated = { ...drawerJobOrder, status: "Work in progress" as const };
+                        setJobOrders((prev) => prev.map((jo) => (jo.id === updated.id ? updated : jo)));
+                        setDrawerJobOrder(updated);
+                        triggerToast(`Started inspection — Job Order is now Work in progress`);
+                      }
                     }}
                     className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
                   >

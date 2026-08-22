@@ -59,11 +59,9 @@ export function normalizeJobOrder(be: any): any {
     status: be.status,
     createdAt: be.created_at,
     vehiclePhotoUrl: be.vehicle_photo_url,
-    inspectionStarted: be.inspection_started || false,
     mechanicFindings: be.mechanic_findings || "",
     discount: be.discount || 0,
     estimateComment: be.estimate_comment || "",
-    mechanicMarkedReady: be.mechanic_marked_ready || false,
     inspectionItems,
     estimateItems
   };
@@ -96,7 +94,8 @@ export const apiService = {
     }
   },
 
-  updateJobOrderStatus: async (id: string, payload: { status?: string; inspection_started?: boolean }) => {
+  updateJobOrderStatus: async (id: string, statusOrPayload: string | { status?: string }) => {
+    const payload = typeof statusOrPayload === "string" ? { status: statusOrPayload } : statusOrPayload;
     try {
       const res = await fetch(`${API_BASE_URL}/job-orders/${id}/status`, {
         method: "PUT",
