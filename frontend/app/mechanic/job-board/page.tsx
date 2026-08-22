@@ -921,7 +921,6 @@ export default function MechanicJobBoardPage() {
                     <div><span className="text-slate-500">Owner</span><div className="font-medium text-slate-900">{drawerJobOrder.ownerName}</div></div>
                     <div><span className="text-slate-500">Contact Number</span><div className="font-medium text-slate-900">{drawerJobOrder.ownerPhone}</div></div>
                     <div><span className="text-slate-500">Plate Number</span><div className="font-medium text-slate-900">{drawerJobOrder.plateNumber}</div></div>
-                    <div><span className="text-slate-500">Engine Type</span><div className="font-medium text-slate-900">{drawerJobOrder.engineType}</div></div>
                     <div><span className="text-slate-500">Odometer Reading</span><div className="font-medium text-slate-900">{drawerJobOrder.odometer}</div></div>
                     <div><span className="text-slate-500">Service Category</span><div className="font-medium text-slate-900">{drawerJobOrder.serviceType}</div></div>
                   </div>
