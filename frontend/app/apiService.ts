@@ -14,21 +14,23 @@ export function normalizeJobOrder(be: any): any {
     const itemPhotos: Record<string, string[]> = {};
 
     (item.details || []).forEach((d: any) => {
-      if (d.note) itemNotes[d.status] = d.note;
+      const upStatus = (d.status || "PENDING").toUpperCase();
+      if (d.note) itemNotes[upStatus] = d.note;
       if (d.photo_urls) {
         try {
-          itemPhotos[d.status] = JSON.parse(d.photo_urls);
+          itemPhotos[upStatus] = JSON.parse(d.photo_urls);
         } catch (e) {
-          itemPhotos[d.status] = [];
+          itemPhotos[upStatus] = [];
         }
       }
     });
 
+    const upperStatus = (item.status || "PENDING").toUpperCase();
     return {
       id: item.id,
       name: item.name,
-      status: item.status,
-      mechanicNote: itemNotes[item.status] || "",
+      status: upperStatus,
+      mechanicNote: itemNotes[upperStatus] || "",
       statusNotes: itemNotes,
       statusPhotos: itemPhotos
     };
