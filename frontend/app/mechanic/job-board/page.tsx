@@ -792,7 +792,6 @@ export default function MechanicJobBoardPage() {
 
                   <div className="p-5 space-y-4 flex-1">
                     <div>
-                      <div className="text-[10px] font-semibold text-slate-400 tracking-wide">{jo.id}</div>
                       <h3 className="text-base font-bold text-slate-900 leading-tight mt-0.5">{jo.vehicleModel}</h3>
                       <p className="text-xs font-normal text-slate-500 mt-1">
                         Owner: <span className="text-slate-800 font-medium">{jo.ownerName}</span>
