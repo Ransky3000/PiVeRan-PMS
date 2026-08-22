@@ -745,23 +745,64 @@ export default function JobOrdersPage() {
                       </div>
                     </div>
 
-                    {/* Inspection Checklist Progress Bar (Matching user mockup) */}
-                    {jo.inspectionItems && jo.inspectionItems.length > 0 && jo.status !== "New" && (
-                      <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-slate-500 font-normal">Inspection Checklist</span>
-                          <span className="font-bold text-purple-600 text-xs">
-                            {getInspectionProgress(jo).completed}/{getInspectionProgress(jo).total} Completed
-                          </span>
+                    {/* Inspection / Progress indicator */}
+                    {(() => {
+                      const progress = getInspectionProgress(jo);
+                      return (
+                        <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                          {jo.status === "New" && !jo.inspectionStarted && (
+                            <div className="space-y-1 pt-0.5">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                <span>Inspection Status</span>
+                                <span className="font-semibold text-amber-700">0/{progress.total} Completed</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                <div className="h-full bg-amber-400 w-0" />
+                              </div>
+                            </div>
+                          )}
+
+                          {jo.status === "New" && jo.inspectionStarted && (
+                            <div className="space-y-1 pt-0.5">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                <span>Inspection Checklist</span>
+                                <span className="font-semibold text-violet-700">{progress.completed}/{progress.total} Completed</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                <div
+                                  className="h-full bg-emerald-600 transition-all duration-300"
+                                  style={{ width: `${(progress.completed / (progress.total || 1)) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {jo.status === "Work in progress" && (
+                            <div className="space-y-1 pt-0.5">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                <span>Repair Progress</span>
+                                <span className="font-semibold text-violet-700">Repair in Progress</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                <div className="h-full bg-violet-600 w-3/4 animate-pulse" />
+                              </div>
+                            </div>
+                          )}
+
+                          {jo.status === "Job completed" && (
+                            <div className="space-y-1 pt-0.5">
+                              <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                <span>Inspection Checklist</span>
+                                <span className="font-semibold text-emerald-600 font-bold">{progress.completed}/{progress.total} Completed</span>
+                              </div>
+                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                <div className="h-full bg-emerald-600 w-full rounded-full" />
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                          <div
-                            className="bg-emerald-600 h-full rounded-full transition-all duration-300"
-                            style={{ width: `${getInspectionProgress(jo).percent}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
 
