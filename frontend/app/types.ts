@@ -19,6 +19,7 @@ export interface InspectionItem {
   status: "GOOD" | "ISSUE" | "MONITOR" | "PENDING";
   mechanicNote?: string;
   photoUrl?: string;
+  proofPhotoUrl?: string;
   photos?: string[];
   statusPhotos?: {
     GOOD?: string[];
