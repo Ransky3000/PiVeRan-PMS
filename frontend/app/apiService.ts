@@ -1,4 +1,4 @@
-import { DEFAULT_JOB_ORDERS, DEFAULT_OWNERS, DEFAULT_VEHICLES, DEFAULT_MECHANICS, DEFAULT_MATERIALS } from "./mockData";
+// apiService.ts - Real API backend service
 
 export const API_BASE_URL = "http://localhost:8000/api";
 
@@ -10,13 +10,13 @@ export function normalizeJobOrder(be: any): any {
   const statusPhotos: Record<string, any> = {};
 
   const inspectionItems = (be.inspection_items || []).map((item: any) => {
-    const itemNotes: Record<string, string> = {};
-    const itemPhotos: Record<string, string[]> = {};
+    const itemNotes: Record<string, string> = item.statusNotes || {};
+    const itemPhotos: Record<string, string[]> = item.statusPhotos || {};
 
     (item.details || []).forEach((d: any) => {
       const upStatus = (d.status || "PENDING").toUpperCase();
-      if (d.note) itemNotes[upStatus] = d.note;
-      if (d.photo_urls) {
+      if (d.note && !itemNotes[upStatus]) itemNotes[upStatus] = d.note;
+      if (d.photo_urls && !itemPhotos[upStatus]) {
         try {
           itemPhotos[upStatus] = JSON.parse(d.photo_urls);
         } catch (e) {
@@ -30,9 +30,10 @@ export function normalizeJobOrder(be: any): any {
       id: item.id,
       name: item.name,
       status: upperStatus,
-      mechanicNote: itemNotes[upperStatus] || "",
+      mechanicNote: itemNotes[upperStatus] || itemNotes[item.status] || "",
       statusNotes: itemNotes,
-      statusPhotos: itemPhotos
+      statusPhotos: itemPhotos,
+      requiredMaterials: item.requiredMaterials || []
     };
   });
 
@@ -52,9 +53,10 @@ export function normalizeJobOrder(be: any): any {
     ownerFb: be.owner?.fb_handle || "",
     vehicleModel: be.vehicle?.model || "",
     plateNumber: be.vehicle?.plate_number || "",
-    engineType: be.vehicle?.engine_type || "",
     odometer: be.odometer || "",
     serviceType: be.service_type || "",
+    serviceDescription: be.service_description || "",
+    serviceFee: be.service_fee || 0,
     inchargeMechanics: (be.mechanics || []).map((m: any) => typeof m === 'string' ? m : m.name),
     status: be.status,
     createdAt: be.created_at,
@@ -75,8 +77,8 @@ export const apiService = {
       const data = await res.json();
       return (data || []).map(normalizeJobOrder);
     } catch (e) {
-      console.warn("Backend unavailable, falling back to mock job orders", e);
-      return DEFAULT_JOB_ORDERS;
+      console.warn("Failed to fetch job orders from backend", e);
+      return [];
     }
   },
 
@@ -87,10 +89,8 @@ export const apiService = {
       const data = await res.json();
       return normalizeJobOrder(data);
     } catch (e) {
-      console.warn(`Backend unavailable, falling back to mock job order for id ${id}`, e);
-      const found = DEFAULT_JOB_ORDERS.find(jo => jo.id === id);
-      if (found) return found;
-      throw e;
+      console.warn(`Failed to fetch job order for id ${id}`, e);
+      return null;
     }
   },
 
@@ -110,9 +110,16 @@ export const apiService = {
     }
   },
 
-  updateInspectionItem: async (id: number, payload: { status: string; note?: string }) => {
+  updateInspectionItem: async (id: string | number, payload: {
+    status?: string;
+    note?: string;
+    diagnostic_notes?: string;
+    statusNotes?: Record<string, string>;
+    statusPhotos?: Record<string, string[]>;
+    visual_proof?: string;
+  }) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/inspection-items/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -122,6 +129,49 @@ export const apiService = {
     } catch (e) {
       console.warn(`Backend unavailable, mock updating inspection item ${id}`, e);
       return { message: "Updated (mock)", id, ...payload };
+    }
+  },
+
+  addMaterialToCart: async (cd_id: string | number, material_id: string, quantity: number = 1) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ material_id, quantity })
+      });
+      if (!res.ok) throw new Error("Failed to add material to cart");
+      return await res.json();
+    } catch (e) {
+      console.warn(`Backend unavailable, mock adding material to cart`, e);
+      return { message: "Added material (mock)", cd_id, material_id, quantity };
+    }
+  },
+
+  removeMaterialFromCart: async (cd_id: string | number, cart_id: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart/${cart_id}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Failed to remove material from cart");
+      return await res.json();
+    } catch (e) {
+      console.warn(`Backend unavailable, mock removing material from cart`, e);
+      return { message: "Removed material (mock)", cd_id, cart_id };
+    }
+  },
+
+  updateCartItemDecision: async (cd_id: string | number, cart_id: string, decision: "Buy" | "No") => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart/${cart_id}/decision`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision })
+      });
+      if (!res.ok) throw new Error("Failed to update cart item decision");
+      return await res.json();
+    } catch (e) {
+      console.warn(`Backend unavailable, mock updating cart decision`, e);
+      return { message: "Updated cart decision (mock)", cd_id, cart_id, decision };
     }
   },
 
@@ -280,8 +330,8 @@ export const apiService = {
         }))
       }));
     } catch (e) {
-      console.warn("Backend unavailable, falling back to mock owners", e);
-      return DEFAULT_OWNERS;
+      console.warn("Backend unavailable, returning empty owners array", e);
+      return [];
     }
   },
 
@@ -347,8 +397,8 @@ export const apiService = {
         }))
       }));
     } catch (e) {
-      console.warn("Backend unavailable, falling back to mock vehicles", e);
-      return DEFAULT_VEHICLES;
+      console.warn("Backend unavailable, returning empty vehicles array", e);
+      return [];
     }
   },
 
@@ -622,8 +672,8 @@ export const apiService = {
       const users = await res.json();
       return (users || []).filter((u: any) => u.role === "Mechanic");
     } catch (e) {
-      console.warn("Backend unavailable, falling back to mock mechanics", e);
-      return DEFAULT_MECHANICS.filter((u: any) => u.role === "Mechanic");
+      console.warn("Backend unavailable, returning empty mechanics array", e);
+      return [];
     }
   },
 
@@ -728,6 +778,34 @@ export const apiService = {
     }
     return await res.json();
   }
+};
+
+export const subscribeToJobOrders = (onUpdate: (data?: any) => void) => {
+  if (typeof window === "undefined") return () => {};
+  const wsUrl = "ws://localhost:8000/ws/job-orders";
+  let ws: WebSocket | null = null;
+  
+  try {
+    ws = new WebSocket(wsUrl);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "JOB_ORDER_UPDATED") {
+          onUpdate(data);
+        }
+      } catch (e) {
+        onUpdate();
+      }
+    };
+  } catch (e) {
+    console.warn("WebSocket connection failed", e);
+  }
+
+  return () => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.close();
+    }
+  };
 };
 
 // SESSION STORAGE HELPERS

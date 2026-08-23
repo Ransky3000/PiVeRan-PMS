@@ -59,7 +59,7 @@ export default function PendingApprovalPage() {
             if (user.role === "Admin") {
               router.push("/admin/analytics");
             } else if (user.role === "Front Desk") {
-              router.push("/frontdesk/dashboard");
+              router.push("/frontdesk/job-orders");
             } else if (user.role === "Mechanic") {
               router.push("/mechanic/job-board");
             }

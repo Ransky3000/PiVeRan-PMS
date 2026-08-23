@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { TailAdminLayout } from "@/components/TailAdminLayout";
-import { apiService } from "@/app/apiService";
+import { apiService, subscribeToJobOrders } from "@/app/apiService";
 import { CustomSelect, SelectOption } from "@/components/CustomSelect";
 import {
   Plus,
@@ -25,11 +25,12 @@ import {
   Minus,
   Maximize2,
   RotateCcw,
-  Tag
+  Tag,
+  ClipboardX
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { JobOrder, InspectionItem, EstimateLineItem, DEFAULT_JOB_ORDERS, JOStatus } from "../../mockData";
+import { JobOrder, InspectionItem, EstimateLineItem, JOStatus } from "../../types";
 
 interface RegisteredOwner {
   id: string;
@@ -45,21 +46,8 @@ export
    SERVICE DESCRIPTIONS & STATUS HELPERS
    ─────────────────────────────────────────── */
 
-const SERVICE_DESCRIPTIONS: Record<string, string> = {
-  "Basic PMS": "Every 10,000 km or 6 months",
-  "Major / Full PMS": "Every 40 - 60 km or 24 - 36 months",
-  "Heavy PMS Refresh": "Every 80,000 km or 48 months",
-  "Change Oil & Brake Check": "Every 5,000 km or 3 months"
-};
-
-const getServiceDescription = (serviceType: string, customDesc?: string): string => {
-  if (customDesc && customDesc.trim()) return customDesc;
-  if (SERVICE_DESCRIPTIONS[serviceType]) return SERVICE_DESCRIPTIONS[serviceType];
-  if (serviceType.toLowerCase().includes("basic")) return SERVICE_DESCRIPTIONS["Basic PMS"];
-  if (serviceType.toLowerCase().includes("major") || serviceType.toLowerCase().includes("full")) return SERVICE_DESCRIPTIONS["Major / Full PMS"];
-  if (serviceType.toLowerCase().includes("heavy")) return SERVICE_DESCRIPTIONS["Heavy PMS Refresh"];
-  if (serviceType.toLowerCase().includes("oil")) return SERVICE_DESCRIPTIONS["Change Oil & Brake Check"];
-  return "Every 10,000 km or 6 months";
+const getServiceDescription = (serviceType?: string, customDesc?: string): string => {
+  return customDesc || "";
 };
 
 const STATUS_CONFIG: Record<JOStatus, { label: string; color: string; bg: string; border: string }> = {
@@ -68,17 +56,42 @@ const STATUS_CONFIG: Record<JOStatus, { label: string; color: string; bg: string
   "Job completed": { label: "Job Completed", color: "text-emerald-800", bg: "bg-emerald-100", border: "border-emerald-300" }
 };
 
-const SERVICE_FEE_MAP: Record<string, number> = {
-  "Basic PMS": 5999,
-  "Intermediate PMS": 6800,
-  "Major / Full PMS": 5999,
-  "Heavy PMS Refresh": 7500,
-  "Diagnostic & Brake Service": 3500
+const getEffectiveEstimateItems = (jo: JobOrder): EstimateLineItem[] => {
+  const existing = jo.estimateItems || [];
+  const map = new Map<string, EstimateLineItem>();
+
+  existing.forEach((item) => {
+    map.set(item.id, item);
+  });
+
+  (jo.inspectionItems || []).forEach((ins) => {
+    (ins.requiredMaterials || []).forEach((m: any) => {
+      if (typeof m === "object" && m.name) {
+        const id = m.cart_id || m.material_id || m.name;
+        if (!map.has(id)) {
+          map.set(id, {
+            id: id,
+            description: m.name,
+            qty: m.qty || 1,
+            unitPrice: m.price || 0,
+            customerApproved: m.decision === "Buy"
+          });
+        } else {
+          const cur = map.get(id)!;
+          if (m.decision !== undefined) {
+            cur.customerApproved = m.decision === "Buy";
+          }
+        }
+      }
+    });
+  });
+
+  return Array.from(map.values());
 };
 
 const getEstimateCalculations = (jo: JobOrder) => {
-  const items = jo.estimateItems || [];
-  const laborFee = SERVICE_FEE_MAP[jo.serviceType] || 5999;
+  const items = getEffectiveEstimateItems(jo);
+  const laborFee = jo.serviceFee || 0;
   const discount = jo.discount || 0;
 
   const buyItems = items.filter((i) => i.customerApproved !== false);
@@ -110,20 +123,21 @@ const INSPECTION_STATUS_ICON: Record<string, React.ReactNode> = {
   PENDING: <span className="w-3.5 h-3.5 rounded border border-slate-300 bg-white block shrink-0 mt-0.5" />
 };
 
-const getItemPhotos = (item: Partial<InspectionItem>): string[] => {
+const getItemNote = (item: Partial<InspectionItem>, targetStatus?: InspectionItem["status"]): string => {
+  const activeStatus = targetStatus || item.status;
+  if (activeStatus && activeStatus !== "PENDING" && item.statusNotes?.[activeStatus] !== undefined) {
+    return item.statusNotes[activeStatus] || "";
+  }
+  return item.mechanicNote || "";
+};
+
+const getItemPhotos = (item: Partial<InspectionItem>, targetStatus?: InspectionItem["status"]): string[] => {
+  const activeStatus = targetStatus || item.status;
+  if (activeStatus && activeStatus !== "PENDING" && item.statusPhotos?.[activeStatus]) {
+    return item.statusPhotos[activeStatus] || [];
+  }
   if (item.photos && item.photos.length > 0) return item.photos;
   if (item.photoUrl) return [item.photoUrl];
-  if (item.status === "ISSUE") {
-    return [
-      "https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=600&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&auto=format&fit=crop&q=80"
-    ];
-  }
-  if (item.status === "MONITOR") {
-    return [
-      "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?w=600&auto=format&fit=crop&q=80"
-    ];
-  }
   return [];
 };
 
@@ -188,14 +202,13 @@ export default function JobOrdersPage() {
   
 
   // Create Form State
-  const [selectedOwnerId, setSelectedOwnerId] = useState("OWN-102");
-  const [formOwnerPhone, setFormOwnerPhone] = useState("0918-444-5678");
-  const [formOwnerFb, setFormOwnerFb] = useState("@mariasantos");
-  const [selectedPlateNumber, setSelectedPlateNumber] = useState("XYZ 8888");
-  const [formEngineType, setFormEngineType] = useState("Diesel");
-  const [formOdometerKm, setFormOdometerKm] = useState("62400");
-  const [formServiceType, setFormServiceType] = useState("Basic PMS");
-  const [formMechanics, setFormMechanics] = useState<string[]>(["Mark Rey", "John Uy"]);
+  const [selectedOwnerId, setSelectedOwnerId] = useState("");
+  const [formOwnerPhone, setFormOwnerPhone] = useState("");
+  const [formOwnerFb, setFormOwnerFb] = useState("");
+  const [selectedPlateNumber, setSelectedPlateNumber] = useState("");
+  const [formOdometerKm, setFormOdometerKm] = useState("");
+  const [formServiceType, setFormServiceType] = useState("");
+  const [formMechanics, setFormMechanics] = useState<string[]>([]);
   const [formVehiclePhotoUrl, setFormVehiclePhotoUrl] = useState<string>("");
 
   const [isEditingDrawer, setIsEditingDrawer] = useState(false);
@@ -295,38 +308,11 @@ export default function JobOrdersPage() {
     const model = v.model || v.make || "Unknown Model";
     return { value: plate, label: `${model} (${plate})` };
   }) || [], [currentOwnerObj]);
-  const engineOptions: SelectOption[] = [
-    { value: "Gasoline", label: "Gasoline" },
-    { value: "Diesel", label: "Diesel" },
-    { value: "Hybrid / EV", label: "Hybrid / EV" }
-  ];
   const serviceTypeOptions: SelectOption[] = useMemo(() => {
-    if (allBundles.length > 0) {
-      return allBundles.map(b => ({ value: b.packageName, label: b.packageName }));
-    }
-    return [
-      { value: "Basic PMS", label: "Basic PMS" },
-      { value: "Full PMS", label: "Full PMS" },
-      { value: "Heavy PMS", label: "Heavy PMS" }
-    ];
+    return allBundles.map(b => ({ value: b.packageName, label: b.packageName }));
   }, [allBundles]);
   const mechanicOptions: SelectOption[] = useMemo(() => availableMechanicsList.map((m) => ({ value: m, label: m })), [availableMechanicsList]);
 
-  // Service Checklists
-  const serviceChecklists: Record<string, { interval: string; items: string[] }> = {
-    "Basic PMS": {
-      interval: "Every 10,000 km or 6 months",
-      items: ["Change engine oil & filter", "Inspect air filter & cabin filter", "Check brake pads & fluid levels", "Tire pressure & tread inspection", "Battery load test & terminal cleaning"]
-    },
-    "Major / Full PMS": {
-      interval: "Every 40 - 60 km or 24 - 36 months",
-      items: ["Includes everything from Basic and Intermediate Services", "Replace spark plugs", "Replace brake fluid", "Replace transmission fluid (manual/AT/CVT)", "Replace coolant (radiator flush)", "Replace fuel filter (if applicable)", "Check timing belt or chain condition", "Clean EGR valve/intake manifold (diesel cars)", "Deep diagnostic scan (optional but recommended)", "Test battery load capacity", "Full vehicle road test"]
-    },
-    "Heavy PMS Refresh": {
-      interval: "Every 80,000 km or 48 months",
-      items: ["Includes everything from Major Full PMS", "Complete engine overhaul inspection", "Suspension & underchassis bushing overhaul", "Aircon system deep clean & freon recharge"]
-    }
-  };
   const activeServiceInfo = useMemo(() => {
     if (allBundles.length > 0) {
       const b = allBundles.find(x => x.packageName === formServiceType);
@@ -334,7 +320,7 @@ export default function JobOrdersPage() {
         return { interval: b.targetInterval || b.description || "N/A", items: b.servicesIncluded || [] };
       }
     }
-    return serviceChecklists[formServiceType] || serviceChecklists["Major / Full PMS"];
+    return { interval: "N/A", items: [] };
   }, [allBundles, formServiceType]);
 
   
@@ -347,6 +333,12 @@ export default function JobOrdersPage() {
         const data = await apiService.getJobOrders();
         // The backend returns models. Normalize them if needed.
         setJobOrders(data);
+        if (drawerJobOrder) {
+          const updatedCurrent = data.find((j: any) => j.id === drawerJobOrder.id);
+          if (updatedCurrent) {
+            setDrawerJobOrder(updatedCurrent);
+          }
+        }
       } catch (err) {
         console.error("Failed to load job orders", err);
       } finally {
@@ -354,7 +346,12 @@ export default function JobOrdersPage() {
       }
     };
     loadJobOrders();
-  }, []);
+
+    const unsubscribe = subscribeToJobOrders(() => {
+      loadJobOrders();
+    });
+    return () => unsubscribe();
+  }, [drawerJobOrder?.id]);
 
   useEffect(() => {
     if (!selectedPlateNumber) return;
@@ -529,6 +526,26 @@ export default function JobOrdersPage() {
     updateDrawerJO({ inspectionItems: updatedItems });
   };
 
+  const handleToggleCartDecision = async (cdId: string | number, cartId: string, currentDecision?: "Buy" | "No") => {
+    const newDecision = currentDecision === "Buy" ? "No" : "Buy";
+    if (drawerJobOrder) {
+      const updatedItems = (drawerJobOrder.inspectionItems || []).map((item) => {
+        if (item.id === cdId && item.requiredMaterials) {
+          const updatedMats = item.requiredMaterials.map((m: any) => {
+            if (typeof m === "object" && m.cart_id === cartId) {
+              return { ...m, decision: newDecision };
+            }
+            return m;
+          });
+          return { ...item, requiredMaterials: updatedMats };
+        }
+        return item;
+      });
+      updateDrawerJO({ inspectionItems: updatedItems });
+    }
+    await apiService.updateCartItemDecision(cdId, cartId, newDecision);
+  };
+
   const getInspectionProgress = (jo: JobOrder) => {
     const items = jo.inspectionItems || [];
     const total = items.length;
@@ -556,10 +573,25 @@ export default function JobOrdersPage() {
   };
 
   const updateEstimateLine = (lineId: string, updates: Partial<EstimateLineItem>) => {
-    const items = drawerJobOrder?.estimateItems || [];
-    updateDrawerJO({
-      estimateItems: items.map((i) => (i.id === lineId ? { ...i, ...updates } : i))
-    });
+    if (!drawerJobOrder) return;
+    const currentItems = getEffectiveEstimateItems(drawerJobOrder);
+    const updatedItems = currentItems.map((i) => (i.id === lineId ? { ...i, ...updates } : i));
+    updateDrawerJO({ estimateItems: updatedItems });
+
+    if ("customerApproved" in updates) {
+      const isBuy = updates.customerApproved !== false;
+      const decisionStr: "Buy" | "No" = isBuy ? "Buy" : "No";
+
+      (drawerJobOrder.inspectionItems || []).forEach((insItem) => {
+        (insItem.requiredMaterials || []).forEach((m: any) => {
+          if (typeof m === "object" && (m.cart_id === lineId || m.material_id === lineId || m.name === lineId)) {
+            if (insItem.id && m.cart_id) {
+              apiService.updateCartItemDecision(insItem.id, m.cart_id, decisionStr);
+            }
+          }
+        });
+      });
+    }
   };
 
   const toggleCustomerApproval = (lineId: string) => {
@@ -687,122 +719,135 @@ export default function JobOrdersPage() {
           </div>
         </div>
 
-        {/* CARD GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredJobOrders.map((jo) => {
-            const sc = STATUS_CONFIG[jo.status];
-            const badgeLabel = sc.label;
-            return (
-              <div
-                key={jo.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-all group max-w-xs w-full cursor-pointer"
-                onClick={() => setDrawerJobOrder({ ...jo })}
-              >
-                <div className="h-40 bg-slate-100 relative flex items-center justify-center border-b border-slate-200 overflow-hidden">
-                  {jo.vehiclePhotoUrl ? (
-                    <img
-                      src={jo.vehiclePhotoUrl}
-                      alt={jo.vehicleModel}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="text-center space-y-1 text-slate-400">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-200/70 flex items-center justify-center mx-auto text-slate-500">
-                        <Camera className="w-6 h-6" />
-                      </div>
-                      <div className="text-sm font-medium text-slate-400">Photo</div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-5 space-y-4 flex-1">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 leading-tight">
-                      {jo.vehicleModel}
-                    </h3>
-                    <p className="text-xs font-normal text-slate-500 mt-1">
-                      Owner: <span className="text-slate-800 font-medium">{jo.ownerName}</span>
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 text-xs border-t border-slate-100 pt-3">
-                    <div className="flex items-start justify-between">
-                      <span className="text-slate-500 font-normal">Service type:</span>
-                      <span className="font-medium text-slate-900">{jo.serviceType}</span>
-                    </div>
-
-                    <div className="space-y-1.5 pt-1">
-                      <div className="text-slate-500 font-normal text-[11px]">Incharge Mechanics:</div>
-                      <div className="flex flex-wrap gap-1">
-                        {jo.inchargeMechanics.map((mech, idx) => (
-                          <span
-                            key={idx}
-                            className="bg-slate-100 text-slate-700 font-normal text-[11px] px-2.5 py-0.5 rounded-lg border border-slate-200/80"
-                          >
-                            {mech}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Inspection / Progress indicator */}
-                    {(() => {
-                      const progress = getInspectionProgress(jo);
-                      return (
-                        <div className="space-y-1.5 pt-2 border-t border-slate-100">
-                          {jo.status === "New" && (
-                            <div className="space-y-1 pt-0.5">
-                              <div className="flex items-center justify-between text-[10px] text-slate-500">
-                                <span>Inspection Status</span>
-                                <span className="font-semibold text-amber-700">0/{progress.total} Completed</span>
-                              </div>
-                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                                <div className="h-full bg-amber-400 w-0" />
-                              </div>
-                            </div>
-                          )}
-
-                          {jo.status === "Work in progress" && (
-                            <div className="space-y-1 pt-0.5">
-                              <div className="flex items-center justify-between text-[10px] text-slate-500">
-                                <span>Inspection Checklist</span>
-                                <span className="font-semibold text-violet-700">{progress.completed}/{progress.total} Completed</span>
-                              </div>
-                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                                <div
-                                  className="h-full bg-emerald-600 transition-all duration-300"
-                                  style={{ width: `${(progress.completed / (progress.total || 1)) * 100}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {jo.status === "Job completed" && (
-                            <div className="space-y-1 pt-0.5">
-                              <div className="flex items-center justify-between text-[10px] text-slate-500">
-                                <span>Inspection Checklist</span>
-                                <span className="font-semibold text-emerald-600 font-bold">{progress.completed}/{progress.total} Completed</span>
-                              </div>
-                              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                                <div className="h-full bg-emerald-600 w-full rounded-full" />
-                              </div>
-                            </div>
-                          )}
+        {/* CARD GRID OR EMPTY STATE */}
+        {filteredJobOrders.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200/90 p-12 text-center max-w-lg mx-auto my-8 space-y-4 shadow-2xs">
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+              <ClipboardX className="w-8 h-8 text-slate-400" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-slate-800">No Job Orders Found</h3>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                There are currently no job orders for the selected status filter. Click <span className="font-semibold text-emerald-600">'+ Create Job Order'</span> above to start a new job order.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredJobOrders.map((jo) => {
+              const sc = STATUS_CONFIG[jo.status];
+              const badgeLabel = sc.label;
+              return (
+                <div
+                  key={jo.id}
+                  className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden flex flex-col justify-between hover:shadow-md transition-all group max-w-xs w-full cursor-pointer"
+                  onClick={() => setDrawerJobOrder({ ...jo })}
+                >
+                  <div className="h-40 bg-slate-100 relative flex items-center justify-center border-b border-slate-200 overflow-hidden">
+                    {jo.vehiclePhotoUrl ? (
+                      <img
+                        src={jo.vehiclePhotoUrl}
+                        alt={jo.vehicleModel}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="text-center space-y-1 text-slate-400">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-200/70 flex items-center justify-center mx-auto text-slate-500">
+                          <Camera className="w-6 h-6" />
                         </div>
-                      );
-                    })()}
+                        <div className="text-sm font-medium text-slate-400">Photo</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-5 space-y-4 flex-1">
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 leading-tight">
+                        {jo.vehicleModel}
+                      </h3>
+                      <p className="text-xs font-normal text-slate-500 mt-1">
+                        Owner: <span className="text-slate-800 font-medium">{jo.ownerName}</span>
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 text-xs border-t border-slate-100 pt-3">
+                      <div className="flex items-start justify-between">
+                        <span className="text-slate-500 font-normal">Service type:</span>
+                        <span className="font-bold text-slate-900">{jo.serviceType}</span>
+                      </div>
+
+                      <div className="space-y-1.5 pt-1">
+                        <div className="text-slate-500 font-normal text-[11px]">Incharge Mechanics:</div>
+                        <div className="flex flex-wrap gap-1">
+                          {(jo.inchargeMechanics || []).map((mech, idx) => (
+                            <span
+                              key={idx}
+                              className="bg-slate-100 text-slate-700 font-normal text-[11px] px-2.5 py-0.5 rounded-lg border border-slate-200/80"
+                            >
+                              {mech}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Inspection / Progress indicator */}
+                      {(() => {
+                        const progress = getInspectionProgress(jo);
+                        return (
+                          <div className="space-y-1.5 pt-2 border-t border-slate-100">
+                            {jo.status === "New" && (
+                              <div className="space-y-1 pt-0.5">
+                                <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                  <span>Inspection Status</span>
+                                  <span className="font-semibold text-amber-700">0/{progress.total} Completed</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                  <div className="h-full bg-amber-400 w-0" />
+                                </div>
+                              </div>
+                            )}
+
+                            {jo.status === "Work in progress" && (
+                              <div className="space-y-1 pt-0.5">
+                                <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                  <span>Inspection Checklist</span>
+                                  <span className="font-semibold text-violet-700">{progress.completed}/{progress.total} Completed</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                  <div
+                                    className="h-full bg-emerald-600 transition-all duration-300"
+                                    style={{ width: `${(progress.completed / (progress.total || 1)) * 100}%` }}
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {jo.status === "Job completed" && (
+                              <div className="space-y-1 pt-0.5">
+                                <div className="flex items-center justify-between text-[10px] text-slate-500">
+                                  <span>Inspection Checklist</span>
+                                  <span className="font-semibold text-emerald-600 font-bold">{progress.completed}/{progress.total} Completed</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
+                                  <div className="h-full bg-emerald-600 w-full rounded-full" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+                    <span className="text-[11px] text-slate-400 font-normal">{jo.createdAt}</span>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
                   </div>
                 </div>
-
-                <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
-                  <span className="text-[11px] text-slate-400 font-normal">{jo.createdAt}</span>
-                  <ChevronRight className="w-4 h-4 text-slate-400" />
-                </div>
-
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
       </div>
 
@@ -956,7 +1001,8 @@ export default function JobOrdersPage() {
                         const isNewJob = drawerJobOrder.status === "New";
                         const effectiveStatus = isNewJob ? "PENDING" : item.status;
                         const isExpanded = expandedIndex === idx;
-                        const photos = getItemPhotos(item);
+                        const photos = getItemPhotos(item, effectiveStatus);
+                        const currentNote = getItemNote(item, effectiveStatus);
 
                         const statusLabel =
                           effectiveStatus === "GOOD" ? "Good" :
@@ -1020,8 +1066,8 @@ export default function JobOrdersPage() {
                                         DIAGNOSTIC NOTES
                                       </div>
                                       <div className="text-xs text-slate-800 font-medium leading-relaxed">
-                                        {item.mechanicNote ? (
-                                          item.mechanicNote
+                                         {currentNote ? (
+                                           currentNote
                                         ) : (
                                           <span className="text-slate-400 italic font-normal">No diagnostic notes recorded.</span>
                                         )}
@@ -1088,9 +1134,9 @@ export default function JobOrdersPage() {
                                             const name = typeof m === "object" ? m.name : m;
                                             const qty = typeof m === "object" ? m.qty : 1;
                                             return (
-                                              <div key={mIdx} className="flex items-center justify-between py-1 px-0.5 text-xs font-semibold text-slate-800">
+                                              <div key={mIdx} className="flex items-center justify-between py-1 px-0.5 text-xs font-normal text-slate-700">
                                                 <span>{name}</span>
-                                                <span className="font-extrabold text-slate-900 text-xs">{qty}</span>
+                                                <span className="font-normal text-slate-700 text-xs">{qty}</span>
                                               </div>
                                             );
                                           })}
@@ -1106,7 +1152,7 @@ export default function JobOrdersPage() {
                                           {item.requiredMaterials.map((m: any, mIdx: number) => {
                                             const name = typeof m === "object" ? m.name : m;
                                             return (
-                                              <div key={mIdx} className="flex items-center gap-2 py-1 px-0.5 text-xs font-semibold text-slate-800">
+                                               <div key={mIdx} className="flex items-center gap-2 py-1 px-0.5 text-xs font-normal text-slate-700">
                                                 <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                                                 <span>{name}</span>
                                               </div>
@@ -1137,7 +1183,7 @@ export default function JobOrdersPage() {
                       </div>
                       
                       {(() => {
-                        const items = drawerJobOrder.estimateItems || [];
+                        const items = getEffectiveEstimateItems(drawerJobOrder);
                         const isAllBuy = items.length > 0 && items.every((i) => i.customerApproved !== false);
                         return (
                           <label className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600 font-semibold select-none">
@@ -1147,11 +1193,10 @@ export default function JobOrdersPage() {
                               checked={isAllBuy}
                               onChange={(e) => {
                                 const nextVal = e.target.checked;
-                                const updatedItems = (drawerJobOrder.estimateItems || []).map((i) => ({
-                                  ...i,
-                                  customerApproved: nextVal
-                                }));
-                                updateDrawerJO({ estimateItems: updatedItems });
+                                const current = getEffectiveEstimateItems(drawerJobOrder);
+                                current.forEach((i) => {
+                                  updateEstimateLine(i.id, { customerApproved: nextVal });
+                                });
                               }}
                               className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                             />
@@ -1162,7 +1207,7 @@ export default function JobOrdersPage() {
 
                     {/* ESTIMATE ITEM CARDS */}
                     <div className="space-y-2.5">
-                      {(drawerJobOrder.estimateItems || []).map((item) => {
+                      {getEffectiveEstimateItems(drawerJobOrder).map((item) => {
                         const isBuy = item.customerApproved !== false;
                         const lineTotal = item.qty * item.unitPrice;
                         return (
@@ -1175,7 +1220,7 @@ export default function JobOrdersPage() {
                             }`}
                           >
                             <div className="flex items-center justify-between gap-2 mb-2.5">
-                              <span className="font-semibold text-slate-800 text-xs truncate">{item.description}</span>
+                              <span className="font-normal text-slate-700 text-xs truncate">{item.description}</span>
                               
                               {/* Buy / No Toggle Switch (COMPACT SIZE) */}
                               <div className="inline-flex items-center bg-slate-900 p-0.5 rounded-full shadow-2xs shrink-0">
@@ -1350,25 +1395,21 @@ export default function JobOrdersPage() {
                         const isCompleted = (progress.total > 0 && progress.completed === progress.total);
                         return isCompleted ? (
                           <button
-                            onClick={() => {
-                              const updated = { ...drawerJobOrder, status: "Job completed" as JOStatus };
-                              setJobOrders((prev) =>
-                                prev.map((jo) => (jo.id === drawerJobOrder.id ? updated : jo))
-                              );
-                              setDrawerJobOrder(null);
+                            onClick={async () => {
                               try {
-                                const key = "piveran_job_orders_v11";
-                                const currentSaved = localStorage.getItem(key);
-                                const parsed = currentSaved ? JSON.parse(currentSaved) : [];
-                                const newSaved = parsed.map((j: any) => (j.id === updated.id ? { ...j, status: "COMPLETED" } : j));
-                                localStorage.setItem(key, JSON.stringify(newSaved));
-                              } catch (e) {}
-                              triggerToast(`${drawerJobOrder.id} → Completed & Receipt Printed`);
+                                await apiService.updateJobOrderStatus(drawerJobOrder.id, "Job completed");
+                                const data = await apiService.getJobOrders();
+                                setJobOrders(data);
+                                setDrawerJobOrder(null);
+                                triggerToast(`${drawerJobOrder.id} → Marked as Completed`);
+                              } catch (e) {
+                                console.error("Failed to update status to completed", e);
+                              }
                             }}
                             className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
                           >
                             <FileText className="w-4 h-4" />
-                            <span>Complete & Print Receipt</span>
+                            <span>Complete</span>
                           </button>
                         ) : (
                           <button
@@ -1377,7 +1418,7 @@ export default function JobOrdersPage() {
                             title="Unlocks once mechanics complete the inspection checklist items (100% completed)"
                           >
                             <FileText className="w-4 h-4" />
-                            <span>Complete & Print Receipt</span>
+                            <span>Complete</span>
                           </button>
                         );
                       })()

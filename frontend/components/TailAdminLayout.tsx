@@ -9,8 +9,11 @@ import {
   Flame,
   LayoutDashboard,
   Users,
+  UserCog,
   Wrench,
   Package,
+  Layers,
+  Boxes,
   Settings,
   ClipboardList,
   Car,
@@ -67,19 +70,19 @@ const navItems: NavItem[] = [
   {
     label: "Mechanics",
     href: "/frontdesk/mechanics",
-    icon: Wrench,
+    icon: UserCog,
     roles: ["FrontDesk"]
   },
   {
     label: "Bundle",
     href: "/frontdesk/bundles",
-    icon: Wrench,
+    icon: Layers,
     roles: ["FrontDesk"]
   },
   {
     label: "Materials",
     href: "/frontdesk/materials",
-    icon: Package,
+    icon: Boxes,
     roles: ["FrontDesk"]
   },
 

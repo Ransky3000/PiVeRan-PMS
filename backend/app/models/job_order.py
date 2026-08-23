@@ -4,6 +4,7 @@ from sqlalchemy import Column, String, Float, Integer, Text, DateTime, ForeignKe
 import enum
 from sqlalchemy.orm import relationship
 from backend.app.database import Base
+from backend.app.models.master import Material
 
 class JobOrderStatus(str, enum.Enum):
     NEW = "New"
@@ -73,3 +74,4 @@ class Cart(Base):
     decision = Column(Enum(CartDecision), nullable=False, default=CartDecision.NO)
 
     checklist_item = relationship("ChecklistDetail", back_populates="cart_items")
+    material = relationship("Material")

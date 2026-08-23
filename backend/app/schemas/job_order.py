@@ -31,6 +31,9 @@ class InspectionItemResponse(BaseModel):
     name: str
     status: str
     details: List[DetailItem] = []
+    statusNotes: Optional[dict] = {}
+    statusPhotos: Optional[dict] = {}
+    requiredMaterials: List[dict] = []
 
 class MechanicResponse(BaseModel):
     user_id: str
@@ -49,7 +52,7 @@ class VehicleResponseSimple(BaseModel):
     vehicle_id: str
     model: str
     plate_number: str
-    engine_type: str
+    engine_type: Optional[str] = None
     photo_url: Optional[str] = None
 
 class JobOrderCreate(BaseModel):
@@ -64,6 +67,8 @@ class JobOrderResponse(BaseModel):
     owner: OwnerResponseSimple
     vehicle: VehicleResponseSimple
     service_type: str
+    service_description: Optional[str] = None
+    service_fee: Optional[float] = 0.0
     odometer: str
     status: str
     created_at: str

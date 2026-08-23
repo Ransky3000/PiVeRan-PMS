@@ -24,7 +24,7 @@ export default function LoginPage() {
   const handleGoogleAuth = () => {
     triggerToast("Google OAuth trigger: Authenticating with Google Account...");
     setTimeout(() => {
-      router.push("/frontdesk/dashboard");
+      router.push("/frontdesk/job-orders");
     }, 1200);
   };
 
@@ -59,7 +59,7 @@ export default function LoginPage() {
           if (user.role === "Admin") {
             router.push("/admin/analytics");
           } else if (user.role === "Front Desk") {
-            router.push("/frontdesk/dashboard");
+            router.push("/frontdesk/job-orders");
           } else if (user.role === "Mechanic") {
             router.push("/mechanic/job-board");
           }

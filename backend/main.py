@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.database import engine, Base, SessionLocal
 from backend.app.routers import auth_router, users_router, master_router, job_orders_router
 from backend.app.models import UserAccount, UserRole, AccountStatus, Labor, Bundle, BundleService
+from backend.app.websocket_manager import ws_manager
 import bcrypt
 
 Base.metadata.create_all(bind=engine)
@@ -20,6 +21,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.websocket("/ws/job-orders")
+async def websocket_endpoint(websocket: WebSocket):
+    await ws_manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        ws_manager.disconnect(websocket)
 
 app.include_router(auth_router)
 app.include_router(users_router)

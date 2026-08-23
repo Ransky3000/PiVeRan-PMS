@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { TailAdminLayout } from "@/components/TailAdminLayout";
-import { apiService } from "@/app/apiService";
+import { apiService, subscribeToJobOrders } from "@/app/apiService";
 import { CustomSelect, SelectOption } from "@/components/CustomSelect";
 import {
   Search,
@@ -27,52 +27,13 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { JobOrder, InspectionItem, EstimateLineItem, DEFAULT_JOB_ORDERS, JOStatus, MaterialRequirement } from "../../mockData";
+import { JobOrder, InspectionItem, EstimateLineItem, JOStatus, MaterialRequirement } from "../../types";
 
-
-
-
-/* ───────────────────────────────────────────
-   SERVICE DESCRIPTIONS
-   ─────────────────────────────────────────── */
-
-const SERVICE_DESCRIPTIONS: Record<string, string> = {
-  "Basic PMS": "Every 10,000 km or 6 months",
-  "Major / Full PMS": "Every 40 - 60 km or 24 - 36 months",
-  "Heavy PMS Refresh": "Every 80,000 km or 48 months",
-  "Change Oil & Brake Check": "Every 5,000 km or 3 months"
+const getServiceDescription = (serviceType?: string, customDesc?: string): string => {
+  return customDesc || "";
 };
 
-const getServiceDescription = (serviceType: string, customDesc?: string): string => {
-  if (customDesc && customDesc.trim()) return customDesc;
-  if (SERVICE_DESCRIPTIONS[serviceType]) return SERVICE_DESCRIPTIONS[serviceType];
-  if (serviceType.toLowerCase().includes("basic")) return SERVICE_DESCRIPTIONS["Basic PMS"];
-  if (serviceType.toLowerCase().includes("major") || serviceType.toLowerCase().includes("full")) return SERVICE_DESCRIPTIONS["Major / Full PMS"];
-  if (serviceType.toLowerCase().includes("heavy")) return SERVICE_DESCRIPTIONS["Heavy PMS Refresh"];
-  if (serviceType.toLowerCase().includes("oil")) return SERVICE_DESCRIPTIONS["Change Oil & Brake Check"];
-  return "Every 10,000 km or 6 months";
-};
-
-/* ───────────────────────────────────────────
-   PRESET MATERIALS CATALOG
-   ─────────────────────────────────────────── */
-
-const INITIAL_MATERIAL_OPTIONS: SelectOption[] = [
-  { value: "Engine Oil (5W-40 Synthetic 1L)", label: "Engine Oil (5W-40 Synthetic 1L)" },
-  { value: "Oil Filter", label: "Oil Filter" },
-  { value: "Air Filter", label: "Air Filter" },
-  { value: "Cabin Air Filter", label: "Cabin Air Filter" },
-  { value: "Spark Plugs (NGK Iridium)", label: "Spark Plugs (NGK Iridium)" },
-  { value: "Brake Fluid (DOT4 1L)", label: "Brake Fluid (DOT4 1L)" },
-  { value: "Front Brake Pads (Set)", label: "Front Brake Pads (Set)" },
-  { value: "Rear Brake Pads (Set)", label: "Rear Brake Pads (Set)" },
-  { value: "Radiator Coolant (1L)", label: "Radiator Coolant (1L)" },
-  { value: "Transmission Fluid (ATF 1L)", label: "Transmission Fluid (ATF 1L)" },
-  { value: "Serpentine Drive Belt", label: "Serpentine Drive Belt" },
-  { value: "Wiper Blades (Pair)", label: "Wiper Blades (Pair)" },
-  { value: "Valve Cover Gasket Set", label: "Valve Cover Gasket Set" },
-  { value: "EGR Cleaner Spray", label: "EGR Cleaner Spray" }
-];
+const INITIAL_MATERIAL_OPTIONS: SelectOption[] = [];
 
 /* ───────────────────────────────────────────
    HELPERS & CONFIG
@@ -129,6 +90,7 @@ export default function MechanicJobBoardPage() {
 
   // Materials master list & quick modal state
   const [materialsList, setMaterialsList] = useState<SelectOption[]>(INITIAL_MATERIAL_OPTIONS);
+  const [rawMaterialsList, setRawMaterialsList] = useState<any[]>([]);
   const [isAddMaterialModalOpen, setIsAddMaterialModalOpen] = useState(false);
   const [newMaterialInput, setNewMaterialInput] = useState("");
 
@@ -139,196 +101,6 @@ export default function MechanicJobBoardPage() {
   const [addMaterialQtyInput, setAddMaterialQtyInput] = useState<number>(1);
   const [materialSearchQuery, setMaterialSearchQuery] = useState<string>("");
 
-  /* ─── DEFAULT JOB ORDERS CONSTANT ─── */
-  const DEFAULT_JOB_ORDERS: JobOrder[] = [
-    // 1. ACTIVE WORK IN PROGRESS JOB
-    {
-      id: "JO-1042",
-      ownerName: "Juan Dela Cruz",
-      ownerPhone: "0917-555-1234",
-      ownerFb: "@juandelacruz",
-      vehicleModel: "Toyota Vios 2018",
-      plateNumber: "ABC 1234",
-      engineType: "Gasoline",
-      odometer: "45,210 KM",
-      serviceType: "Basic PMS",
-      inchargeMechanics: ["Rodel Santos"],
-      status: "New",
-      createdAt: "Today, 10:15 AM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Change engine oil & filter", status: "GOOD" },
-        {
-          name: "Inspect air filter & cabin filter",
-          status: "ISSUE",
-          mechanicNote: "Air filter clogged with dirt, needs replacement",
-          requiredMaterials: ["Air Filter", "Cabin Air Filter"]
-        },
-        {
-          name: "Check brake pads & fluid levels",
-          status: "MONITOR",
-          mechanicNote: "Front brake pads at 30% wear, monitor next 5k km"
-        },
-        { name: "Tire pressure & tread inspection", status: "PENDING" },
-        { name: "Battery load test & terminal cleaning", status: "PENDING" }
-      ],
-      mechanicFindings: "Engine oil changed cleanly. Air filter requires replacement. Front brake pads near wear limit."
-    },
-    // 2. NEW MOCKUP #1
-    {
-      id: "JO-1045",
-      ownerName: "Ana Lim",
-      ownerPhone: "0917-111-2222",
-      ownerFb: "@analim",
-      vehicleModel: "Nissan Navara 2022",
-      plateNumber: "NVR 4321",
-      engineType: "Diesel",
-      odometer: "28,500 KM",
-      serviceType: "Change Oil & Brake Check",
-      inchargeMechanics: ["Mark Rey"],
-      status: "New",
-      createdAt: "Today, 1:45 PM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Change engine oil & filter", status: "PENDING" },
-        { name: "Inspect air filter & cabin filter", status: "PENDING" },
-        { name: "Check brake pads & fluid levels", status: "PENDING" },
-        { name: "Tire pressure & tread inspection", status: "PENDING" },
-        { name: "Battery load test & terminal cleaning", status: "PENDING" }
-      ]
-    },
-    // 3. NEW MOCKUP #2
-    {
-      id: "JO-1046",
-      ownerName: "Pedro Cruz",
-      ownerPhone: "0918-333-4444",
-      ownerFb: "@pedrocruz",
-      vehicleModel: "Honda CR-V 2020",
-      plateNumber: "CRV 8765",
-      engineType: "Gasoline",
-      odometer: "38,900 KM",
-      serviceType: "Aircon & Electrical Check",
-      inchargeMechanics: ["Rodel Santos"],
-      status: "New",
-      createdAt: "Today, 2:10 PM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Check aircon compressor & belt", status: "PENDING" },
-        { name: "Test cabin blower & freon level", status: "PENDING" },
-        { name: "Inspect battery & alternator charging", status: "PENDING" },
-        { name: "Check headlights, signals & brake lights", status: "PENDING" },
-        { name: "Scan diagnostic trouble codes", status: "PENDING" }
-      ]
-    },
-    // 4. NEW MOCKUP #3
-    {
-      id: "JO-1047",
-      ownerName: "Vicente Sotto",
-      ownerPhone: "0919-777-8888",
-      ownerFb: "@vicesotto",
-      vehicleModel: "Ford Ranger 2021",
-      plateNumber: "RNG 9988",
-      engineType: "Diesel",
-      odometer: "51,200 KM",
-      serviceType: "Suspension & Engine Tune-up",
-      inchargeMechanics: ["Mark Rey", "Rodel Santos"],
-      status: "New",
-      createdAt: "Today, 2:30 PM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Inspect front & rear shock absorbers", status: "PENDING" },
-        { name: "Check tie rod ends & ball joints", status: "PENDING" },
-        { name: "Clean diesel fuel injectors", status: "PENDING" },
-        { name: "Inspect drive belt condition", status: "PENDING" },
-        { name: "Full underchassis bolt torque check", status: "PENDING" }
-      ]
-    },
-    // READY FOR PICKUP MOCKUPS
-    {
-      id: "JO-1038",
-      ownerName: "Carlos Reyes",
-      ownerPhone: "0920-333-9999",
-      ownerFb: "@carlosreyes",
-      vehicleModel: "Honda Civic 2019",
-      plateNumber: "NMO 5678",
-      engineType: "Gasoline",
-      odometer: "54,200 KM",
-      serviceType: "Basic PMS",
-      inchargeMechanics: ["Mark Rey", "Rey Duran"],
-      status: "Job completed",
-      createdAt: "Today, 9:15 AM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Change engine oil & filter", status: "GOOD" },
-        { name: "Inspect air filter & cabin filter", status: "GOOD" },
-        { name: "Check brake pads & fluid levels", status: "GOOD" },
-        { name: "Tire pressure & tread inspection", status: "GOOD" },
-        { name: "Battery load test & terminal cleaning", status: "GOOD" }
-      ]
-    },
-    {
-      id: "JO-1037",
-      ownerName: "Ana Lim",
-      ownerPhone: "0917-111-2222",
-      ownerFb: "@analim",
-      vehicleModel: "Ford Ranger 2021",
-      plateNumber: "RNG 9988",
-      engineType: "Diesel",
-      odometer: "38,500 KM",
-      serviceType: "Change Oil & Brake Check",
-      inchargeMechanics: ["John Uy"],
-      status: "Job completed",
-      createdAt: "Yesterday, 2:45 PM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Change engine oil & filter", status: "GOOD" },
-        { name: "Inspect air filter & cabin filter", status: "GOOD" },
-        { name: "Check brake pads & fluid levels", status: "GOOD" }
-      ]
-    },
-    // JOB COMPLETED MOCKUPS
-    {
-      id: "JO-1036",
-      ownerName: "Bong Go",
-      ownerPhone: "0919-888-7777",
-      ownerFb: "@bonggo",
-      vehicleModel: "Toyota Fortuner 2021",
-      plateNumber: "NKN 9999",
-      engineType: "Diesel",
-      odometer: "68,400 KM",
-      serviceType: "Heavy PMS Refresh",
-      inchargeMechanics: ["Bernard Caermare", "Roderick Omisol"],
-      status: "Job completed",
-      createdAt: "Yesterday, 10:00 AM",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Complete engine overhaul inspection", status: "GOOD" },
-        { name: "Suspension & underchassis bushing overhaul", status: "GOOD" },
-        { name: "Aircon system deep clean & freon recharge", status: "GOOD" }
-      ]
-    },
-    {
-      id: "JO-1035",
-      ownerName: "Vicente Sotto",
-      ownerPhone: "0919-222-3333",
-      ownerFb: "@vicesotto",
-      vehicleModel: "Toyota Wigo 2021",
-      plateNumber: "NGA 5521",
-      engineType: "Gasoline",
-      odometer: "22,100 KM",
-      serviceType: "Basic PMS",
-      inchargeMechanics: ["Rodel Santos"],
-      status: "Job completed",
-      createdAt: "2 days ago",
-      vehiclePhotoUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?w=600&auto=format&fit=crop&q=80",
-      inspectionItems: [
-        { name: "Change engine oil & filter", status: "GOOD" },
-        { name: "Inspect air filter & cabin filter", status: "GOOD" },
-        { name: "Check brake pads & fluid levels", status: "GOOD" }
-      ]
-    }
-  ];
-
   const [laborMaterialsMap, setLaborMaterialsMap] = useState<Record<string, string[]>>({});
 
   // Load from localStorage
@@ -337,6 +109,12 @@ export default function MechanicJobBoardPage() {
       try {
         const data = await apiService.getJobOrders();
         setJobOrders(data);
+        if (drawerJobOrder) {
+          const updatedCurrent = data.find((j: any) => j.id === drawerJobOrder.id);
+          if (updatedCurrent) {
+            setDrawerJobOrder(updatedCurrent);
+          }
+        }
       } catch (err) {
         console.error("Failed to load job orders", err);
       } finally {
@@ -344,7 +122,12 @@ export default function MechanicJobBoardPage() {
       }
     };
     loadJobOrders();
-  }, []);
+
+    const unsubscribe = subscribeToJobOrders(() => {
+      loadJobOrders();
+    });
+    return () => unsubscribe();
+  }, [drawerJobOrder?.id]);
 
   // Load materials and labor mapping from DB
   useEffect(() => {
@@ -352,6 +135,7 @@ export default function MechanicJobBoardPage() {
       try {
         const mats = await apiService.getMaterials();
         if (mats && mats.length > 0) {
+          setRawMaterialsList(mats);
           const opts = mats.map((m: any) => ({
             value: m.name,
             label: `${m.name} (₱${parseFloat(m.price).toLocaleString("en-US", { minimumFractionDigits: 2 })})`
@@ -437,8 +221,19 @@ export default function MechanicJobBoardPage() {
   const updateInspectionItemStatus = (idx: number, status: InspectionItem["status"]) => {
     const items = drawerJobOrder?.inspectionItems || [];
     const updatedItems = [...items];
-    updatedItems[idx] = { ...updatedItems[idx], status };
+    const targetItem = updatedItems[idx];
+    updatedItems[idx] = { ...targetItem, status };
     updateDrawerJO({ inspectionItems: updatedItems });
+
+    if (targetItem && targetItem.id) {
+      apiService.updateInspectionItem(targetItem.id, {
+        status,
+        statusNotes: targetItem.statusNotes || {},
+        statusPhotos: targetItem.statusPhotos || {}
+      }).catch(err => {
+        console.error("Failed to update inspection item status in backend", err);
+      });
+    }
   };
 
   const getItemNote = (item: Partial<InspectionItem>, targetStatus?: InspectionItem["status"]): string => {
@@ -467,6 +262,16 @@ export default function MechanicJobBoardPage() {
       statusNotes: updatedStatusNotes
     };
     updateDrawerJO({ inspectionItems: updatedItems });
+
+    if (targetItem && targetItem.id) {
+      apiService.updateInspectionItem(targetItem.id, {
+        status: targetItem.status || "PENDING",
+        statusNotes: updatedStatusNotes,
+        statusPhotos: targetItem.statusPhotos || {}
+      }).catch(err => {
+        console.error("Failed to update inspection item note in backend", err);
+      });
+    }
   };
 
   const updateInspectionItemPhoto = (idx: number, photoUrl?: string) => {
@@ -541,6 +346,16 @@ export default function MechanicJobBoardPage() {
 
           updateDrawerJO({ inspectionItems: updatedItems });
           triggerToast(`Added photo to ${targetItem.name}`);
+
+          if (targetItem && targetItem.id) {
+            apiService.updateInspectionItem(targetItem.id, {
+              status: targetItem.status || "PENDING",
+              statusNotes: targetItem.statusNotes || {},
+              statusPhotos: updatedStatusPhotos
+            }).catch(err => {
+              console.error("Failed to update inspection item photo in backend", err);
+            });
+          }
         }
       };
       img.src = rawDataUrl;
@@ -573,6 +388,16 @@ export default function MechanicJobBoardPage() {
 
     updateDrawerJO({ inspectionItems: updatedItems });
     triggerToast(`Removed photo from ${targetItem.name}`);
+
+    if (targetItem && targetItem.id) {
+      apiService.updateInspectionItem(targetItem.id, {
+        status: targetItem.status || "PENDING",
+        statusNotes: targetItem.statusNotes || {},
+        statusPhotos: updatedStatusPhotos
+      }).catch(err => {
+        console.error("Failed to update inspection item photo in backend", err);
+      });
+    }
 
     if (lightboxData && lightboxData.itemIdx === itemIdx) {
       if (updatedPhotosForStatus.length === 0) {
@@ -616,21 +441,55 @@ export default function MechanicJobBoardPage() {
     updateDrawerJO({ inspectionItems: updatedItems });
   };
 
-  const removeMaterialItem = (itemIdx: number, matName: string) => {
-    const items = drawerJobOrder?.inspectionItems || [];
-    const updatedItems = [...items];
-    const existing = updatedItems[itemIdx]?.requiredMaterials || [];
+  const removeMaterialItem = async (itemIdx: number, matNameOrObj: any) => {
+    if (!drawerJobOrder) return;
+    const items = drawerJobOrder.inspectionItems || [];
+    const targetItem = items[itemIdx];
+
+    let cartIdToDelete = typeof matNameOrObj === "object" ? matNameOrObj.cart_id : null;
+    if (!cartIdToDelete && targetItem && targetItem.requiredMaterials) {
+      const match = targetItem.requiredMaterials.find((m: any) =>
+        (typeof m === "object" ? m.name : m) === (typeof matNameOrObj === "object" ? matNameOrObj.name : matNameOrObj)
+      );
+      if (match && typeof match === "object") {
+        cartIdToDelete = match.cart_id;
+      }
+    }
+
+    if (targetItem && targetItem.id && cartIdToDelete) {
+      try {
+        await apiService.removeMaterialFromCart(targetItem.id, cartIdToDelete);
+      } catch (err) {
+        console.error("Failed to remove material from cart", err);
+      }
+    }
+
+    const existing = targetItem?.requiredMaterials || [];
+    const matName = typeof matNameOrObj === "object" ? matNameOrObj.name : matNameOrObj;
     const filtered = existing.filter((m) => (typeof m === "object" ? m.name : m) !== matName);
-    updatedItems[itemIdx] = { ...updatedItems[itemIdx], requiredMaterials: filtered };
+    const updatedItems = [...items];
+    updatedItems[itemIdx] = { ...targetItem, requiredMaterials: filtered };
     updateDrawerJO({ inspectionItems: updatedItems });
   };
 
-  const confirmAddMaterial = (itemIdx: number) => {
-    if (!selectedPartName) return;
-    const items = drawerJobOrder?.inspectionItems || [];
-    const updatedItems = [...items];
-    const existing = updatedItems[itemIdx]?.requiredMaterials || [];
+  const confirmAddMaterial = async (itemIdx: number) => {
+    if (!selectedPartName || !drawerJobOrder) return;
+    const items = drawerJobOrder.inspectionItems || [];
+    const targetItem = items[itemIdx];
 
+    const matObj = rawMaterialsList.find((m: any) => m.name === selectedPartName || m.materials_id === selectedPartName || m.id === selectedPartName);
+
+    if (targetItem && targetItem.id && matObj) {
+      const matId = matObj.materials_id || matObj.id;
+      try {
+        await apiService.addMaterialToCart(targetItem.id, matId, addMaterialQtyInput);
+      } catch (err) {
+        console.error("Failed to add material to cart", err);
+      }
+    }
+
+    // Local UI update for instant response
+    const existing = targetItem?.requiredMaterials || [];
     const existingIndex = existing.findIndex((m) => (typeof m === "object" ? m.name : m) === selectedPartName);
     let updatedReqs: MaterialRequirement[];
 
@@ -638,16 +497,19 @@ export default function MechanicJobBoardPage() {
       updatedReqs = existing.map((m, i) => {
         const name = typeof m === "object" ? m.name : m;
         const qty = typeof m === "object" ? m.qty : 1;
+        const baseObj: MaterialRequirement = typeof m === "object" ? m : { name, qty: 1 };
         if (i === existingIndex) {
-          return { name, qty: qty + addMaterialQtyInput };
+          return { ...baseObj, name, qty: qty + addMaterialQtyInput };
         }
-        return { name, qty };
+        return baseObj;
       });
     } else {
-      updatedReqs = [...existing.map(m => typeof m === "object" ? m : { name: m, qty: 1 }), { name: selectedPartName, qty: addMaterialQtyInput }];
+      const normalizedExisting: MaterialRequirement[] = existing.map(m => typeof m === "object" ? m : { name: m, qty: 1 });
+      updatedReqs = [...normalizedExisting, { name: selectedPartName, qty: addMaterialQtyInput, price: matObj?.price || 0 }];
     }
 
-    updatedItems[itemIdx] = { ...updatedItems[itemIdx], requiredMaterials: updatedReqs };
+    const updatedItems = [...items];
+    updatedItems[itemIdx] = { ...targetItem, requiredMaterials: updatedReqs };
     updateDrawerJO({ inspectionItems: updatedItems });
 
     setActiveAddMaterialItemIdx(null);
@@ -739,8 +601,16 @@ export default function MechanicJobBoardPage() {
         {/* CARD GRID */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredJobs.length === 0 ? (
-            <div className="col-span-full py-12 text-center text-slate-400 text-xs font-medium bg-white rounded-2xl border border-slate-200">
-              No jobs found in this category
+            <div className="col-span-full py-16 px-4 text-center max-w-lg mx-auto bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3 my-6">
+              <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                <Wrench className="w-7 h-7 text-slate-400" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-slate-800 text-sm">No Active Jobs Found</h3>
+                <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                  There are currently no job orders assigned under this status tab.
+                </p>
+              </div>
             </div>
           ) : (
             filteredJobs.map((jo) => {
@@ -1005,7 +875,7 @@ export default function MechanicJobBoardPage() {
                                                     return (
                                                       <div key={name} className="flex items-center gap-2.5 py-1 px-1 text-xs">
                                                         <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                                        <span className="font-semibold text-slate-800 truncate">{name}</span>
+                                                        <span className="font-normal text-slate-700 truncate">{name}</span>
                                                       </div>
                                                     );
                                                   }
@@ -1013,10 +883,10 @@ export default function MechanicJobBoardPage() {
                                                   return (
                                                     <div key={name} className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-red-50/80 bg-white border border-slate-100 transition-all text-xs group">
                                                       <div className="flex items-center gap-2 min-w-0">
-                                                        <span className="font-semibold text-slate-800 truncate pr-2">{name}</span>
+                                                        <span className="font-normal text-slate-700 truncate pr-2">{name}</span>
                                                       </div>
                                                       <div className="flex items-center gap-2 shrink-0">
-                                                        <span className="font-semibold text-slate-800 text-xs min-w-[20px] text-right group-hover:hidden pr-1">
+                                                        <span className="font-normal text-slate-700 text-xs min-w-[20px] text-right group-hover:hidden pr-1">
                                                           {qty}
                                                         </span>
                                                         <input
@@ -1053,47 +923,33 @@ export default function MechanicJobBoardPage() {
 
                                           {/* STEP 2 & STEP 3 INLINE POPUP CARD (RED THEME FOR REPAIR NEEDED) */}
                                           {activeAddMaterialItemIdx === idx ? (
-                                            <div className="bg-slate-50 border-2 border-red-500/60 rounded-2xl p-3.5 space-y-3 shadow-md">
+                                            <div className="space-y-2.5">
+                                              <div className="flex items-center justify-between pb-0.5">
+                                                <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Select Material</span>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setActiveAddMaterialItemIdx(null)}
+                                                  className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200/60 transition-colors"
+                                                >
+                                                  <X className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
+
+                                              {/* Search Input */}
+                                              <div className="relative">
+                                                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                                                <input
+                                                  type="text"
+                                                  value={materialSearchQuery}
+                                                  onChange={(e) => setMaterialSearchQuery(e.target.value)}
+                                                  placeholder="Search"
+                                                  className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 outline-none focus:border-red-500 shadow-2xs"
+                                                />
+                                              </div>
+
                                               {addMaterialStep === "SELECT_PART" ? (
                                                 /* STEP 2: Radio Button Selection Screen */
                                                 <div className="space-y-2.5">
-                                                  <div className="flex items-center justify-between pb-0.5">
-                                                    <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Select Material</span>
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => setActiveAddMaterialItemIdx(null)}
-                                                      className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200/60 transition-colors"
-                                                    >
-                                                      <X className="w-3.5 h-3.5" />
-                                                    </button>
-                                                  </div>
-
-                                                  {/* Search Input */}
-                                                  <div className="relative">
-                                                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
-                                                    <input
-                                                      type="text"
-                                                      value={materialSearchQuery}
-                                                      onChange={(e) => setMaterialSearchQuery(e.target.value)}
-                                                      placeholder="Search"
-                                                      className="w-full bg-white border border-slate-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-800 outline-none focus:border-red-500 shadow-2xs"
-                                                    />
-                                                  </div>
-
-                                                  {/* + new button (Red text style) */}
-                                                  <div className="px-0.5">
-                                                    <button
-                                                      type="button"
-                                                      onClick={() => {
-                                                        setNewMaterialInput("");
-                                                        setIsAddMaterialModalOpen(true);
-                                                      }}
-                                                      className="text-xs font-semibold text-red-600 hover:text-red-700 flex items-center gap-1 transition-colors cursor-pointer"
-                                                    >
-                                                      <Plus className="w-3.5 h-3.5" />
-                                                      <span>new</span>
-                                                    </button>
-                                                  </div>
 
                                                   {/* Radio Button Options List (Groups recommended materials at the top) */}
                                                   <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
@@ -1378,65 +1234,165 @@ export default function MechanicJobBoardPage() {
                       </div>
                     ) : (
                       /* READ-ONLY PREVIEW FOR COMPLETED OR WORK IN PROGRESS (ACCORDION) */
-                      <div className="space-y-2">
+                      <div className="space-y-2.5">
                         {drawerJobOrder.inspectionItems.map((item, idx) => {
+                          const effectiveStatus = item.status || "PENDING";
                           const isExpanded = expandedIndex === idx;
-                          const hasDetails = item.mechanicNote || item.photoUrl || (item.requiredMaterials && item.requiredMaterials.length > 0);
+                          const photos = getItemPhotos(item, effectiveStatus);
+                          const currentNote = getItemNote(item, effectiveStatus);
+
+                          const statusLabel =
+                            effectiveStatus === "GOOD" ? "Good" :
+                            effectiveStatus === "ISSUE" ? "Issue" :
+                            effectiveStatus === "MONITOR" ? "Monitor" : "Pending";
+
+                          const statusColorClass =
+                            effectiveStatus === "GOOD" ? "text-emerald-600" :
+                            effectiveStatus === "ISSUE" ? "text-red-600" :
+                            effectiveStatus === "MONITOR" ? "text-amber-600" : "text-slate-500";
+
                           return (
-                            <div key={idx} className="bg-slate-50 border border-slate-200/60 rounded-xl overflow-hidden transition-all shadow-2xs">
-                              {/* Accordion Header */}
+                            <div
+                              key={idx}
+                              className={`border rounded-2xl transition-all overflow-hidden bg-white ${
+                                isExpanded
+                                  ? "border-slate-300 shadow-xs"
+                                  : "border-slate-200"
+                              }`}
+                            >
+                              {/* ACCORDION HEADER */}
                               <div
-                                onClick={() => {
-                                  if (hasDetails) {
-                                    setExpandedIndex(isExpanded ? null : idx);
-                                  }
-                                }}
-                                className={`px-4 py-2.5 flex items-center justify-between gap-3 ${hasDetails ? "cursor-pointer hover:bg-slate-100/60" : "select-text"}`}
+                                onClick={() => setExpandedIndex(isExpanded ? null : idx)}
+                                className={`px-4 py-3 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
+                                  isExpanded
+                                    ? "bg-slate-100/90 border-b border-slate-200/80"
+                                    : "bg-slate-50/70 hover:bg-slate-100/80"
+                                }`}
                               >
                                 <div className="flex items-center gap-2.5 min-w-0">
-                                  <div className="shrink-0">{INSPECTION_STATUS_ICON[item.status || "PENDING"]}</div>
-                                  <span className="font-semibold text-slate-800 text-xs truncate">{item.name}</span>
+                                  <div className="shrink-0">{INSPECTION_STATUS_ICON[effectiveStatus || "PENDING"]}</div>
+                                  <span className="font-bold text-slate-800 text-xs truncate">{item.name}</span>
                                 </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  {hasDetails && (
-                                    <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
-                                  )}
-                                </div>
+                                <ChevronRight className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                               </div>
 
-                              {/* Accordion Body (Render details if expanded and details exist) */}
-                              {isExpanded && hasDetails && (
-                                <div className="px-4 pb-3.5 pt-1.5 border-t border-slate-200/50 bg-white space-y-2.5">
-                                  {item.requiredMaterials && item.requiredMaterials.length > 0 && (
-                                    <div>
-                                      <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Required Materials</div>
-                                      <div className="flex flex-wrap gap-1">
-                                        {item.requiredMaterials.map((mat) => {
-                                          const name = typeof mat === "object" ? mat.name : mat;
-                                          const qty = typeof mat === "object" ? mat.qty : 1;
-                                          return (
-                                            <span key={name} className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-800 rounded-md text-[10px] font-semibold">
-                                              {name} <span className="text-slate-500 font-bold ml-0.5">×{qty}</span>
-                                            </span>
-                                          );
-                                        })}
+                              {/* ACCORDION BODY (FRONT DESK DESIGN MATCH) */}
+                              {isExpanded && (
+                                <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-white space-y-4 text-xs">
+                                  {/* 1. STATUS */}
+                                  <div>
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                      STATUS
+                                    </div>
+                                    <div className={`text-sm font-bold ${statusColorClass}`}>
+                                      {statusLabel}
+                                    </div>
+                                  </div>
+
+                                  {/* 2. DIAGNOSTIC NOTES & VISUAL PROOF (Hidden when status is PENDING) */}
+                                  {effectiveStatus !== "PENDING" && (
+                                    <>
+                                      <div>
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                          DIAGNOSTIC NOTES
+                                        </div>
+                                        <div className="text-xs text-slate-800 font-medium leading-relaxed">
+                                          {currentNote ? (
+                                            currentNote
+                                          ) : (
+                                            <span className="text-slate-400 italic font-normal">No diagnostic notes recorded.</span>
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
-                                  )}
-                                  {item.mechanicNote && (
-                                    <div>
-                                      <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">Notes</div>
-                                      <div className="text-xs text-slate-700 font-medium italic">"{item.mechanicNote}"</div>
-                                    </div>
-                                  )}
-                                  {item.photoUrl && (
-                                    <div>
-                                      <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Attached Proof</div>
-                                      <div className="relative w-14 h-14 rounded-lg border border-slate-200 overflow-hidden bg-slate-100 shadow-2xs">
-                                        <img src={item.photoUrl} alt="Inspection proof" className="w-full h-full object-cover" />
+
+                                      <div>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                            VISUAL PROOF
+                                          </span>
+                                          {photos.length > 0 && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setLightboxData({ itemIdx: idx, photoIdx: 0 });
+                                              }}
+                                              className="text-slate-500 hover:text-slate-800 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                              title="Expand Fullscreen Lightbox"
+                                            >
+                                              <Maximize2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          )}
+                                        </div>
+
+                                        {photos.length > 0 ? (
+                                          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                                            {photos.map((photoUrl, pIdx) => (
+                                              <div
+                                                key={pIdx}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setLightboxData({ itemIdx: idx, photoIdx: pIdx });
+                                                }}
+                                                className="relative w-16 h-16 rounded-xl border border-slate-200 overflow-hidden bg-slate-100 shrink-0 cursor-pointer group hover:border-purple-500 transition-all shadow-2xs"
+                                              >
+                                                <img src={photoUrl} alt={`Proof ${pIdx + 1}`} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                  <Maximize2 className="w-4 h-4 text-white drop-shadow-md" />
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        ) : (
+                                          <div className="text-[11px] text-slate-400 italic py-1">No visual proof attached.</div>
+                                        )}
                                       </div>
+                                    </>
+                                  )}
+
+                                  {/* 3. MATERIALS NEEDED / APPLIED */}
+                                  {item.requiredMaterials && item.requiredMaterials.length > 0 && (effectiveStatus === "ISSUE" || effectiveStatus === "GOOD") && (
+                                    <div>
+                                      {effectiveStatus === "ISSUE" ? (
+                                        <>
+                                          <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-0.5">
+                                            <span>MATERIALS NEEDED</span>
+                                            <span>QUANTITY</span>
+                                          </div>
+                                          <div className="space-y-1">
+                                            {item.requiredMaterials.map((m: any, mIdx: number) => {
+                                              const name = typeof m === "object" ? m.name : m;
+                                              const qty = typeof m === "object" ? m.qty : 1;
+                                              return (
+                                                <div key={mIdx} className="flex items-center justify-between py-1 px-0.5 text-xs font-normal text-slate-700">
+                                                  <span>{name}</span>
+                                                  <span className="font-normal text-slate-700 text-xs">{qty}</span>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-0.5">
+                                            MATERIALS APPLIED
+                                          </div>
+                                          <div className="space-y-1">
+                                            {item.requiredMaterials.map((m: any, mIdx: number) => {
+                                              const name = typeof m === "object" ? m.name : m;
+                                              return (
+                                                <div key={mIdx} className="flex items-center gap-2 py-1 px-0.5 text-xs font-normal text-slate-700">
+                                                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                                  <span>{name}</span>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        </>
+                                      )}
                                     </div>
                                   )}
+
                                 </div>
                               )}
                             </div>
