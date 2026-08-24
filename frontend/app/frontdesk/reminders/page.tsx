@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 export default function RemindersPage() {
   const devContext = useDevRole();
   const [reminders, setReminders] = useState<ReminderItem[]>([]);
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterStatus, setFilterStatus] = useState<string>("PENDING");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedReminder, setSelectedReminder] = useState<ReminderItem | null>(null);
@@ -22,7 +22,7 @@ export default function RemindersPage() {
   const fetchReminders = async () => {
     setIsLoading(true);
     try {
-      const data = await apiService.getReminders(filterStatus === "ALL" ? undefined : filterStatus);
+      const data = await apiService.getReminders(filterStatus);
       setReminders(data || []);
     } catch (e) {
       console.error("Failed to load reminders", e);
@@ -80,12 +80,10 @@ export default function RemindersPage() {
   });
 
   const getStatusCount = (status: string) => {
-    if (status === "ALL") return reminders.length;
     return reminders.filter((r) => r.status.toUpperCase() === status.toUpperCase()).length;
   };
 
   const statusTabs = [
-    { id: "ALL", label: "All" },
     { id: "PENDING", label: "Pending" },
     { id: "DUE", label: "Due Soon" },
     { id: "OVERDUE", label: "Overdue" },
@@ -121,17 +119,46 @@ export default function RemindersPage() {
           </div>
         </motion.div>
 
-        {/* STICKY SEARCH BAR AREA */}
-        <div className="sticky top-0 z-30 bg-slate-50 pt-2 pb-3 border-b border-slate-200/90 shadow-2xs -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 transition-all flex items-center justify-end">
-          <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search reminders..."
-              className="w-full bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-600 transition-all shadow-2xs"
-            />
+        {/* STICKY AREA: TAB PILLS & SEARCH BAR */}
+        <div className="sticky top-0 z-30 bg-slate-50 pt-2 pb-0 border-b border-slate-200/90 shadow-2xs -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 transition-all">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60">
+            {/* Status Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              {statusTabs.map((tab) => {
+                const isActive = filterStatus.toUpperCase() === tab.id;
+                const count = getStatusCount(tab.id);
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setFilterStatus(tab.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                      isActive
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${isActive ? "bg-white/20 text-white" : "bg-slate-200 text-slate-800"}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search Bar */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search reminders..."
+                  className="bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-600 transition-all w-44 sm:w-60 shadow-2xs"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
