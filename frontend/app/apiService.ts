@@ -609,8 +609,8 @@ export const apiService = {
         popularBadge: false
       }));
     } catch (e) {
-      console.warn("Backend unavailable, falling back to mock bundles");
-      return null;
+      console.warn("Backend unavailable, falling back to empty bundles");
+      return [];
     }
   },
 

@@ -97,7 +97,7 @@ export default function JobOrdersPage() {
 
   const handleSaveEditDrawer = async () => {
     if (!drawerJobOrder) return;
-    const activeBundle = allBundles.find((b: any) => b.packageName === editServiceType) || allBundles[0];
+    const activeBundle = (allBundles || []).find((b: any) => b.packageName === editServiceType) || (allBundles || [])[0];
     if (!activeBundle) {
       triggerToast("Error: No bundle selected.");
       return;
@@ -173,12 +173,12 @@ export default function JobOrdersPage() {
     return { value: plate, label: `${model} (${plate})` };
   }) || [], [currentOwnerObj]);
   const serviceTypeOptions: SelectOption[] = useMemo(() => {
-    return allBundles.map((b) => ({ value: b.packageName, label: b.packageName }));
+    return (allBundles || []).map((b) => ({ value: b.packageName, label: b.packageName }));
   }, [allBundles]);
   const mechanicOptions: SelectOption[] = useMemo(() => availableMechanicsList.map((m) => ({ value: m, label: m })), [availableMechanicsList]);
 
   const activeServiceInfo = useMemo(() => {
-    if (allBundles.length > 0) {
+    if (allBundles && allBundles.length > 0) {
       const b = allBundles.find((x) => x.packageName === formServiceType);
       if (b) {
         return { interval: b.targetInterval || b.description || "N/A", items: b.servicesIncluded || [] };
@@ -297,7 +297,7 @@ export default function JobOrdersPage() {
       return;
     }
 
-    const activeBundle = allBundles.find((b: any) => b.packageName === formServiceType) || allBundles[0];
+    const activeBundle = (allBundles || []).find((b: any) => b.packageName === formServiceType) || (allBundles || [])[0];
     if (!activeBundle) {
       triggerToast("Error: No bundle selected.");
       return;
