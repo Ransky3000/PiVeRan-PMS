@@ -2,19 +2,22 @@
 
 import React, { useState, useEffect } from "react";
 import { TailAdminLayout } from "@/components/TailAdminLayout";
-import { ReminderStats } from "./ReminderStats";
+import { useDevRole } from "@/context/DevRoleContext";
 import { ReminderTable, ReminderItem } from "./ReminderTable";
 import { ReminderModal } from "./ReminderModal";
 import { apiService, subscribeToJobOrders } from "@/app/apiService";
-import { Bell, Search, Plus } from "lucide-react";
+import { Search, Plus, Bell } from "lucide-react";
+import { motion } from "framer-motion";
 
 export default function RemindersPage() {
+  const devContext = useDevRole();
   const [reminders, setReminders] = useState<ReminderItem[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedReminder, setSelectedReminder] = useState<ReminderItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState<boolean>(true);
 
   const fetchReminders = async () => {
     setIsLoading(true);
@@ -55,7 +58,7 @@ export default function RemindersPage() {
   };
 
   const handleDeleteReminder = async (id: string) => {
-    if (confirm("Are you sure you want to delete this reminder?")) {
+    if (confirm("Are you sure you want to delete this maintenance reminder?")) {
       try {
         await apiService.deleteReminder(id);
         await fetchReminders();
@@ -76,77 +79,113 @@ export default function RemindersPage() {
     );
   });
 
-  const totalCount = reminders.length;
-  const pendingCount = reminders.filter((r) => r.status === "Pending").length;
-  const dueCount = reminders.filter((r) => r.status === "Due").length;
-  const overdueCount = reminders.filter((r) => r.status === "Overdue").length;
-  const doneCount = reminders.filter((r) => r.status === "Done").length;
+  const getStatusCount = (status: string) => {
+    if (status === "ALL") return reminders.length;
+    return reminders.filter((r) => r.status.toUpperCase() === status.toUpperCase()).length;
+  };
+
+  const statusTabs = [
+    { id: "ALL", label: "All" },
+    { id: "PENDING", label: "Pending" },
+    { id: "DUE", label: "Due Soon" },
+    { id: "OVERDUE", label: "Overdue" },
+    { id: "DONE", label: "Completed" }
+  ];
 
   return (
-    <TailAdminLayout userRole="FrontDesk">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Bell className="w-6 h-6 text-slate-700 dark:text-slate-300" />
-              Maintenance Reminders
-            </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Track vehicle PMS service due dates auto-calculated upon job completion.
-            </p>
+    <TailAdminLayout userRole={devContext.activeRole} userName={devContext.currentProfile.name} userEmail={devContext.currentProfile.email}>
+      <div className="space-y-3">
+        {/* TOP TITLE HEADER */}
+        <motion.div
+          animate={{ height: isHeaderVisible ? "auto" : 0, opacity: isHeaderVisible ? 1 : 0, marginBottom: isHeaderVisible ? 12 : 0 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
+          className="overflow-hidden border-b border-slate-200/80 pb-2.5"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Reminders</h1>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">Track vehicle PMS service due dates for PiVeRan PMS</p>
+            </div>
+            <div>
+              <button
+                onClick={() => {
+                  setSelectedReminder(null);
+                  setIsModalOpen(true);
+                }}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs px-4 py-2 rounded-xl shadow-md shadow-emerald-700/20 transition-all flex items-center gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Reminder</span>
+              </button>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* STICKY AREA: TAB PILLS & SEARCH BAR */}
+        <div className="sticky top-0 z-30 bg-slate-50 pt-2 pb-0 border-b border-slate-200/90 shadow-2xs -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 transition-all">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60">
+            {/* Status Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              {statusTabs.map((tab) => {
+                const isActive = filterStatus.toUpperCase() === tab.id;
+                const count = getStatusCount(tab.id);
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setFilterStatus(tab.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 ${
+                      isActive
+                        ? "bg-slate-900 text-white shadow-xs"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono ${isActive ? "bg-white/20 text-white" : "bg-slate-200 text-slate-800"}`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Search Bar */}
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search reminders..."
+                  className="bg-white border border-slate-200 rounded-xl py-2 pl-9 pr-3 text-xs text-slate-900 placeholder:text-slate-400 outline-none focus:border-emerald-600 transition-all w-44 sm:w-60 shadow-2xs"
+                />
+              </div>
+            </div>
           </div>
 
-          <button
-            onClick={() => {
-              setSelectedReminder(null);
+          {/* TABLE HEADERS */}
+          <div className="bg-slate-100/90 text-slate-500 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 grid grid-cols-12 py-3 px-5 items-center mt-2 rounded-t-xl">
+            <div className="col-span-3">Vehicle & Owner</div>
+            <div className="col-span-2">Last Odometer</div>
+            <div className="col-span-2">Target Due Date</div>
+            <div className="col-span-2">Target Odometer</div>
+            <div className="col-span-2">Status</div>
+            <div className="col-span-1 text-right">Actions</div>
+          </div>
+        </div>
+
+        {/* DATA ROWS */}
+        <section>
+          <ReminderTable
+            reminders={filteredReminders}
+            onEdit={(r) => {
+              setSelectedReminder(r);
               setIsModalOpen(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm self-start sm:self-auto"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Create Reminder</span>
-          </button>
-        </div>
-
-        {/* Stats Grid */}
-        <ReminderStats
-          total={totalCount}
-          pending={pendingCount}
-          due={dueCount}
-          overdue={overdueCount}
-          done={doneCount}
-          activeFilter={filterStatus}
-          onFilterChange={setFilterStatus}
-        />
-
-        {/* Search Bar & Controls */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search vehicle, plate, owner..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
-            />
-          </div>
-          <div className="text-xs text-slate-500 font-mono">
-            Showing {filteredReminders.length} of {totalCount} records
-          </div>
-        </div>
-
-        {/* Table */}
-        <ReminderTable
-          reminders={filteredReminders}
-          onEdit={(r) => {
-            setSelectedReminder(r);
-            setIsModalOpen(true);
-          }}
-          onDelete={handleDeleteReminder}
-          isLoading={isLoading}
-        />
+            onDelete={handleDeleteReminder}
+            isLoading={isLoading}
+          />
+        </section>
 
         {/* Edit / Create Modal */}
         <ReminderModal
