@@ -172,7 +172,7 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                           onClick={() => setExpandedIndex(isExpanded ? null : idx)}
                           className={`px-4 py-3 flex items-center justify-between gap-3 cursor-pointer transition-colors select-none ${
                             isExpanded
-                              ? "bg-slate-100/90 border-b border-slate-200/80"
+                              ? "bg-slate-100/90 border-b border-slate-200/60"
                               : "hover:bg-slate-100/70"
                           }`}
                         >
@@ -194,7 +194,7 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                             className="overflow-hidden"
                           >
-                          <div className="px-4 pb-4 pt-2 border-t border-slate-200/60 bg-white space-y-3.5">
+                          <div className="px-4 pb-4 pt-3 bg-white space-y-3.5">
                             {/* Status Buttons */}
                             <div>
                               <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Status</div>
@@ -613,7 +613,7 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                         <div
                           onClick={() => setExpandedIndex(isExpanded ? null : idx)}
                           className={`px-4 py-3 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
-                            isExpanded ? "bg-slate-100/90 border-b border-slate-200/80" : "bg-slate-50/70 hover:bg-slate-100/80"
+                            isExpanded ? "bg-slate-100/90 border-b border-slate-200/60" : "bg-slate-50/70 hover:bg-slate-100/80"
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -632,7 +632,7 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                             className="overflow-hidden"
                           >
-                          <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-white space-y-4 text-xs">
+                          <div className="px-4 pb-4 pt-3 bg-white space-y-4 text-xs">
                             <div>
                               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">STATUS</div>
                               <div className={`text-sm font-bold ${statusColorClass}`}>{statusLabel}</div>

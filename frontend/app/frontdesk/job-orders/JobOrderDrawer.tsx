@@ -241,7 +241,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                         onClick={() => setExpandedItemId(isExpanded ? null : itemId)}
                         className={`px-4 py-3 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
                           isExpanded
-                            ? "bg-slate-100/90 border-b border-slate-200/80"
+                            ? "bg-slate-100/90 border-b border-slate-200/60"
                             : "bg-slate-50/70 hover:bg-slate-100/80"
                         }`}
                       >
@@ -261,7 +261,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                           className="overflow-hidden"
                         >
-                        <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-white space-y-4 text-xs">
+                        <div className="px-4 pb-4 pt-3 bg-white space-y-4 text-xs">
                           <div>
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                               STATUS
