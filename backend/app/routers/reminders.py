@@ -44,10 +44,18 @@ def get_reminders(status_filter: Optional[str] = None, db: Session = Depends(get
 
 @router.post("", response_model=ReminderResponse, status_code=status.HTTP_201_CREATED)
 async def create_reminder(data: ReminderCreate, db: Session = Depends(get_db)):
+    v_id = data.vehicle_id
+    o_id = data.owner_id
+    if data.jo_id and (not v_id or not o_id):
+        jo = db.query(JobOrder).filter(JobOrder.jo_id == data.jo_id).first()
+        if jo:
+            v_id = v_id or jo.vehicle_id
+            o_id = o_id or jo.owner_id
+
     new_reminder = Reminder(
         jo_id=data.jo_id,
-        vehicle_id=data.vehicle_id,
-        owner_id=data.owner_id,
+        vehicle_id=v_id,
+        owner_id=o_id,
         start_date=data.start_date or datetime.utcnow(),
         target_date=data.target_date,
         start_odometer=data.start_odometer or 0,

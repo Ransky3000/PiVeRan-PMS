@@ -45,6 +45,15 @@ export default function RemindersPage() {
     }
   };
 
+  const handleCreateReminder = async (newReminderData: any) => {
+    try {
+      await apiService.createReminder(newReminderData);
+      await fetchReminders();
+    } catch (e) {
+      console.error("Failed to create reminder", e);
+    }
+  };
+
   const handleDeleteReminder = async (id: string) => {
     if (confirm("Are you sure you want to delete this reminder?")) {
       try {
@@ -87,6 +96,17 @@ export default function RemindersPage() {
               Track vehicle PMS service due dates auto-calculated upon job completion.
             </p>
           </div>
+
+          <button
+            onClick={() => {
+              setSelectedReminder(null);
+              setIsModalOpen(true);
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors shadow-sm self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Create Reminder</span>
+          </button>
         </div>
 
         {/* Stats Grid */}
@@ -128,12 +148,13 @@ export default function RemindersPage() {
           isLoading={isLoading}
         />
 
-        {/* Edit Modal */}
+        {/* Edit / Create Modal */}
         <ReminderModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           reminder={selectedReminder}
           onSave={handleSaveReminder}
+          onCreate={handleCreateReminder}
         />
       </div>
     </TailAdminLayout>

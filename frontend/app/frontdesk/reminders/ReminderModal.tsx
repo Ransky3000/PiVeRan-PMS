@@ -1,22 +1,27 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Gauge, FileText, CheckCircle } from "lucide-react";
+import { X, Calendar, Gauge, FileText, Car } from "lucide-react";
 import { ReminderItem } from "./ReminderTable";
+import { apiService } from "@/app/apiService";
 
 interface ReminderModalProps {
   isOpen: boolean;
   onClose: () => void;
   reminder: ReminderItem | null;
   onSave: (id: string, updates: Partial<ReminderItem>) => Promise<void>;
+  onCreate?: (newReminder: any) => Promise<void>;
 }
 
 export const ReminderModal: React.FC<ReminderModalProps> = ({
   isOpen,
   onClose,
   reminder,
-  onSave
+  onSave,
+  onCreate
 }) => {
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [targetOdometer, setTargetOdometer] = useState<number>(10000);
   const [status, setStatus] = useState<"Pending" | "Due" | "Overdue" | "Done">("Pending");
@@ -24,7 +29,25 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (reminder) {
+    if (isOpen && !reminder) {
+      // Fetch vehicles for manual creation dropdown
+      apiService.getVehicles().then((data) => {
+        setVehicles(data || []);
+        if (data && data.length > 0) {
+          setSelectedVehicleId(data[0].id);
+        }
+      }).catch(console.error);
+
+      // Default date to 6 months from now
+      const defaultDt = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000);
+      const yyyy = defaultDt.getFullYear();
+      const mm = String(defaultDt.getMonth() + 1).padStart(2, "0");
+      const dd = String(defaultDt.getDate()).padStart(2, "0");
+      setTargetDate(`${yyyy}-${mm}-${dd}`);
+      setTargetOdometer(10000);
+      setStatus("Pending");
+      setNotes("");
+    } else if (reminder) {
       if (reminder.targetDate) {
         const d = new Date(reminder.targetDate);
         const yyyy = d.getFullYear();
@@ -38,23 +61,37 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
       setStatus(reminder.status || "Pending");
       setNotes(reminder.notes || "");
     }
-  }, [reminder]);
+  }, [isOpen, reminder]);
 
-  if (!isOpen || !reminder) return null;
+  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await onSave(reminder.id, {
-        targetDate: new Date(targetDate).toISOString(),
-        targetOdometer: Number(targetOdometer),
-        status,
-        notes
-      });
+      if (reminder) {
+        await onSave(reminder.id, {
+          targetDate: new Date(targetDate).toISOString(),
+          targetOdometer: Number(targetOdometer),
+          status,
+          notes
+        });
+      } else if (onCreate) {
+        const vObj = vehicles.find((v) => v.id === selectedVehicleId) || vehicles[0];
+        await onCreate({
+          vehicleId: vObj ? vObj.id : "",
+          ownerId: vObj ? vObj.owner_id || vObj.ownerId || "" : "",
+          startDate: new Date().toISOString(),
+          targetDate: new Date(targetDate).toISOString(),
+          startOdometer: vObj ? vObj.odometer || 0 : 0,
+          targetOdometer: Number(targetOdometer),
+          status,
+          notes
+        });
+      }
       onClose();
     } catch (err) {
-      console.error("Failed to save reminder updates", err);
+      console.error("Failed to save reminder", err);
     } finally {
       setIsSubmitting(false);
     }
@@ -68,10 +105,12 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
           <div>
             <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Edit Maintenance Reminder
+              {reminder ? "Edit Maintenance Reminder" : "Create New Maintenance Reminder"}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {reminder.vehicleName} ({reminder.plateNumber}) • {reminder.ownerName}
+              {reminder
+                ? `${reminder.vehicleName} (${reminder.plateNumber}) • ${reminder.ownerName}`
+                : "Schedule a future maintenance reminder for a customer vehicle"}
             </p>
           </div>
           <button
@@ -83,6 +122,26 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {!reminder && (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                <Car className="w-3.5 h-3.5 text-slate-400" />
+                Select Vehicle
+              </label>
+              <select
+                value={selectedVehicleId}
+                onChange={(e) => setSelectedVehicleId(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 dark:focus:ring-white"
+              >
+                {vehicles.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.make || v.model || "Vehicle"} ({v.plate_number || v.plate || "No Plate"}) - {v.owner_name || "Owner"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
@@ -163,7 +222,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
               disabled={isSubmitting}
               className="px-5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors disabled:opacity-50"
             >
-              {isSubmitting ? "Saving..." : "Save Reminder"}
+              {isSubmitting ? "Saving..." : reminder ? "Save Reminder" : "Create Reminder"}
             </button>
           </div>
         </form>

@@ -7,8 +7,10 @@ import {
   ClipboardCheck,
   ChevronRight,
   Maximize2,
-  Check
+  Check,
+  Bell
 } from "lucide-react";
+import { apiService } from "@/app/apiService";
 import { JobOrder, InspectionItem, EstimateLineItem } from "@/app/types";
 import { CustomSelect, SelectOption } from "@/components/CustomSelect";
 import {
@@ -67,6 +69,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
   onMarkCompleted
 }) => {
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [isAddingReminder, setIsAddingReminder] = useState(false);
 
   if (!drawerJobOrder) return null;
 
@@ -609,6 +612,38 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
               >
                 Close
               </button>
+              {drawerJobOrder.status === "Job completed" && (
+                <button
+                  onClick={async () => {
+                    if (isAddingReminder) return;
+                    setIsAddingReminder(true);
+                    try {
+                      const startOdo = parseInt(String(drawerJobOrder.odometer || "0").replace(/[^\d]/g, "")) || 0;
+                      const targetOdo = startOdo + 10000;
+                      const targetDt = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+                      await apiService.createReminder({
+                        joId: drawerJobOrder.id,
+                        startDate: new Date().toISOString(),
+                        targetDate: targetDt,
+                        startOdometer: startOdo,
+                        targetOdometer: targetOdo,
+                        status: "Pending"
+                      });
+                      alert("Service reminder created successfully!");
+                    } catch (e) {
+                      console.error("Failed to create reminder from drawer", e);
+                      alert("Failed to create service reminder.");
+                    } finally {
+                      setIsAddingReminder(false);
+                    }
+                  }}
+                  disabled={isAddingReminder}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Bell className="w-4 h-4" />
+                  <span>{isAddingReminder ? "Adding..." : "+ Add Reminder"}</span>
+                </button>
+              )}
               {drawerJobOrder.status !== "Job completed" && (
                 (() => {
                   const progress = getInspectionProgress(drawerJobOrder);
