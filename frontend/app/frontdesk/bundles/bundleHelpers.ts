@@ -13,6 +13,8 @@ export interface PackageBundle {
   id: string;
   packageName: string;
   targetInterval: string;
+  intervalKm?: number;
+  intervalMonths?: number;
   description: string;
   servicesIncluded: string[];
   packagePrice: string;

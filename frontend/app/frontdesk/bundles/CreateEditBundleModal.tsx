@@ -11,8 +11,10 @@ interface CreateEditBundleModalProps {
   setPkgTitle: (val: string) => void;
   pkgDescription: string;
   setPkgDescription: (val: string) => void;
-  pkgInterval: string;
-  setPkgInterval: (val: string) => void;
+  pkgIntervalKm: number | string;
+  setPkgIntervalKm: (val: number | string) => void;
+  pkgIntervalMonths: number | string;
+  setPkgIntervalMonths: (val: number | string) => void;
   pkgFlatPrice: string;
   setPkgFlatPrice: (val: string) => void;
   selectedLaborIdsForPkg: string[];
@@ -31,8 +33,10 @@ export const CreateEditBundleModal: React.FC<CreateEditBundleModalProps> = ({
   setPkgTitle,
   pkgDescription,
   setPkgDescription,
-  pkgInterval,
-  setPkgInterval,
+  pkgIntervalKm,
+  setPkgIntervalKm,
+  pkgIntervalMonths,
+  setPkgIntervalMonths,
   pkgFlatPrice,
   setPkgFlatPrice,
   selectedLaborIdsForPkg,
@@ -104,16 +108,29 @@ export const CreateEditBundleModal: React.FC<CreateEditBundleModalProps> = ({
             />
           </div>
 
-          {/* Target Interval & Flat Package Rate */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Service Intervals & Package Rate */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1">Service Interval</label>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Interval (KM)</label>
               <input
-                type="text"
-                value={pkgInterval}
-                onChange={(e) => setPkgInterval(e.target.value)}
-                placeholder="e.g. Every 10,000 KM"
-                className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl p-2.5 text-xs text-slate-900 outline-none font-semibold"
+                type="number"
+                required
+                value={pkgIntervalKm}
+                onChange={(e) => setPkgIntervalKm(e.target.value)}
+                placeholder="10000"
+                className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl p-2.5 text-xs text-slate-900 font-mono outline-none font-semibold"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-1">Interval (Months)</label>
+              <input
+                type="number"
+                required
+                value={pkgIntervalMonths}
+                onChange={(e) => setPkgIntervalMonths(e.target.value)}
+                placeholder="6"
+                className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl p-2.5 text-xs text-slate-900 font-mono outline-none font-semibold"
               />
             </div>
 
@@ -124,7 +141,7 @@ export const CreateEditBundleModal: React.FC<CreateEditBundleModalProps> = ({
                 value={pkgFlatPrice}
                 onChange={(e) => setPkgFlatPrice(e.target.value)}
                 placeholder={`Default: ₱${standaloneSum}`}
-                className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl p-2.5 text-xs font-extrabold text-emerald-800 outline-none"
+                className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl p-2.5 text-xs font-mono font-extrabold text-emerald-800 outline-none"
               />
             </div>
           </div>

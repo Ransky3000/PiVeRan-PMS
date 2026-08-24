@@ -78,7 +78,8 @@ export default function AdminServicesPage() {
   // Package Form State
   const [pkgTitle, setPkgTitle] = useState("");
   const [pkgDescription, setPkgDescription] = useState("");
-  const [pkgInterval, setPkgInterval] = useState("");
+  const [pkgIntervalKm, setPkgIntervalKm] = useState<number | string>(10000);
+  const [pkgIntervalMonths, setPkgIntervalMonths] = useState<number | string>(6);
   const [pkgFlatPrice, setPkgFlatPrice] = useState("");
   const [selectedLaborIdsForPkg, setSelectedLaborIdsForPkg] = useState<string[]>(["PMS-001", "PMS-002"]);
   const [pkgSearchLaborQuery, setPkgSearchLaborQuery] = useState("");
@@ -151,7 +152,8 @@ export default function AdminServicesPage() {
     setSelectedPackageDetail(pkg);
     setPkgTitle(pkg.packageName);
     setPkgDescription(pkg.description);
-    setPkgInterval(pkg.targetInterval);
+    setPkgIntervalKm(pkg.intervalKm || 10000);
+    setPkgIntervalMonths(pkg.intervalMonths || 6);
     setPkgFlatPrice(pkg.packagePrice.replace(/[^\d.]/g, ""));
 
     const matchedIds: string[] = [];
@@ -168,7 +170,8 @@ export default function AdminServicesPage() {
     setSelectedPackageDetail(null);
     setPkgTitle("");
     setPkgDescription("");
-    setPkgInterval("");
+    setPkgIntervalKm(10000);
+    setPkgIntervalMonths(6);
     setPkgFlatPrice("");
     setSelectedLaborIdsForPkg(["PMS-001", "PMS-002"]);
     setIsAddPackageModalOpen(true);
@@ -225,12 +228,17 @@ export default function AdminServicesPage() {
 
     const standaloneSumNum = calculateStandaloneSum(selectedLaborIdsForPkg, selectableItemsForPackagePicker);
     const finalPrice = pkgFlatPrice ? `₱${Number(pkgFlatPrice).toLocaleString()}.00` : `₱${standaloneSumNum.toLocaleString()}.00`;
+    const kmNum = Number(pkgIntervalKm) || 10000;
+    const monthsNum = Number(pkgIntervalMonths) || 6;
+    const autoIntervalStr = `Every ${kmNum.toLocaleString()} KM or ${monthsNum} Months`;
 
     if (selectedPackageDetail) {
       try {
         const updated = await apiService.updateBundle(selectedPackageDetail.id, {
           bundle_name: pkgTitle,
-          interval: pkgInterval || selectedPackageDetail.targetInterval,
+          interval_km: kmNum,
+          interval_months: monthsNum,
+          interval: autoIntervalStr,
           description: pkgDescription || selectedPackageDetail.description,
           original_price: standaloneSumNum,
           discounted_price: pkgFlatPrice ? parseFloat(pkgFlatPrice) : standaloneSumNum,
@@ -247,7 +255,9 @@ export default function AdminServicesPage() {
       try {
         const result = await apiService.createBundle({
           packageName: pkgTitle,
-          targetInterval: pkgInterval || "Custom Service Interval",
+          intervalKm: kmNum,
+          intervalMonths: monthsNum,
+          targetInterval: autoIntervalStr,
           description: pkgDescription || `Custom package bundling ${selectedLaborIdsForPkg.length} services.`,
           standaloneSum: `₱${standaloneSumNum.toLocaleString()}.00`,
           packagePrice: finalPrice,
@@ -264,8 +274,10 @@ export default function AdminServicesPage() {
     setSelectedPackageDetail(null);
     setPkgTitle("");
     setPkgDescription("");
-    setPkgInterval("");
+    setPkgIntervalKm(10000);
+    setPkgIntervalMonths(6);
     setPkgFlatPrice("");
+    setSelectedLaborIdsForPkg(["PMS-001", "PMS-002"]);
   };
 
   const handleDeletePackage = async (id: string, name: string) => {
@@ -574,8 +586,10 @@ export default function AdminServicesPage() {
             setPkgTitle={setPkgTitle}
             pkgDescription={pkgDescription}
             setPkgDescription={setPkgDescription}
-            pkgInterval={pkgInterval}
-            setPkgInterval={setPkgInterval}
+            pkgIntervalKm={pkgIntervalKm}
+            setPkgIntervalKm={setPkgIntervalKm}
+            pkgIntervalMonths={pkgIntervalMonths}
+            setPkgIntervalMonths={setPkgIntervalMonths}
             pkgFlatPrice={pkgFlatPrice}
             setPkgFlatPrice={setPkgFlatPrice}
             selectedLaborIdsForPkg={selectedLaborIdsForPkg}
