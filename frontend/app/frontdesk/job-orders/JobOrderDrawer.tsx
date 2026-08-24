@@ -70,6 +70,24 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
 }) => {
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [isAddingReminder, setIsAddingReminder] = useState(false);
+  const [hasReminder, setHasReminder] = useState(false);
+  const [checkingReminder, setCheckingReminder] = useState(false);
+
+  React.useEffect(() => {
+    if (!drawerJobOrder || drawerJobOrder.status !== "Job completed") return;
+    let isMounted = true;
+    setCheckingReminder(true);
+    apiService.getReminders().then((reminders) => {
+      if (!isMounted) return;
+      const exists = (reminders || []).some((r: any) => r.joId === drawerJobOrder.id);
+      setHasReminder(exists);
+      setCheckingReminder(false);
+    }).catch(() => {
+      if (!isMounted) return;
+      setCheckingReminder(false);
+    });
+    return () => { isMounted = false; };
+  }, [drawerJobOrder?.id, drawerJobOrder?.status]);
 
   if (!drawerJobOrder) return null;
 
@@ -613,36 +631,47 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                 Close
               </button>
               {drawerJobOrder.status === "Job completed" && (
-                <button
-                  onClick={async () => {
-                    if (isAddingReminder) return;
-                    setIsAddingReminder(true);
-                    try {
-                      const startOdo = parseInt(String(drawerJobOrder.odometer || "0").replace(/[^\d]/g, "")) || 0;
-                      const targetOdo = startOdo + 10000;
-                      const targetDt = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
-                      await apiService.createReminder({
-                        joId: drawerJobOrder.id,
-                        startDate: new Date().toISOString(),
-                        targetDate: targetDt,
-                        startOdometer: startOdo,
-                        targetOdometer: targetOdo,
-                        status: "Pending"
-                      });
-                      alert("Service reminder created successfully!");
-                    } catch (e) {
-                      console.error("Failed to create reminder from drawer", e);
-                      alert("Failed to create service reminder.");
-                    } finally {
-                      setIsAddingReminder(false);
-                    }
-                  }}
-                  disabled={isAddingReminder}
-                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  <Bell className="w-4 h-4" />
-                  <span>{isAddingReminder ? "Adding..." : "+ Add Reminder"}</span>
-                </button>
+                hasReminder ? (
+                  <button
+                    disabled
+                    className="px-4 py-2 bg-emerald-100 text-emerald-800 font-semibold text-xs rounded-xl shadow-2xs flex items-center gap-1.5 cursor-not-allowed opacity-90 border border-emerald-300"
+                  >
+                    <Check className="w-4 h-4 text-emerald-700" />
+                    <span>✓ Reminder Added</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={async () => {
+                      if (isAddingReminder || checkingReminder) return;
+                      setIsAddingReminder(true);
+                      try {
+                        const startOdo = parseInt(String(drawerJobOrder.odometer || "0").replace(/[^\d]/g, "")) || 0;
+                        const targetOdo = startOdo + 10000;
+                        const targetDt = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+                        await apiService.createReminder({
+                          joId: drawerJobOrder.id,
+                          startDate: new Date().toISOString(),
+                          targetDate: targetDt,
+                          startOdometer: startOdo,
+                          targetOdometer: targetOdo,
+                          status: "Pending"
+                        });
+                        setHasReminder(true);
+                        alert("Service reminder created successfully!");
+                      } catch (e) {
+                        console.error("Failed to create reminder from drawer", e);
+                        alert("Failed to create service reminder.");
+                      } finally {
+                        setIsAddingReminder(false);
+                      }
+                    }}
+                    disabled={isAddingReminder || checkingReminder}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    <Bell className="w-4 h-4" />
+                    <span>{checkingReminder ? "Checking..." : isAddingReminder ? "Adding..." : "+ Add Reminder"}</span>
+                  </button>
+                )
               )}
               {drawerJobOrder.status !== "Job completed" && (
                 (() => {

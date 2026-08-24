@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Phone, Edit3, Trash2, Car, Calendar, Gauge } from "lucide-react";
+import React, { useState } from "react";
+import { Phone, Edit3, Trash2, Gauge, Wrench, MoreVertical } from "lucide-react";
 
 export interface ReminderItem {
   id: string;
@@ -33,20 +33,7 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
   onDelete,
   isLoading
 }) => {
-  const getBadgeStyle = (status: string) => {
-    switch (status) {
-      case "Pending":
-        return "bg-amber-100 text-amber-800 border-amber-200";
-      case "Due":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "Overdue":
-        return "bg-rose-100 text-rose-800 border-rose-200";
-      case "Done":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      default:
-        return "bg-slate-100 text-slate-700 border-slate-200";
-    }
-  };
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
@@ -58,102 +45,197 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
     }
   };
 
+  const formatKm = (kmVal?: number) => {
+    if (kmVal === undefined || kmVal === null) return "0 km";
+    return `${kmVal.toLocaleString()} km`;
+  };
+
+  // Progress percentage calculation
+  const getProgressPercentage = (r: ReminderItem) => {
+    if (!r.startDate || !r.targetDate) return 0;
+    const start = new Date(r.startDate).getTime();
+    const target = new Date(r.targetDate).getTime();
+    const now = Date.now();
+
+    if (isNaN(start) || isNaN(target) || target <= start) return 0;
+    if (now <= start) return 0;
+    if (now >= target) return 100;
+
+    const pct = ((now - start) / (target - start)) * 100;
+    return Math.min(Math.max(pct, 0), 100);
+  };
+
+  const getProgressColor = (pct: number, status: string) => {
+    if (status === "Overdue" || pct >= 100) return "bg-rose-500";
+    if (status === "Due" || pct >= 75) return "bg-amber-500";
+    if (status === "Done") return "bg-emerald-600";
+    return "bg-emerald-500";
+  };
+
   if (isLoading) {
     return (
-      <div className="py-12 bg-white rounded-b-2xl border border-slate-200 border-t-0 text-center">
-        <div className="inline-block w-5 h-5 border-2 border-emerald-700 border-t-transparent rounded-full animate-spin mr-2" />
-        <span className="text-xs text-slate-500 font-medium">Loading reminders...</span>
+      <div className="py-16 bg-white rounded-3xl border border-slate-200 text-center shadow-xs">
+        <div className="inline-block w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin mr-2" />
+        <span className="text-sm text-slate-500 font-medium">Loading reminders...</span>
       </div>
     );
   }
 
   if (reminders.length === 0) {
     return (
-      <div className="py-12 px-4 bg-white rounded-b-2xl border border-slate-200 border-t-0 text-center space-y-2">
-        <Car className="w-8 h-8 text-slate-300 mx-auto" />
-        <h4 className="text-sm font-semibold text-slate-800">No maintenance reminders found</h4>
-        <p className="text-xs text-slate-400">Completed job orders will automatically create service reminders here.</p>
+      <div className="py-16 px-4 bg-white rounded-3xl border border-slate-200 text-center space-y-2 shadow-xs">
+        <Wrench className="w-10 h-10 text-slate-300 mx-auto" />
+        <h4 className="text-base font-bold text-slate-800">No maintenance reminders found</h4>
+        <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          Completed job orders will automatically populate service reminders here.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-b-2xl border border-slate-200 border-t-0 shadow-2xs divide-y divide-slate-100 text-xs">
-      {reminders.map((r) => (
-        <div
-          key={r.id}
-          className="grid grid-cols-12 py-3.5 px-5 items-center hover:bg-emerald-50/40 transition-colors group"
-        >
-          {/* VEHICLE & OWNER */}
-          <div className="col-span-3 flex flex-col justify-center pr-2">
-            <span className="font-extrabold text-slate-900 text-xs truncate">
-              {r.vehicleName || "Vehicle"}
-            </span>
-            <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-500 font-medium">
-              <span className="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-semibold">
-                {r.plateNumber || "No Plate"}
-              </span>
-              <span>•</span>
-              <span className="truncate">{r.ownerName || "Unknown Owner"}</span>
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      {reminders.map((r) => {
+        const progressPct = getProgressPercentage(r);
+        const progressColor = getProgressColor(progressPct, r.status);
+        const isMenuOpen = activeMenuId === r.id;
+
+        return (
+          <div
+            key={r.id}
+            className="bg-white rounded-3xl border-2 border-slate-800 p-5 shadow-xs flex flex-col justify-between relative hover:shadow-md transition-shadow"
+          >
+            <div>
+              {/* HEADER: Vehicle Title & 3-Dot Actions */}
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight line-clamp-1">
+                  {r.vehicleName || "Unknown Vehicle"}
+                </h3>
+
+                {/* 3-Dot Action Menu */}
+                <div className="relative shrink-0">
+                  <button
+                    onClick={() => setActiveMenuId(isMenuOpen ? null : r.id)}
+                    className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                    aria-label="Actions menu"
+                  >
+                    <MoreVertical className="w-5 h-5" />
+                  </button>
+
+                  {isMenuOpen && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setActiveMenuId(null)}
+                      />
+                      <div className="absolute right-0 top-8 z-20 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 text-xs font-semibold text-slate-700">
+                        {r.ownerPhone && (
+                          <a
+                            href={`tel:${r.ownerPhone}`}
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                          >
+                            <Phone className="w-4 h-4 text-emerald-600" />
+                            <span>Call Owner</span>
+                          </a>
+                        )}
+                        <button
+                          onClick={() => {
+                            setActiveMenuId(null);
+                            onEdit(r);
+                          }}
+                          className="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                        >
+                          <Edit3 className="w-4 h-4 text-slate-500" />
+                          <span>Edit</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setActiveMenuId(null);
+                            onDelete(r.id);
+                          }}
+                          className="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4 text-rose-500" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* SUBTITLE: Owner & Plate */}
+              <p className="text-xs text-slate-600 font-medium mb-4">
+                Owner: <span className="font-semibold text-slate-800">{r.ownerName || "Unknown Owner"}</span>
+                {" | "}
+                Plate no. <span className="font-mono font-semibold text-slate-800">{r.plateNumber || "N/A"}</span>
+              </p>
+
+              {/* TWO METRIC BOXES: Last Service & Last Odometer */}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {/* Last Service */}
+                <div className="border border-slate-300 rounded-2xl p-3 flex items-center gap-3 bg-slate-50/50">
+                  <div className="w-9 h-9 rounded-xl border border-slate-300 flex items-center justify-center shrink-0 bg-white shadow-2xs">
+                    <Wrench className="w-5 h-5 text-slate-800" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
+                      Last Service
+                    </span>
+                    <span className="block text-sm font-bold text-slate-900 truncate">
+                      {formatDate(r.startDate)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Last Odometer */}
+                <div className="border border-slate-300 rounded-2xl p-3 flex items-center gap-3 bg-slate-50/50">
+                  <div className="w-9 h-9 rounded-xl border border-slate-300 flex items-center justify-center shrink-0 bg-white shadow-2xs">
+                    <Gauge className="w-5 h-5 text-slate-800" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
+                      Last Odometer
+                    </span>
+                    <span className="block text-sm font-bold text-slate-900 font-mono truncate">
+                      {formatKm(r.startOdometer)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* DIVIDER */}
+              <hr className="border-t border-slate-300 mb-3" />
+
+              {/* DUE ODOMETER & NEXT SCHEDULE ROWS */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-xs font-semibold text-slate-600">Due Odometer</span>
+                  <span className="font-bold font-mono text-slate-900 text-base">
+                    {formatKm(r.targetOdometer)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-xs font-semibold text-slate-600">Next Schedule</span>
+                  <span className="font-bold font-mono text-slate-900 text-base">
+                    {formatDate(r.targetDate)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* TIMELINE PROGRESS BAR */}
+            <div className="mt-4 pt-2">
+              <div className="h-2 w-full bg-slate-100 rounded-full relative overflow-hidden border border-slate-200">
+                <div
+                  className={`h-full rounded-full transition-all duration-300 ${progressColor}`}
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
             </div>
           </div>
-
-          {/* LAST SERVICE ODOMETER */}
-          <div className="col-span-2 flex flex-col justify-center text-slate-700 font-medium">
-            <span className="font-mono font-bold text-slate-900 text-xs">
-              {r.startOdometer ? `${r.startOdometer.toLocaleString()} KM` : "0 KM"}
-            </span>
-            <span className="text-[10px] text-slate-400 font-mono mt-0.5">
-              Completed {formatDate(r.startDate)}
-            </span>
-          </div>
-
-          {/* TARGET DUE DATE */}
-          <div className="col-span-2 flex items-center gap-1.5 font-mono text-slate-800 font-bold">
-            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            <span>{formatDate(r.targetDate)}</span>
-          </div>
-
-          {/* TARGET ODOMETER */}
-          <div className="col-span-2 font-mono font-bold text-slate-800">
-            {r.targetOdometer ? `${r.targetOdometer.toLocaleString()} KM` : "N/A"}
-          </div>
-
-          {/* STATUS */}
-          <div className="col-span-2">
-            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold border ${getBadgeStyle(r.status)}`}>
-              {r.status}
-            </span>
-          </div>
-
-          {/* ACTIONS */}
-          <div className="col-span-1 flex items-center justify-end gap-1">
-            {r.ownerPhone && (
-              <a
-                href={`tel:${r.ownerPhone}`}
-                className="p-1.5 rounded-lg text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 transition-colors"
-                title={`Call ${r.ownerName} (${r.ownerPhone})`}
-              >
-                <Phone className="w-3.5 h-3.5" />
-              </a>
-            )}
-            <button
-              onClick={() => onEdit(r)}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-              title="Edit Reminder"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => onDelete(r.id)}
-              className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors"
-              title="Delete Reminder"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

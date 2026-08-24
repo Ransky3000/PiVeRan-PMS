@@ -162,20 +162,10 @@ export default function RemindersPage() {
               </div>
             </div>
           </div>
-
-          {/* TABLE HEADERS */}
-          <div className="bg-slate-100/90 text-slate-500 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 grid grid-cols-12 py-3 px-5 items-center mt-2 rounded-t-xl">
-            <div className="col-span-3">Vehicle & Owner</div>
-            <div className="col-span-2">Last Odometer</div>
-            <div className="col-span-2">Target Due Date</div>
-            <div className="col-span-2">Target Odometer</div>
-            <div className="col-span-2">Status</div>
-            <div className="col-span-1 text-right">Actions</div>
-          </div>
         </div>
 
-        {/* DATA ROWS */}
-        <section>
+        {/* CARDS CONTAINER */}
+        <section className="mt-6">
           <ReminderTable
             reminders={filteredReminders}
             onEdit={(r) => {
