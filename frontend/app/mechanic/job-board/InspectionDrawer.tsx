@@ -335,29 +335,41 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                                                     <div className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded-md uppercase tracking-wider border border-emerald-200/50">
                                                       Recommended for {item.name}
                                                     </div>
-                                                    {recommendedOptions.map((opt) => (
-                                                      <label
-                                                        key={opt.value}
-                                                        onClick={() => {
-                                                          setSelectedPartName(opt.value);
-                                                          setAddMaterialStep("SET_QUANTITY");
-                                                        }}
-                                                        className="flex items-center gap-2.5 py-2 px-3 hover:bg-emerald-50 bg-white rounded-xl cursor-pointer transition-colors border border-emerald-100/50 group/item"
-                                                      >
-                                                        <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
-                                                          selectedPartName === opt.value
-                                                            ? "border-emerald-600 bg-emerald-600"
-                                                            : "border-slate-300 bg-white group-hover/item:border-emerald-400"
-                                                        }`}>
-                                                          {selectedPartName === opt.value ? (
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                                                          ) : (
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover/item:bg-emerald-200/50" />
+                                                    {recommendedOptions.map((opt) => {
+                                                      const match = opt.label.match(/^(.*)\s+\((₱[\d,.]+)\)$/);
+                                                      return (
+                                                        <label
+                                                          key={opt.value}
+                                                          onClick={() => {
+                                                            setSelectedPartName(opt.value);
+                                                            setAddMaterialStep("SET_QUANTITY");
+                                                          }}
+                                                          className="flex items-center justify-between gap-2.5 py-2 px-3 hover:bg-emerald-50 bg-white rounded-xl cursor-pointer transition-colors border border-emerald-100/50 group/item"
+                                                        >
+                                                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                                                              selectedPartName === opt.value
+                                                                ? "border-emerald-600 bg-emerald-600"
+                                                                : "border-slate-300 bg-white group-hover/item:border-emerald-400"
+                                                            }`}>
+                                                              {selectedPartName === opt.value ? (
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                                              ) : (
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover/item:bg-emerald-200/50" />
+                                                              )}
+                                                            </div>
+                                                            <span className="text-xs font-semibold text-slate-800 group-hover/item:text-emerald-950 truncate">
+                                                              {match ? match[1] : opt.label}
+                                                            </span>
+                                                          </div>
+                                                          {match && (
+                                                            <span className="text-xs font-bold text-slate-600 group-hover/item:text-emerald-900 shrink-0 ml-auto">
+                                                              {match[2]}
+                                                            </span>
                                                           )}
-                                                        </div>
-                                                        <span className="text-xs font-semibold text-slate-800 group-hover/item:text-emerald-950">{opt.label}</span>
-                                                      </label>
-                                                    ))}
+                                                        </label>
+                                                      );
+                                                    })}
                                                   </div>
                                                 )}
 
@@ -368,29 +380,41 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                                                         Other Materials
                                                       </div>
                                                     )}
-                                                    {otherOptions.map((opt) => (
-                                                      <label
-                                                        key={opt.value}
-                                                        onClick={() => {
-                                                          setSelectedPartName(opt.value);
-                                                          setAddMaterialStep("SET_QUANTITY");
-                                                        }}
-                                                        className="flex items-center gap-2.5 py-2 px-3 hover:bg-red-50/80 bg-white rounded-xl cursor-pointer transition-colors border border-slate-100/80 hover:border-red-200 group/item"
-                                                      >
-                                                        <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
-                                                          selectedPartName === opt.value
-                                                            ? "border-red-600 bg-red-600"
-                                                            : "border-slate-300 bg-white group-hover/item:border-red-400"
-                                                        }`}>
-                                                          {selectedPartName === opt.value ? (
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                                                          ) : (
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover/item:bg-red-200/50" />
+                                                    {otherOptions.map((opt) => {
+                                                      const match = opt.label.match(/^(.*)\s+\((₱[\d,.]+)\)$/);
+                                                      return (
+                                                        <label
+                                                          key={opt.value}
+                                                          onClick={() => {
+                                                            setSelectedPartName(opt.value);
+                                                            setAddMaterialStep("SET_QUANTITY");
+                                                          }}
+                                                          className="flex items-center justify-between gap-2.5 py-2 px-3 hover:bg-red-50/80 bg-white rounded-xl cursor-pointer transition-colors border border-slate-100/80 hover:border-red-200 group/item"
+                                                        >
+                                                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors ${
+                                                              selectedPartName === opt.value
+                                                                ? "border-red-600 bg-red-600"
+                                                                : "border-slate-300 bg-white group-hover/item:border-red-400"
+                                                            }`}>
+                                                              {selectedPartName === opt.value ? (
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                                                              ) : (
+                                                                <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover/item:bg-red-200/50" />
+                                                              )}
+                                                            </div>
+                                                            <span className="text-xs font-semibold text-slate-800 group-hover/item:text-red-950 truncate">
+                                                              {match ? match[1] : opt.label}
+                                                            </span>
+                                                          </div>
+                                                          {match && (
+                                                            <span className="text-xs font-bold text-slate-600 group-hover/item:text-red-900 shrink-0 ml-auto">
+                                                              {match[2]}
+                                                            </span>
                                                           )}
-                                                        </div>
-                                                        <span className="text-xs font-semibold text-slate-800 group-hover/item:text-red-950">{opt.label}</span>
-                                                      </label>
-                                                    ))}
+                                                        </label>
+                                                      );
+                                                    })}
                                                   </div>
                                                 )}
                                               </>
