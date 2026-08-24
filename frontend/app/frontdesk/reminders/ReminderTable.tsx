@@ -187,7 +187,7 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                 </div>
 
                 {/* Last Odometer */}
-                <div className="flex items-center gap-3 py-1">
+                <div className="flex items-center gap-3 py-1 justify-self-end">
                   <Gauge className="w-6 h-6 text-slate-800 shrink-0" />
                   <div className="min-w-0">
                     <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
