@@ -57,9 +57,16 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     const startOdo = parseInt(String(jo.odometer || "0").replace(/[^\d]/g, "")) || 0;
     setTargetOdometer(startOdo + intervalKm);
 
+    // Safely parse completion/creation date
+    let baseDate = new Date();
+    const rawDate = jo.completedAt || jo.updatedAt || jo.createdAt;
+    if (rawDate) {
+      const parsed = new Date(rawDate);
+      if (!isNaN(parsed.getTime())) baseDate = parsed;
+    }
+
     // Compute target date based on bundle intervalMonths
-    const startDate = jo.updatedAt || jo.createdAt ? new Date(jo.updatedAt || jo.createdAt) : new Date();
-    const calculatedTarget = new Date(startDate);
+    const calculatedTarget = new Date(baseDate.getTime());
     calculatedTarget.setMonth(calculatedTarget.getMonth() + intervalMonths);
 
     const yyyy = calculatedTarget.getFullYear();
@@ -96,10 +103,14 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
       // Edit mode
       if (reminder.targetDate) {
         const d = new Date(reminder.targetDate);
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        const dd = String(d.getDate()).padStart(2, "0");
-        setTargetDate(`${yyyy}-${mm}-${dd}`);
+        if (!isNaN(d.getTime())) {
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          setTargetDate(`${yyyy}-${mm}-${dd}`);
+        } else {
+          setTargetDate("");
+        }
       } else {
         setTargetDate("");
       }
@@ -143,10 +154,19 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     }
   };
 
-  const jobSelectOptions: SelectOption[] = completedJobOrders.map((j) => ({
-    value: j.id,
-    label: `${j.vehicleName || "Vehicle"} (${j.plateNumber || "No Plate"}) - ${j.customerName || "Owner"} [JO #${j.id.slice(0, 6)}]`
-  }));
+  // Construct clear, human-readable labels for Front Desk
+  const jobSelectOptions: SelectOption[] = completedJobOrders.map((j) => {
+    const vName = j.vehicleModel || (j.vehicle ? `${j.vehicle.year || ''} ${j.vehicle.make || ''} ${j.vehicle.model || ''}`.trim() : '') || "Vehicle";
+    const plate = j.plateNumber || j.plate_number || j.vehicle?.plate_number || "";
+    const owner = j.ownerName || j.customerName || j.owner?.name || "Customer";
+    const service = j.serviceType || "PMS";
+
+    const plateStr = plate ? `(${plate})` : "";
+    return {
+      value: j.id,
+      label: `${vName} ${plateStr} — ${owner} • ${service}`
+    };
+  });
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50">
@@ -197,7 +217,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              Target Due Date (Status Trigger)
+              Target Due Date (Auto-Filled)
             </label>
             <input
               type="date"
