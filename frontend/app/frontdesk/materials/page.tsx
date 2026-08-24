@@ -66,7 +66,7 @@ function MaterialDetailDrawer({
   };
 
   const inputCls =
-    "w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-sm font-semibold text-slate-800 outline-none focus:border-emerald-600 focus:bg-white transition-all";
+    "w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-sm font-medium text-slate-800 outline-none focus:border-emerald-600 focus:bg-white transition-all";
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -91,8 +91,8 @@ function MaterialDetailDrawer({
               <Boxes className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Material Details</h3>
-              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">View & Edit Item</p>
+              <h3 className="font-bold text-slate-900 text-sm">Material Details</h3>
+              <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">View & Edit Item</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -114,21 +114,21 @@ function MaterialDetailDrawer({
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Item Information</h4>
+              <h4 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Item Information</h4>
               {isDirty && (
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-amber-200">
+                <span className="bg-amber-100 text-amber-800 text-[10px] font-semibold px-2.5 py-0.5 rounded-full border border-amber-200">
                   Unsaved Changes
                 </span>
               )}
             </div>
             <div className="bg-slate-50 rounded-2xl border border-slate-100 p-4 space-y-4">
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Item Name</span>
+                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Item Name</span>
                 <input value={editName} onChange={(e) => setEditName(e.target.value)} className={inputCls} />
               </div>
 
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Description</span>
+                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Description</span>
                 <textarea
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
@@ -138,13 +138,13 @@ function MaterialDetailDrawer({
               </div>
 
               <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Price (₱)</span>
+                <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Price (₱)</span>
                 <input
                   type="number"
                   step="0.01"
                   value={editPrice}
                   onChange={(e) => setEditPrice(e.target.value)}
-                  className={`${inputCls} font-extrabold text-emerald-800`}
+                  className={`${inputCls} text-emerald-700 font-semibold`}
                 />
               </div>
             </div>
@@ -268,7 +268,7 @@ export default function MaterialsPage() {
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Materials</h1>
+              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Materials</h1>
               <p className="text-xs text-slate-500 font-medium mt-0.5">Manage workshop materials, parts, and pricing</p>
             </div>
             <div>
@@ -322,7 +322,7 @@ export default function MaterialsPage() {
           </div>
 
           {/* TABLE HEADERS */}
-          <div className="bg-slate-100/90 text-slate-500 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200 grid grid-cols-12 py-3 px-5 items-center mt-2 rounded-t-xl">
+          <div className="bg-slate-100/90 text-slate-500 font-semibold uppercase tracking-wider text-[10px] border-b border-slate-200 grid grid-cols-12 py-3 px-5 items-center mt-2 rounded-t-xl">
             <div className="col-span-4">Item Name</div>
             <div className="col-span-5">Description</div>
             <div className="col-span-3 text-right">Price (₱)</div>
@@ -347,7 +347,7 @@ export default function MaterialsPage() {
                   className="grid grid-cols-12 py-3.5 px-5 items-center hover:bg-emerald-50/60 cursor-pointer transition-colors group"
                 >
                   {/* Name */}
-                  <div className="col-span-4 pr-2 font-bold text-slate-900">{item.name}</div>
+                  <div className="col-span-4 pr-2 font-semibold text-slate-900">{item.name}</div>
 
                   {/* Description */}
                   <div className="col-span-5 pr-2 text-slate-500 font-normal truncate">
@@ -355,7 +355,7 @@ export default function MaterialsPage() {
                   </div>
 
                   {/* Price */}
-                  <div className="col-span-3 text-right font-extrabold text-emerald-800">
+                  <div className="col-span-3 text-right font-semibold text-emerald-700">
                     ₱{Number(item.price).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </div>
                 </div>
@@ -389,12 +389,12 @@ export default function MaterialsPage() {
                 <X className="w-4 h-4" />
               </button>
               <div>
-                <h3 className="text-base font-extrabold text-slate-900">Add Material</h3>
+                <h3 className="text-base font-bold text-slate-900">Add Material</h3>
                 <p className="text-xs text-slate-500">Register a new material item in the database</p>
               </div>
               <form onSubmit={handleAddMaterial} className="space-y-3.5">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Item Name</label>
+                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Item Name</label>
                   <input
                     type="text"
                     required
@@ -405,7 +405,7 @@ export default function MaterialsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description</label>
+                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Description</label>
                   <textarea
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
@@ -414,7 +414,7 @@ export default function MaterialsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Price (₱)</label>
+                  <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Price (₱)</label>
                   <input
                     type="number"
                     step="0.01"
