@@ -358,12 +358,12 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover/item:bg-emerald-200/50" />
                                                               )}
                                                             </div>
-                                                            <span className="text-xs font-semibold text-slate-800 group-hover/item:text-emerald-950 truncate">
+                                                            <span className="text-xs font-medium text-slate-700 group-hover/item:text-emerald-950 truncate">
                                                               {match ? match[1] : opt.label}
                                                             </span>
                                                           </div>
                                                           {match && (
-                                                            <span className="text-xs font-bold text-slate-600 group-hover/item:text-emerald-900 shrink-0 ml-auto">
+                                                            <span className="text-xs font-mono font-medium text-slate-500 group-hover/item:text-slate-700 shrink-0 ml-auto">
                                                               {match[2]}
                                                             </span>
                                                           )}
@@ -403,12 +403,12 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                                                                 <div className="w-1.5 h-1.5 rounded-full bg-transparent group-hover/item:bg-red-200/50" />
                                                               )}
                                                             </div>
-                                                            <span className="text-xs font-semibold text-slate-800 group-hover/item:text-red-950 truncate">
+                                                            <span className="text-xs font-medium text-slate-700 group-hover/item:text-red-950 truncate">
                                                               {match ? match[1] : opt.label}
                                                             </span>
                                                           </div>
                                                           {match && (
-                                                            <span className="text-xs font-bold text-slate-600 group-hover/item:text-red-900 shrink-0 ml-auto">
+                                                            <span className="text-xs font-mono font-medium text-slate-500 group-hover/item:text-slate-700 shrink-0 ml-auto">
                                                               {match[2]}
                                                             </span>
                                                           )}
