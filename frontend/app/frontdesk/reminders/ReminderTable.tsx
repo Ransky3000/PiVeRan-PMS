@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Phone, Edit3, Trash2, Gauge, Wrench, MoreVertical } from "lucide-react";
+import { Phone, Edit3, Trash2, Gauge, Wrench, MoreVertical, CheckCircle2 } from "lucide-react";
 
 export interface ReminderItem {
   id: string;
@@ -137,6 +137,18 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                             <Phone className="w-4 h-4 text-emerald-600" />
                             <span>Call Owner</span>
                           </a>
+                        )}
+                        {r.status !== "Done" && (
+                          <button
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              onEdit({ ...r, status: "Done" });
+                            }}
+                            className="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                          >
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span>Mark Completed</span>
+                          </button>
                         )}
                         <button
                           onClick={() => {
