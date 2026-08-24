@@ -482,7 +482,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                             />
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="text-[11px] text-slate-400 font-normal">₱</span>
+                            <span className="text-[11px] text-slate-400 font-mono">₱</span>
                             <input
                               type="number"
                               min="0"
@@ -492,11 +492,11 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                                 const parsed = val === "" ? 0 : parseInt(val);
                                 updateEstimateLine(item.id, { unitPrice: isNaN(parsed) ? 0 : parsed });
                               }}
-                              className="w-16 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-center font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-400/20 text-xs"
+                              className="w-16 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-center font-mono font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-400/20 text-xs"
                             />
                           </div>
                         </div>
-                        <span className="font-semibold text-slate-900 text-xs">
+                        <span className="font-mono font-bold text-slate-900 text-xs">
                           ₱{lineTotal.toLocaleString()}
                         </span>
                       </div>
@@ -511,18 +511,18 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                   <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5 space-y-2 mt-3 text-xs">
                     <div className="flex items-center justify-between font-normal text-slate-600">
                       <span>{calc.materialsLabel}</span>
-                      <span className="font-medium text-slate-900">₱{calc.materialsSubtotal.toLocaleString()}</span>
+                      <span className="font-mono font-bold text-slate-900">₱{calc.materialsSubtotal.toLocaleString()}</span>
                     </div>
 
                     <div className="flex items-center justify-between font-normal text-slate-600">
                       <span>{drawerJobOrder.serviceType}</span>
-                      <span className="font-medium text-slate-900">₱{calc.laborFee.toLocaleString()}</span>
+                      <span className="font-mono font-bold text-slate-900">₱{calc.laborFee.toLocaleString()}</span>
                     </div>
 
                     <div className="flex items-center justify-between font-normal text-slate-600">
                       <span>Discount</span>
                       <div className="flex items-center gap-1">
-                        <span className="text-slate-400 font-normal">₱</span>
+                        <span className="text-slate-400 font-mono">₱</span>
                         <input
                           type="number"
                           min="0"
@@ -532,7 +532,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                             const parsed = val === "" ? 0 : parseInt(val);
                             updateDrawerJO({ discount: isNaN(parsed) ? 0 : Math.max(0, parsed) });
                           }}
-                          className="w-16 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-right font-medium text-slate-900 outline-none focus:border-emerald-500 text-xs"
+                          className="w-16 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-right font-mono font-medium text-slate-900 outline-none focus:border-emerald-500 text-xs"
                         />
                       </div>
                     </div>
@@ -550,7 +550,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                       </div>
                       <div className="flex items-center justify-between text-xs font-bold text-slate-900 pt-1">
                         <span>Grand Total</span>
-                        <span className="text-emerald-700 font-bold text-sm">₱{calc.grandTotal.toLocaleString()}</span>
+                        <span className="text-emerald-700 font-mono font-bold text-sm">₱{calc.grandTotal.toLocaleString()}</span>
                       </div>
                     </div>
                   </div>
