@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Gauge, Car } from "lucide-react";
+import { X, Calendar, Gauge, Car, Wrench } from "lucide-react";
 import { ReminderItem } from "./ReminderTable";
 import { apiService } from "@/app/apiService";
 import { CustomSelect, SelectOption } from "@/components/CustomSelect";
@@ -27,6 +27,23 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   const [targetDate, setTargetDate] = useState("");
   const [targetOdometer, setTargetOdometer] = useState<number>(10000);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Friendly date formatting e.g. "Aug 24, 2026"
+  const formatDateFriendly = (dateStr: string) => {
+    if (!dateStr) return "N/A";
+    try {
+      const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  const formatKm = (kmVal?: number) => {
+    if (kmVal === undefined || kmVal === null) return "0 km";
+    return `${kmVal.toLocaleString()} km`;
+  };
 
   // Compute status based on target date and 7-day advance notice window
   const computeStatusFromDate = (targetDateStr: string, currentStatus?: string): "Pending" | "Due" | "Overdue" | "Done" => {
@@ -154,6 +171,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     }
   };
 
+  // Currently selected Job Order object for history preview matching card details
+  const selectedJo = completedJobOrders.find((j) => j.id === selectedJoId);
+  const selectedJoOdo = selectedJo ? parseInt(String(selectedJo.odometer || "0").replace(/[^\d]/g, "")) || 0 : 0;
+  const selectedJoDate = selectedJo ? (selectedJo.completedAt || selectedJo.updatedAt || selectedJo.createdAt) : "";
+
   // Construct clear, human-readable labels for Front Desk
   const jobSelectOptions: SelectOption[] = completedJobOrders.map((j) => {
     const vName = j.vehicleModel || (j.vehicle ? `${j.vehicle.year || ''} ${j.vehicle.make || ''} ${j.vehicle.model || ''}`.trim() : '') || "Vehicle";
@@ -194,21 +216,49 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {!reminder && (
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Car className="w-3.5 h-3.5 text-slate-400" />
-                Select Completed Job Order
-              </label>
-              {completedJobOrders.length > 0 ? (
-                <CustomSelect
-                  options={jobSelectOptions}
-                  value={selectedJoId}
-                  onChange={(val) => handleSelectJobOrder(val, completedJobOrders, bundles)}
-                  placeholder="Select completed job order..."
-                />
-              ) : (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
-                  No completed job orders available to schedule a reminder.
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+                  <Car className="w-3.5 h-3.5 text-slate-400" />
+                  Select Completed Job Order
+                </label>
+                {completedJobOrders.length > 0 ? (
+                  <CustomSelect
+                    options={jobSelectOptions}
+                    value={selectedJoId}
+                    onChange={(val) => handleSelectJobOrder(val, completedJobOrders, bundles)}
+                    placeholder="Select completed job order..."
+                  />
+                ) : (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                    No completed job orders available to schedule a reminder.
+                  </div>
+                )}
+              </div>
+
+              {/* CARD DETAILS PREVIEW: Last Service & Last Odometer History */}
+              {selectedJo && (
+                <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    <span>Owner: <strong className="text-slate-800 dark:text-slate-200">{selectedJo.ownerName || selectedJo.customerName || "Customer"}</strong></span>
+                    <span>Plate no. <strong className="font-mono text-slate-800 dark:text-slate-200">{selectedJo.plateNumber || "N/A"}</strong></span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200/80 dark:border-slate-700/60">
+                    <div className="flex items-center gap-2.5">
+                      <Wrench className="w-5 h-5 text-slate-800 dark:text-slate-200 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Last Service</span>
+                        <span className="block text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{formatDateFriendly(selectedJoDate)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      <Gauge className="w-5 h-5 text-slate-800 dark:text-slate-200 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Last Odometer</span>
+                        <span className="block text-xs font-bold text-slate-900 dark:text-slate-100 font-mono truncate">{formatKm(selectedJoOdo)}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -216,22 +266,8 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              Target Due Date (Auto-Filled)
-            </label>
-            <input
-              type="date"
-              required
-              value={targetDate}
-              onChange={(e) => setTargetDate(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Gauge className="w-3.5 h-3.5 text-slate-400" />
-              Target Odometer (Informational Reference)
+              Due Odometer
             </label>
             <div className="relative">
               <input
@@ -241,7 +277,34 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                 onChange={(e) => setTargetOdometer(Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all"
               />
-              <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400">KM</span>
+              <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400">km</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              Next Schedule
+            </label>
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                readOnly
+                value={formatDateFriendly(targetDate)}
+                onClick={() => {
+                  const el = document.getElementById("target-date-picker-input");
+                  if (el && 'showPicker' in el) (el as any).showPicker();
+                }}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all cursor-pointer"
+              />
+              <input
+                id="target-date-picker-input"
+                type="date"
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
+                className="absolute right-3 opacity-0 w-6 h-6 cursor-pointer"
+              />
+              <Calendar className="w-4 h-4 text-slate-500 absolute right-3.5 pointer-events-none" />
             </div>
           </div>
 
