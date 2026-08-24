@@ -167,7 +167,7 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                   {drawerJobOrder.inspectionItems.map((item: InspectionItem, idx: number) => {
                     const isExpanded = expandedIndex === idx;
                     return (
-                      <div key={idx} className={`bg-slate-50 border border-slate-200 rounded-xl transition-all shadow-2xs relative ${isExpanded ? "overflow-visible z-30" : "overflow-hidden z-0"}`}>
+                      <div key={idx} className={`bg-slate-50 border rounded-2xl transition-all overflow-hidden relative ${isExpanded ? "border-slate-300 shadow-xs z-10" : "border-slate-200 z-0"}`}>
                         <div
                           onClick={() => setExpandedIndex(isExpanded ? null : idx)}
                           className={`px-4 py-3 flex items-center justify-between gap-3 cursor-pointer transition-colors select-none ${
@@ -194,7 +194,7 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                             className="overflow-hidden"
                           >
-                          <div className="px-4 pb-4 pt-3 bg-white space-y-3.5">
+                          <div className="px-4 pb-4 pt-3 bg-white space-y-3.5 rounded-b-2xl">
                             {/* Status Buttons */}
                             <div>
                               <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Status</div>
@@ -632,7 +632,7 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                             className="overflow-hidden"
                           >
-                          <div className="px-4 pb-4 pt-3 bg-white space-y-4 text-xs">
+                          <div className="px-4 pb-4 pt-3 bg-white space-y-4 text-xs rounded-b-2xl">
                             <div>
                               <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">STATUS</div>
                               <div className={`text-sm font-bold ${statusColorClass}`}>{statusLabel}</div>

@@ -261,7 +261,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                           className="overflow-hidden"
                         >
-                        <div className="px-4 pb-4 pt-3 bg-white space-y-4 text-xs">
+                        <div className="px-4 pb-4 pt-3 bg-white space-y-4 text-xs rounded-b-2xl">
                           <div>
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                               STATUS
