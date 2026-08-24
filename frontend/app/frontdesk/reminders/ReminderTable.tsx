@@ -187,7 +187,7 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                 </div>
 
                 {/* Last Odometer */}
-                <div className="flex items-center gap-3 py-1 justify-self-end">
+                <div className="flex items-center gap-3 py-1">
                   <Gauge className="w-6 h-6 text-slate-800 shrink-0" />
                   <div className="min-w-0">
                     <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
@@ -221,7 +221,7 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
             </div>
 
             {/* TIMELINE PROGRESS BAR */}
-            <div className="mt-4 pt-2">
+            <div className="mt-2.5">
               <div className="h-2 w-full bg-slate-100 rounded-full relative overflow-hidden border border-slate-200">
                 <div
                   className={`h-full rounded-full transition-all duration-300 ${progressColor}`}
