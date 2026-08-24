@@ -88,3 +88,5 @@ class JobOrderUpdate(BaseModel):
     odometer: Optional[int] = None
     bundle_id: Optional[str] = None
     mechanic_names: Optional[List[str]] = None
+    discount: Optional[float] = None
+    estimate_comment: Optional[str] = None

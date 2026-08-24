@@ -218,32 +218,36 @@ async def update_job_order(jo_id: str, data: JobOrderUpdate, db: Session = Depen
     if not jo:
         raise HTTPException(status_code=404, detail="Job Order not found")
         
-    if jo.status != JobOrderStatus.NEW:
-        raise HTTPException(status_code=400, detail="Cannot edit a Job Order that is no longer in New status")
+    if data.discount is not None:
+        jo.discount = data.discount
         
-    if data.odometer is not None:
-        jo.odometer = data.odometer
-        
-    if data.mechanic_names is not None:
-        mechanics = db.query(UserAccount).filter(UserAccount.name.in_(data.mechanic_names)).all()
-        jo.mechanics = mechanics
-        
-    if data.bundle_id is not None and data.bundle_id != jo.bundle_id:
-        bundle = db.query(Bundle).filter(Bundle.bundle_id == data.bundle_id).first()
-        if not bundle:
-            raise HTTPException(status_code=404, detail="Bundle not found")
-        jo.bundle_id = data.bundle_id
-        
-        # Re-resolve checklist items
-        db.query(ChecklistDetail).filter(ChecklistDetail.jo_id == jo_id).delete()
-        resolved_labors = resolve_bundle_services(data.bundle_id, db)
-        for labor in resolved_labors:
-            detail = ChecklistDetail(
-                jo_id=jo_id,
-                labor_id=labor.labor_id,
-                status=InspectionStatus.PENDING
-            )
-            db.add(detail)
+    if data.estimate_comment is not None:
+        jo.estimate_comment = data.estimate_comment
+
+    if jo.status == JobOrderStatus.NEW:
+        if data.odometer is not None:
+            jo.odometer = data.odometer
+            
+        if data.mechanic_names is not None:
+            mechanics = db.query(UserAccount).filter(UserAccount.name.in_(data.mechanic_names)).all()
+            jo.mechanics = mechanics
+            
+        if data.bundle_id is not None and data.bundle_id != jo.bundle_id:
+            bundle = db.query(Bundle).filter(Bundle.bundle_id == data.bundle_id).first()
+            if not bundle:
+                raise HTTPException(status_code=404, detail="Bundle not found")
+            jo.bundle_id = data.bundle_id
+            
+            # Re-resolve checklist items
+            db.query(ChecklistDetail).filter(ChecklistDetail.jo_id == jo_id).delete()
+            resolved_labors = resolve_bundle_services(data.bundle_id, db)
+            for labor in resolved_labors:
+                detail = ChecklistDetail(
+                    jo_id=jo_id,
+                    labor_id=labor.labor_id,
+                    status=InspectionStatus.PENDING
+                )
+                db.add(detail)
             
     db.commit()
     db.refresh(jo)
@@ -347,6 +351,25 @@ async def update_cart_decision(cd_id: str, cart_id: str, payload: dict, db: Sess
     db.commit()
     await ws_manager.broadcast({"type": "JOB_ORDER_UPDATED", "jo_id": detail.jo_id})
     return {"message": "Cart decision updated successfully"}
+
+@router.put("/checklist-items/{cd_id}/cart/{cart_id}")
+async def update_cart_item(cd_id: str, cart_id: str, payload: dict, db: Session = Depends(get_db)):
+    detail = db.query(ChecklistDetail).filter(ChecklistDetail.cd_id == cd_id).first()
+    if not detail:
+        raise HTTPException(status_code=404, detail="Checklist item not found")
+
+    cart_item = db.query(Cart).filter(Cart.cart_id == cart_id).first()
+    if not cart_item:
+        raise HTTPException(status_code=404, detail="Cart item not found")
+
+    if "quantity" in payload and payload["quantity"] is not None:
+        cart_item.quantity = payload["quantity"]
+    if "price" in payload and payload["price"] is not None:
+        cart_item.price = payload["price"]
+
+    db.commit()
+    await ws_manager.broadcast({"type": "JOB_ORDER_UPDATED", "jo_id": detail.jo_id})
+    return {"message": "Cart item updated successfully"}
 
 @router.delete("/checklist-items/{cd_id}/cart/{cart_id}")
 async def remove_cart_item(cd_id: str, cart_id: str, db: Session = Depends(get_db)):

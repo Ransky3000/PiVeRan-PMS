@@ -197,10 +197,27 @@ export const apiService = {
     }
   },
 
+  updateCartItem: async (cd_id: string | number, cart_id: string, updates: { quantity?: number; price?: number }) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart/${cart_id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates)
+      });
+      if (!res.ok) throw new Error("Failed to update cart item");
+      return await res.json();
+    } catch (e) {
+      console.warn(`Backend unavailable, mock updating cart item`, e);
+      return { message: "Updated cart item (mock)", cd_id, cart_id, ...updates };
+    }
+  },
+
   updateJobOrder: async (id: string, payload: {
     odometer?: number;
     bundle_id?: string;
     mechanic_names?: string[];
+    discount?: number;
+    estimate_comment?: string;
   }) => {
     try {
       const res = await fetch(`${API_BASE_URL}/job-orders/${id}`, {

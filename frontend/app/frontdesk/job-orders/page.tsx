@@ -333,6 +333,14 @@ export default function JobOrdersPage() {
       if (!prev) return null;
       const updated = { ...prev, ...updates };
       setJobOrders((list) => list.map((jo) => (jo.id === updated.id ? updated : jo)));
+
+      if (updates.discount !== undefined || updates.estimateComment !== undefined) {
+        apiService.updateJobOrder(updated.id, {
+          discount: updates.discount,
+          estimate_comment: updates.estimateComment
+        }).catch((err) => console.warn("Failed to persist job order updates", err));
+      }
+
       return updated;
     });
   };
@@ -381,6 +389,21 @@ export default function JobOrdersPage() {
               if (insItem.id && m.cart_id && !updatedCartIds.has(m.cart_id)) {
                 updatedCartIds.add(m.cart_id);
                 apiService.updateCartItemDecision(insItem.id, m.cart_id, decisionStr);
+              }
+            }
+          });
+        });
+      }
+
+      if (updates.qty !== undefined || updates.unitPrice !== undefined) {
+        (prev.inspectionItems || []).forEach((insItem) => {
+          (insItem.requiredMaterials || []).forEach((m: any) => {
+            if (typeof m === "object" && (m.cart_id === lineId || m.material_id === lineId || m.name === lineId)) {
+              if (insItem.id && m.cart_id) {
+                apiService.updateCartItem(insItem.id, m.cart_id, {
+                  quantity: updates.qty,
+                  price: updates.unitPrice
+                }).catch((err) => console.warn("Failed to update cart item qty/price", err));
               }
             }
           });
