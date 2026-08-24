@@ -174,7 +174,7 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
               {/* TWO METRIC BOXES: Last Service & Last Odometer */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 {/* Last Service */}
-                <div className="border border-slate-300 rounded-2xl p-3 flex items-center gap-3 bg-slate-50/50">
+                <div className="flex items-center gap-3 py-1">
                   <Wrench className="w-6 h-6 text-slate-800 shrink-0" />
                   <div className="min-w-0">
                     <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
@@ -187,7 +187,7 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                 </div>
 
                 {/* Last Odometer */}
-                <div className="border border-slate-300 rounded-2xl p-3 flex items-center gap-3 bg-slate-50/50">
+                <div className="flex items-center gap-3 py-1">
                   <Gauge className="w-6 h-6 text-slate-800 shrink-0" />
                   <div className="min-w-0">
                     <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
