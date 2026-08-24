@@ -6,8 +6,8 @@ from backend.app.schemas.master import VehicleResponse, OwnerResponse
 
 class ReminderCreate(BaseModel):
     jo_id: Optional[str] = None
-    vehicle_id: str
-    owner_id: str
+    vehicle_id: Optional[str] = None
+    owner_id: Optional[str] = None
     start_date: Optional[datetime] = None
     target_date: datetime
     start_odometer: Optional[int] = 0

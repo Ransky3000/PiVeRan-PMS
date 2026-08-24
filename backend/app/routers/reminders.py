@@ -52,6 +52,9 @@ async def create_reminder(data: ReminderCreate, db: Session = Depends(get_db)):
             v_id = v_id or jo.vehicle_id
             o_id = o_id or jo.owner_id
 
+    if not v_id or not o_id:
+        raise HTTPException(status_code=400, detail="vehicle_id and owner_id are required")
+
     new_reminder = Reminder(
         jo_id=data.jo_id,
         vehicle_id=v_id,
