@@ -53,7 +53,7 @@ export const ProofLightbox: React.FC<ProofLightboxProps> = ({
       };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex flex-col p-4 sm:p-6">
+    <div className="fixed inset-0 z-[100] bg-slate-950/95 flex flex-col p-4 sm:p-6">
       <div className="flex items-center justify-between border-b border-slate-800 pb-3 shrink-0">
         <div className="flex items-center gap-3">
           <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border uppercase tracking-wider ${lightboxStyle.bgBadge}`}>

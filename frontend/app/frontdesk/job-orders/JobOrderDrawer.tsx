@@ -78,7 +78,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 z-40 bg-slate-950/30 backdrop-blur-xs"
+        className="fixed inset-0 z-40 bg-slate-950/40"
       />
 
       {/* Drawer Panel */}

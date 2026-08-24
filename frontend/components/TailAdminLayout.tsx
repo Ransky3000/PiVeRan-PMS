@@ -144,7 +144,7 @@ export function TailAdminLayout({
       {isMobileOpen && (
         <div
           onClick={() => setIsMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden"
         />
       )}
 

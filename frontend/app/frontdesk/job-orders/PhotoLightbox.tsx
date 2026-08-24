@@ -25,7 +25,7 @@ export const PhotoLightbox: React.FC<PhotoLightboxProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[200] bg-slate-950/90 backdrop-blur-md flex flex-col p-6 text-white">
+      <div className="fixed inset-0 z-[200] bg-slate-950/95 flex flex-col p-6 text-white">
         {/* Lightbox Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 shrink-0">
           <div>

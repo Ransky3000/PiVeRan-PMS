@@ -156,7 +156,7 @@ export function CustomSelect({
             initial={{ opacity: 0, y: dropUp ? -4 : 4, scale: 0.99 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: dropUp ? -4 : 4, scale: 0.99 }}
-            transition={{ duration: 0.1 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
             className={`absolute z-[80] w-full min-w-[220px] bg-white rounded-xl border border-slate-200 shadow-xl py-1 max-h-56 overflow-hidden flex flex-col ${
               dropUp ? "bottom-full mb-1.5" : "top-full mt-1.5"
             } ${align === "right" ? "right-0" : "left-0"} ${menuClassName}`}

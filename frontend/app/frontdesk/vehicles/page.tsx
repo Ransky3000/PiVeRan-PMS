@@ -70,7 +70,7 @@ function VehicleDetailDrawer({ vehicle, onClose, onSaved, onDeleted }: { vehicle
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="absolute inset-0 bg-slate-950/20 backdrop-blur-xs"
+        className="absolute inset-0 bg-slate-950/30"
       />
       <motion.div
         initial={{ x: "100%" }}
@@ -392,7 +392,7 @@ export default function VehiclesPage() {
         </motion.div>
 
         {/* STICKY AREA: SEARCH BAR */}
-        <div className="sticky top-0 z-30 bg-slate-50/95 backdrop-blur-md pt-2 pb-0 border-b border-slate-200/90 shadow-2xs -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 transition-all">
+        <div className="sticky top-0 z-30 bg-slate-50 pt-2 pb-0 border-b border-slate-200/90 shadow-2xs -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 transition-all">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60">
             <div className="flex items-center gap-2">
               <div className="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 bg-slate-900 text-white shadow-xs">
@@ -486,7 +486,7 @@ export default function VehiclesPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsAddModalOpen(false)}
-              className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs"
+              className="absolute inset-0 bg-slate-950/50"
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}

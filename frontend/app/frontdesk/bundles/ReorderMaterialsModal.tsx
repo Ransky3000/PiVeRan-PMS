@@ -37,7 +37,7 @@ export const ReorderMaterialsModal: React.FC<ReorderMaterialsModalProps> = ({
   const standaloneSum = calculateStandaloneSum(selectedLaborIds, selectableItems);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -144,6 +144,7 @@ export const ReorderMaterialsModal: React.FC<ReorderMaterialsModalProps> = ({
                 axis="y"
                 values={selectedLaborIds}
                 onReorder={onReorder}
+                layoutScroll
                 className="flex-1 overflow-y-auto space-y-1.5 pr-1 bg-slate-50/60 p-2.5 rounded-2xl border border-slate-200/60"
               >
                 {selectedLaborIds.map((id) => {
@@ -153,7 +154,7 @@ export const ReorderMaterialsModal: React.FC<ReorderMaterialsModalProps> = ({
                     <Reorder.Item
                       key={id}
                       value={id}
-                      whileDrag={{ scale: 1.03, boxShadow: "0px 10px 25px rgba(0,0,0,0.15)", zIndex: 50 }}
+                      whileDrag={{ scale: 1.02, boxShadow: "0 4px 12px rgba(0,0,0,0.1)", zIndex: 50 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
                       className={`p-2.5 rounded-xl border shadow-2xs flex items-center justify-between text-xs cursor-grab active:cursor-grabbing select-none ${
                         item.isPackageItem
