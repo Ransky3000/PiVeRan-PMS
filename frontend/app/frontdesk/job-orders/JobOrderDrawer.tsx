@@ -649,7 +649,9 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                         const targetOdo = startOdo + 10000;
                         const targetDt = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
                         await apiService.createReminder({
-                          joId: drawerJobOrder.id,
+                          joId: drawerJobOrder.id || drawerJobOrder.joId,
+                          vehicleId: drawerJobOrder.vehicleId,
+                          ownerId: drawerJobOrder.ownerId,
                           startDate: new Date().toISOString(),
                           targetDate: targetDt,
                           startOdometer: startOdo,

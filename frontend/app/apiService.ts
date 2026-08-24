@@ -46,8 +46,15 @@ export function normalizeJobOrder(be: any): any {
     provisioning: e.provisioning
   }));
 
+  const joId = be.jo_id || be.id || "";
+  const vehicleId = be.vehicle_id || be.vehicle?.vehicle_id || be.vehicle?.id || "";
+  const ownerId = be.owner_id || be.owner?.owner_id || be.owner?.id || "";
+
   return {
-    id: be.id,
+    id: joId,
+    joId,
+    vehicleId,
+    ownerId,
     ownerName: be.owner?.name || "",
     ownerPhone: be.owner?.phone || "",
     ownerFb: be.owner?.fb_handle || "",

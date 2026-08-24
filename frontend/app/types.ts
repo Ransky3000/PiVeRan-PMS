@@ -44,6 +44,9 @@ export interface EstimateLineItem {
 
 export interface JobOrder {
   id: string;
+  joId?: string;
+  vehicleId?: string;
+  ownerId?: string;
   ownerName: string;
   ownerPhone: string;
   ownerFb: string;
