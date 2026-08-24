@@ -241,7 +241,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                         onClick={() => setExpandedItemId(isExpanded ? null : itemId)}
                         className={`px-4 py-3 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
                           isExpanded
-                            ? "bg-slate-100/90 border-b border-slate-200/60"
+                            ? "bg-slate-100"
                             : "bg-slate-50/70 hover:bg-slate-100/80"
                         }`}
                       >

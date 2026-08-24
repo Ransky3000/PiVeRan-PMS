@@ -172,7 +172,7 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                           onClick={() => setExpandedIndex(isExpanded ? null : idx)}
                           className={`px-4 py-3 flex items-center justify-between gap-3 cursor-pointer transition-colors select-none ${
                             isExpanded
-                              ? "bg-slate-100/90 border-b border-slate-200/60"
+                              ? "bg-slate-100"
                               : "hover:bg-slate-100/70"
                           }`}
                         >
@@ -613,7 +613,7 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                         <div
                           onClick={() => setExpandedIndex(isExpanded ? null : idx)}
                           className={`px-4 py-3 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
-                            isExpanded ? "bg-slate-100/90 border-b border-slate-200/60" : "bg-slate-50/70 hover:bg-slate-100/80"
+                            isExpanded ? "bg-slate-100" : "bg-slate-50/70 hover:bg-slate-100/80"
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
