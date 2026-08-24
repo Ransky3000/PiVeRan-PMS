@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   FileText,
@@ -252,7 +252,15 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                         <ChevronRight className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
                       </div>
 
+                      <AnimatePresence initial={false}>
                       {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                          className="overflow-hidden"
+                        >
                         <div className="px-4 pb-4 pt-3 border-t border-slate-100 bg-white space-y-4 text-xs">
                           <div>
                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
@@ -365,7 +373,9 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                             </div>
                           )}
                         </div>
+                        </motion.div>
                       )}
+                      </AnimatePresence>
                     </div>
                   );
                 })}
