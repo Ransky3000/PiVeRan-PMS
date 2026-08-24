@@ -74,6 +74,8 @@ class Bundle(Base):
 
     bundle_id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     bundle_name = Column(String, nullable=False)
+    interval_km = Column(Integer, nullable=False, default=10000)
+    interval_months = Column(Integer, nullable=False, default=6)
     interval = Column(String, nullable=False)
     description = Column(Text, nullable=True)
     original_price = Column(Float, nullable=False)

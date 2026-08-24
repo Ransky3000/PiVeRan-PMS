@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import json
 from backend.app.database import get_db
 from backend.app.models.job_order import JobOrder, ChecklistDetail, JobOrderStatus, InspectionStatus, Cart, CartDecision
+from backend.app.models.reminder import Reminder, ReminderStatus
 from backend.app.models.master import Owner, Vehicle, Bundle, Labor, Material
 from backend.app.models.user import UserAccount
 from backend.app.schemas.job_order import (
@@ -203,7 +204,37 @@ async def update_job_order_status(jo_id: str, payload: dict, db: Session = Depen
         
     if "status" in payload:
         try:
-            jo.status = JobOrderStatus(payload["status"])
+            new_status = JobOrderStatus(payload["status"])
+            jo.status = new_status
+
+            # Auto-create or update Reminder when status is changed to "Job completed"
+            if new_status == JobOrderStatus.JOB_COMPLETED:
+                interval_km = getattr(jo.bundle, "interval_km", 10000) if jo.bundle else 10000
+                interval_months = getattr(jo.bundle, "interval_months", 6) if jo.bundle else 6
+                
+                start_odo = jo.odometer or 0
+                target_odo = start_odo + (interval_km or 10000)
+                target_dt = datetime.utcnow() + timedelta(days=(interval_months or 6) * 30)
+
+                existing_rem = db.query(Reminder).filter(Reminder.jo_id == jo_id).first()
+                if existing_rem:
+                    existing_rem.start_odometer = start_odo
+                    existing_rem.target_odometer = target_odo
+                    existing_rem.target_date = target_dt
+                    existing_rem.status = ReminderStatus.PENDING
+                else:
+                    new_rem = Reminder(
+                        jo_id=jo.jo_id,
+                        vehicle_id=jo.vehicle_id,
+                        owner_id=jo.owner_id,
+                        start_date=datetime.utcnow(),
+                        target_date=target_dt,
+                        start_odometer=start_odo,
+                        target_odometer=target_odo,
+                        status=ReminderStatus.PENDING
+                    )
+                    db.add(new_rem)
+
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid status value")
             

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from backend.app.database import engine, Base, SessionLocal
-from backend.app.routers import auth_router, users_router, master_router, job_orders_router
+from backend.app.routers import auth_router, users_router, master_router, job_orders_router, reminders_router
 from backend.app.models import UserAccount, UserRole, AccountStatus, Labor, Bundle, BundleService
 from backend.app.websocket_manager import ws_manager
 import bcrypt
@@ -35,6 +35,7 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(master_router)
 app.include_router(job_orders_router)
+app.include_router(reminders_router)
 
 @app.on_event("startup")
 def seed_initial_data():

@@ -166,9 +166,15 @@ def get_bundles(db: Session = Depends(get_db)):
 
 @router.post("/bundles", response_model=BundleResponse, status_code=status.HTTP_201_CREATED)
 def create_bundle(data: BundleCreate, db: Session = Depends(get_db)):
+    km = data.interval_km if data.interval_km is not None else 10000
+    months = data.interval_months if data.interval_months is not None else 6
+    interval_str = data.interval or f"Every {km:,} KM or {months} Months"
+
     new_bundle = Bundle(
         bundle_name=data.bundle_name,
-        interval=data.interval,
+        interval_km=km,
+        interval_months=months,
+        interval=interval_str,
         description=data.description,
         original_price=data.original_price,
         discounted_price=data.discounted_price

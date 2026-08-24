@@ -111,7 +111,9 @@ class LaborUpdate(BaseModel):
 # --- Bundle Schemas ---
 class BundleCreate(BaseModel):
     bundle_name: str
-    interval: str
+    interval_km: Optional[int] = 10000
+    interval_months: Optional[int] = 6
+    interval: Optional[str] = None
     description: Optional[str] = None
     original_price: float
     discounted_price: float
@@ -120,6 +122,8 @@ class BundleCreate(BaseModel):
 class BundleResponse(BaseModel):
     bundle_id: str
     bundle_name: str
+    interval_km: int = 10000
+    interval_months: int = 6
     interval: str
     description: Optional[str] = None
     original_price: float
@@ -132,6 +136,8 @@ class BundleResponse(BaseModel):
 
 class BundleUpdate(BaseModel):
     bundle_name: Optional[str] = None
+    interval_km: Optional[int] = None
+    interval_months: Optional[int] = None
     interval: Optional[str] = None
     description: Optional[str] = None
     original_price: Optional[float] = None

@@ -85,6 +85,12 @@ const navItems: NavItem[] = [
     icon: Boxes,
     roles: ["FrontDesk"]
   },
+  {
+    label: "Reminders",
+    href: "/frontdesk/reminders",
+    icon: Bell,
+    roles: ["FrontDesk"]
+  },
 
   // MECHANIC NAV ITEMS
   {

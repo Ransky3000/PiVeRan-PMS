@@ -600,6 +600,8 @@ export const apiService = {
         id: b.bundle_id,
         packageName: b.bundle_name,
         targetInterval: b.interval,
+        intervalKm: b.interval_km || 10000,
+        intervalMonths: b.interval_months || 6,
         description: b.description || "",
         servicesIncluded: (b.services || []).map((s: any) => s.labor_name),
         packagePrice: `₱${parseFloat(b.discounted_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
@@ -619,10 +621,12 @@ export const apiService = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           bundle_name: bundle.packageName,
+          interval_km: bundle.intervalKm || 10000,
+          interval_months: bundle.intervalMonths || 6,
           interval: bundle.targetInterval,
           description: bundle.description || "",
-          original_price: parseFloat(bundle.standaloneSum.replace(/[₱,]/g, "")),
-          discounted_price: parseFloat(bundle.packagePrice.replace(/[₱,]/g, "")),
+          original_price: typeof bundle.standaloneSum === "number" ? bundle.standaloneSum : parseFloat(bundle.standaloneSum?.replace(/[₱,]/g, "") || "0"),
+          discounted_price: typeof bundle.packagePrice === "number" ? bundle.packagePrice : parseFloat(bundle.packagePrice?.replace(/[₱,]/g, "") || "0"),
           labor_ids: bundle.laborIds || []
         })
       });
@@ -632,6 +636,8 @@ export const apiService = {
         id: b.bundle_id,
         packageName: b.bundle_name,
         targetInterval: b.interval,
+        intervalKm: b.interval_km || 10000,
+        intervalMonths: b.interval_months || 6,
         description: b.description || "",
         servicesIncluded: (b.services || []).map((s: any) => s.labor_name),
         packagePrice: `₱${parseFloat(b.discounted_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
@@ -641,6 +647,93 @@ export const apiService = {
     } catch (e) {
       console.warn("Backend unavailable, mock creating bundle", e);
       return { ...bundle, id: `PKG-${Math.random().toString(36).substr(2, 4)}` };
+    }
+  },
+
+  // REMINDERS API
+  getReminders: async (filterStatus?: string) => {
+    try {
+      const url = filterStatus ? `${API_BASE_URL}/reminders?status_filter=${filterStatus}` : `${API_BASE_URL}/reminders`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch reminders");
+      const data = await res.json();
+      return (data || []).map((r: any) => ({
+        id: r.reminder_id,
+        joId: r.jo_id,
+        vehicleId: r.vehicle_id,
+        ownerId: r.owner_id,
+        startDate: r.start_date,
+        targetDate: r.target_date,
+        startOdometer: r.start_odometer,
+        targetOdometer: r.target_odometer,
+        status: r.status,
+        notes: r.notes || "",
+        vehicleName: r.vehicle ? `${r.vehicle.year || ""} ${r.vehicle.make || ""} ${r.vehicle.model || ""}`.trim() : "Unknown Vehicle",
+        plateNumber: r.vehicle?.plate_number || "N/A",
+        ownerName: r.owner?.name || "Unknown Owner",
+        ownerPhone: r.owner?.phone_number || "N/A"
+      }));
+    } catch (e) {
+      console.warn("Backend unavailable, returning empty reminders list", e);
+      return [];
+    }
+  },
+
+  createReminder: async (payload: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/reminders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jo_id: payload.joId,
+          vehicle_id: payload.vehicleId,
+          owner_id: payload.ownerId,
+          start_date: payload.startDate,
+          target_date: payload.targetDate,
+          start_odometer: payload.startOdometer,
+          target_odometer: payload.targetOdometer,
+          status: payload.status || "Pending",
+          notes: payload.notes
+        })
+      });
+      if (!res.ok) throw new Error("Failed to create reminder");
+      return await res.json();
+    } catch (e) {
+      console.warn("Failed to create reminder", e);
+      throw e;
+    }
+  },
+
+  updateReminder: async (reminderId: string, updates: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/reminders/${reminderId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          target_date: updates.targetDate,
+          target_odometer: updates.targetOdometer,
+          status: updates.status,
+          notes: updates.notes
+        })
+      });
+      if (!res.ok) throw new Error("Failed to update reminder");
+      return await res.json();
+    } catch (e) {
+      console.warn("Failed to update reminder", e);
+      throw e;
+    }
+  },
+
+  deleteReminder: async (reminderId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/reminders/${reminderId}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Failed to delete reminder");
+      return true;
+    } catch (e) {
+      console.warn("Failed to delete reminder", e);
+      throw e;
     }
   },
 
