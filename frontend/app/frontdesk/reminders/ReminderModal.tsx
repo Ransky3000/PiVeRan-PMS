@@ -229,11 +229,11 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     label: b.packageName
   }));
 
-  // Checklist items preview
-  const checklistItems: string[] = selectedJo?.inspectionItems && selectedJo.inspectionItems.length > 0
-    ? selectedJo.inspectionItems.map((item: any) => item.name || item.title || item.item_name || "Inspection Item")
-    : matchedBundle?.servicesIncluded && matchedBundle.servicesIncluded.length > 0
+  // Checklist items preview dynamically reacting to selected service type (matchedBundle)
+  const checklistItems: string[] = matchedBundle?.servicesIncluded && matchedBundle.servicesIncluded.length > 0
     ? matchedBundle.servicesIncluded
+    : selectedJo?.inspectionItems && selectedJo.inspectionItems.length > 0
+    ? selectedJo.inspectionItems.map((item: any) => item.name || item.title || item.item_name || "Inspection Item")
     : ["Full ECU Scanning", "Diagnose", "Inspect Battery", "Replace Sparkplug", "Replace Air Filter"];
 
   return (
