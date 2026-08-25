@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Gauge, Car, Wrench } from "lucide-react";
+import { X, Calendar, Gauge, Car, Wrench, User, CheckSquare } from "lucide-react";
 import { ReminderItem } from "./ReminderTable";
 import { apiService } from "@/app/apiService";
 import { CustomSelect, SelectOption } from "@/components/CustomSelect";
@@ -28,21 +28,21 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   const [targetOdometer, setTargetOdometer] = useState<number>(10000);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Friendly date formatting e.g. "Aug 24, 2026"
+  // Friendly date formatting e.g. "August 24, 2026"
   const formatDateFriendly = (dateStr: string) => {
     if (!dateStr) return "N/A";
     try {
       const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
       if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     } catch (e) {
       return dateStr;
     }
   };
 
   const formatKm = (kmVal?: number) => {
-    if (kmVal === undefined || kmVal === null) return "0 km";
-    return `${kmVal.toLocaleString()} km`;
+    if (kmVal === undefined || kmVal === null) return "0 Km";
+    return `${kmVal.toLocaleString()} Km`;
   };
 
   // Compute status based on target date and 7-day advance notice window
@@ -171,24 +171,31 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     }
   };
 
-  // Currently selected Job Order object for history preview matching card details
+  // Selected Job Order & Bundle object
   const selectedJo = completedJobOrders.find((j) => j.id === selectedJoId);
+  const matchedBundle = bundles.find(
+    (b) => b.packageName && selectedJo?.serviceType && b.packageName.toLowerCase() === selectedJo.serviceType.toLowerCase()
+  );
+
   const selectedJoOdo = selectedJo ? parseInt(String(selectedJo.odometer || "0").replace(/[^\d]/g, "")) || 0 : 0;
   const selectedJoDate = selectedJo ? (selectedJo.completedAt || selectedJo.updatedAt || selectedJo.createdAt) : "";
 
-  // Construct clear, human-readable labels for Front Desk
+  // Vehicle option label matching wireframe: Vehicle Model | Plate Number
   const jobSelectOptions: SelectOption[] = completedJobOrders.map((j) => {
     const vName = j.vehicleModel || (j.vehicle ? `${j.vehicle.year || ''} ${j.vehicle.make || ''} ${j.vehicle.model || ''}`.trim() : '') || "Vehicle";
-    const plate = j.plateNumber || j.plate_number || j.vehicle?.plate_number || "";
-    const owner = j.ownerName || j.customerName || j.owner?.name || "Customer";
-    const service = j.serviceType || "PMS";
-
-    const plateStr = plate ? `(${plate})` : "";
+    const plate = j.plateNumber || j.plate_number || j.vehicle?.plate_number || "No Plate";
     return {
       value: j.id,
-      label: `${vName} ${plateStr} — ${owner} • ${service}`
+      label: `${vName} | ${plate}`
     };
   });
+
+  // Extract checklist items
+  const checklistItems: string[] = selectedJo?.inspectionItems && selectedJo.inspectionItems.length > 0
+    ? selectedJo.inspectionItems.map((item: any) => item.name || item.title || item.item_name || "Inspection Item")
+    : matchedBundle?.servicesIncluded && matchedBundle.servicesIncluded.length > 0
+    ? matchedBundle.servicesIncluded
+    : ["Full ECU Scanning", "Diagnose", "Inspect Battery", "Replace Sparkplug", "Replace Air Filter"];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50">
@@ -196,14 +203,9 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
           <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              {reminder ? "Edit Maintenance Reminder" : "Create New Maintenance Reminder"}
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+              {reminder ? "Edit Reminder" : "Create Reminder"}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {reminder
-                ? `${reminder.vehicleName} (${reminder.plateNumber}) • ${reminder.ownerName}`
-                : "Schedule a future maintenance reminder from completed job orders"}
-            </p>
           </div>
           <button
             onClick={onClose}
@@ -213,61 +215,124 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {!reminder && (
-            <div className="space-y-3">
+        {/* Form Body - Following Wireframe Sequence */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+          {!reminder ? (
+            <>
+              {/* 1. SELECT VEHICLE ON JOB COMPLETED */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
                   <Car className="w-3.5 h-3.5 text-slate-400" />
-                  Select Completed Job Order
+                  Select Vehicle on Job Completed
                 </label>
                 {completedJobOrders.length > 0 ? (
                   <CustomSelect
                     options={jobSelectOptions}
                     value={selectedJoId}
                     onChange={(val) => handleSelectJobOrder(val, completedJobOrders, bundles)}
-                    placeholder="Select completed job order..."
+                    placeholder="Select completed job vehicle..."
                   />
                 ) : (
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
-                    No completed job orders available to schedule a reminder.
+                    No completed job orders available.
                   </div>
                 )}
               </div>
 
-              {/* CARD DETAILS PREVIEW: Last Service & Last Odometer History */}
-              {selectedJo && (
-                <div className="bg-slate-50 dark:bg-slate-800/60 rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700/80 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
-                    <span>Owner: <strong className="text-slate-800 dark:text-slate-200">{selectedJo.ownerName || selectedJo.customerName || "Customer"}</strong></span>
-                    <span>Plate no. <strong className="font-mono text-slate-800 dark:text-slate-200">{selectedJo.plateNumber || "N/A"}</strong></span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200/80 dark:border-slate-700/60">
-                    <div className="flex items-center gap-2.5">
-                      <Wrench className="w-5 h-5 text-slate-800 dark:text-slate-200 shrink-0" />
-                      <div className="min-w-0">
-                        <span className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Last Service</span>
-                        <span className="block text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{formatDateFriendly(selectedJoDate)}</span>
+              {/* 2. OWNER */}
+              <div>
+                <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-0.5">
+                  Owner
+                </span>
+                <h4 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                  {selectedJo?.ownerName || selectedJo?.customerName || "Juan Dela Cruz"}
+                </h4>
+              </div>
+
+              {/* 3. SERVICE TYPE */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Service type
+                </label>
+                <div className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold">
+                  {selectedJo?.serviceType || "Basic PMS"}
+                </div>
+              </div>
+
+              {/* 4. SERVICE DETAILS CARD BOX (Service description & Checklist) */}
+              <div className="border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 bg-slate-50/70 dark:bg-slate-800/40 space-y-3">
+                <div>
+                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    Service description:
+                  </span>
+                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-0.5">
+                    {matchedBundle?.targetInterval || matchedBundle?.description || "Every 10,000 KM or 6 Months"}
+                  </p>
+                </div>
+
+                <hr className="border-t border-slate-200 dark:border-slate-700/60" />
+
+                <div>
+                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
+                    Checklist:
+                  </span>
+                  <div className="space-y-1.5 pl-1">
+                    {checklistItems.slice(0, 5).map((itemStr, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs font-medium text-slate-800 dark:text-slate-200">
+                        <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="truncate">{itemStr}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      <Gauge className="w-5 h-5 text-slate-800 dark:text-slate-200 shrink-0" />
-                      <div className="min-w-0">
-                        <span className="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Last Odometer</span>
-                        <span className="block text-xs font-bold text-slate-900 dark:text-slate-100 font-mono truncate">{formatKm(selectedJoOdo)}</span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
-              )}
+              </div>
+
+              {/* 5. METRIC ROW: LAST SERVICE & LAST ODOMETER (NO ICON OUTLINE) */}
+              <div className="grid grid-cols-2 gap-4 py-1">
+                {/* Last Service */}
+                <div className="flex items-center gap-3">
+                  <Wrench className="w-6 h-6 text-slate-800 dark:text-slate-200 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
+                      Last service
+                    </span>
+                    <span className="block text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+                      {formatDateFriendly(selectedJoDate)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Last Odometer */}
+                <div className="flex items-center gap-3">
+                  <Gauge className="w-6 h-6 text-slate-800 dark:text-slate-200 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
+                      Last Odometer
+                    </span>
+                    <span className="block text-sm font-bold text-slate-900 dark:text-slate-100 font-mono truncate">
+                      {formatKm(selectedJoOdo)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* EDIT MODE HEADER SUMMARY */
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/80">
+              <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                {reminder.vehicleName}
+              </h4>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                Owner: {reminder.ownerName} | Plate no. {reminder.plateNumber}
+              </p>
             </div>
           )}
 
+          {/* 6. DUE ODOMETER */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Gauge className="w-3.5 h-3.5 text-slate-400" />
-              Due Odometer
+              Due odometer
             </label>
             <div className="relative">
               <input
@@ -277,14 +342,15 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                 onChange={(e) => setTargetOdometer(Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all"
               />
-              <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400">km</span>
+              <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400">Km</span>
             </div>
           </div>
 
+          {/* 7. NEXT SCHEDULE */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              Next Schedule
+              Next schedule
             </label>
             <div className="relative flex items-center">
               <input
@@ -295,7 +361,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                   const el = document.getElementById("target-date-picker-input");
                   if (el && 'showPicker' in el) (el as any).showPicker();
                 }}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all cursor-pointer"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all cursor-pointer"
               />
               <input
                 id="target-date-picker-input"
