@@ -76,7 +76,7 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
     return `${num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} Km`;
   };
 
-  // Progress percentage calculation
+  // Progress percentage calculation (Approach A: Pure Linear Timeline)
   const getProgressPercentage = (r: ReminderItem) => {
     if (r.status === "Overdue") return 100;
     if (!r.startDate || !r.targetDate) return 0;
@@ -100,19 +100,12 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
       return 100;
     }
 
-    const daysUntilTarget = (targetDayStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24);
-
-    // If item is Due Soon (status is 'Due' or target date within 30 days), floor progress to at least 88%
-    if (r.status === "Due" || daysUntilTarget <= 30) {
-      const totalDuration = target - start;
-      const elapsed = now - start;
-      const pct = totalDuration > 0 ? (elapsed / totalDuration) * 100 : 88;
-      return Math.min(100, Math.max(pct || 0, 88));
-    }
-
     if (now <= start) return 0;
 
-    const pct = ((now - start) / (target - start)) * 100;
+    const totalDuration = target - start;
+    if (totalDuration <= 0) return 100;
+
+    const pct = ((now - start) / totalDuration) * 100;
     return Math.min(Math.max(pct, 0), 100);
   };
 

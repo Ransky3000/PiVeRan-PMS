@@ -70,12 +70,40 @@ export default function RemindersPage() {
     }
   };
 
+  const getItemStatus = (r: ReminderItem): string => {
+    const currentStatus = (r.status || "").toUpperCase();
+    if (currentStatus === "DONE" || currentStatus === "COMPLETED") {
+      return "DONE";
+    }
+
+    if (!r.targetDate) return currentStatus || "PENDING";
+
+    try {
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const targetDateObj = new Date(r.targetDate);
+      if (isNaN(targetDateObj.getTime())) return currentStatus || "PENDING";
+
+      const targetStart = new Date(targetDateObj);
+      targetStart.setHours(0, 0, 0, 0);
+
+      const diffDays = Math.round((targetStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+
+      if (diffDays < 0) return "OVERDUE";
+      if (diffDays <= 7) return "DUE";
+      return "PENDING";
+    } catch (e) {
+      return currentStatus || "PENDING";
+    }
+  };
+
   const filteredReminders = reminders.filter((r) => {
-    const statusUpper = (r.status || "").toUpperCase();
+    const effectiveStatus = getItemStatus(r);
     const tabUpper = filterStatus.toUpperCase();
     const matchesStatus = (tabUpper === "DONE" || tabUpper === "COMPLETED")
-      ? (statusUpper === "DONE" || statusUpper === "COMPLETED")
-      : statusUpper === tabUpper;
+      ? (effectiveStatus === "DONE" || effectiveStatus === "COMPLETED")
+      : effectiveStatus === tabUpper;
 
     if (!matchesStatus) return false;
 
@@ -92,11 +120,11 @@ export default function RemindersPage() {
   const getStatusCount = (tabId: string) => {
     const tabUpper = tabId.toUpperCase();
     return reminders.filter((r) => {
-      const statusUpper = (r.status || "").toUpperCase();
+      const effectiveStatus = getItemStatus(r);
       if (tabUpper === "DONE" || tabUpper === "COMPLETED") {
-        return statusUpper === "DONE" || statusUpper === "COMPLETED";
+        return effectiveStatus === "DONE" || effectiveStatus === "COMPLETED";
       }
-      return statusUpper === tabUpper;
+      return effectiveStatus === tabUpper;
     }).length;
   };
 
