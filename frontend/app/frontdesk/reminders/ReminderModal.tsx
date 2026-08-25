@@ -33,7 +33,8 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   const formatSocialDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
     try {
-      const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
+      // Parse directly — handles both ISO ("2026-08-23T03:23:40") and pre-formatted ("Aug 23, 2026, 03:23 AM")
+      const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
 
       const currentYear = new Date().getFullYear();
