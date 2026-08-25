@@ -35,6 +35,22 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
 }) => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
+  const formatSocialDate = (dateStr: string) => {
+    if (!dateStr) return "N/A";
+    try {
+      const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
+      if (isNaN(d.getTime())) return dateStr;
+      const currentYear = new Date().getFullYear();
+      const dateYear = d.getFullYear();
+      if (dateYear === currentYear) {
+        return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+      }
+      return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
     try {
@@ -45,9 +61,10 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
     }
   };
 
-  const formatKm = (kmVal?: number) => {
-    if (kmVal === undefined || kmVal === null) return "0 km";
-    return `${kmVal.toLocaleString()} km`;
+  const formatKm = (kmVal?: number | string) => {
+    if (kmVal === undefined || kmVal === null || kmVal === "") return "0 Km";
+    const num = typeof kmVal === "number" ? kmVal : parseInt(String(kmVal).replace(/[^\d]/g, "")) || 0;
+    return `${num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} Km`;
   };
 
   // Progress percentage calculation
@@ -193,7 +210,7 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                       Last Service
                     </span>
                     <span className="block text-sm font-bold text-slate-900 truncate">
-                      {formatDate(r.startDate)}
+                      {formatSocialDate(r.startDate)}
                     </span>
                   </div>
                 </div>

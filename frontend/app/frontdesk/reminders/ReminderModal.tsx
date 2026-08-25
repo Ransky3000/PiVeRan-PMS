@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Calendar, Gauge, Car, Wrench, User, CheckSquare } from "lucide-react";
+import { X, Calendar, Gauge, Car, Wrench, CheckSquare } from "lucide-react";
 import { ReminderItem } from "./ReminderTable";
 import { apiService } from "@/app/apiService";
 import { CustomSelect, SelectOption } from "@/components/CustomSelect";
@@ -24,25 +24,52 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   const [completedJobOrders, setCompletedJobOrders] = useState<any[]>([]);
   const [bundles, setBundles] = useState<any[]>([]);
   const [selectedJoId, setSelectedJoId] = useState("");
+  const [selectedServiceType, setSelectedServiceType] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [targetOdometer, setTargetOdometer] = useState<number>(10000);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Friendly date formatting e.g. "August 24, 2026"
-  const formatDateFriendly = (dateStr: string) => {
+  // Social media style date formatting e.g. "August 24" (current year) or "August 24, 2025" (older years)
+  const formatSocialDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
     try {
       const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
       if (isNaN(d.getTime())) return dateStr;
+      const currentYear = new Date().getFullYear();
+      const dateYear = d.getFullYear();
+      if (dateYear === currentYear) {
+        return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+      }
       return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     } catch (e) {
       return dateStr;
     }
   };
 
-  const formatKm = (kmVal?: number) => {
-    if (kmVal === undefined || kmVal === null) return "0 Km";
-    return `${kmVal.toLocaleString()} Km`;
+  const formatDateFriendly = (dateStr: string) => {
+    if (!dateStr) return "N/A";
+    try {
+      const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  // Digit formatting with space thousands separators (e.g. 20 000 Km)
+  const formatNumberWithSpaces = (numVal?: number | string) => {
+    if (numVal === undefined || numVal === null || numVal === "") return "0";
+    const num = typeof numVal === "number" ? numVal : parseInt(String(numVal).replace(/[^\d]/g, "")) || 0;
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  };
+
+  const formatKm = (kmVal?: number | string) => {
+    return `${formatNumberWithSpaces(kmVal)} Km`;
+  };
+
+  const formatCurrency = (amountVal?: number | string) => {
+    return `₱ ${formatNumberWithSpaces(amountVal)}`;
   };
 
   // Compute status based on target date and 7-day advance notice window
@@ -57,24 +84,18 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     return "Pending";
   };
 
-  const handleSelectJobOrder = (joId: string, availableJobs: any[], availableBundles: any[]) => {
-    setSelectedJoId(joId);
-    const jo = availableJobs.find((j) => j.id === joId);
+  const calculateTargetInfo = (jo: any, serviceTypeStr: string, availableBundles: any[]) => {
     if (!jo) return;
-
-    // Match service type with bundle table for interval rules
     const matchedBundle = availableBundles.find(
-      (b) => b.packageName && jo.serviceType && b.packageName.toLowerCase() === jo.serviceType.toLowerCase()
+      (b) => b.packageName && serviceTypeStr && b.packageName.toLowerCase() === serviceTypeStr.toLowerCase()
     );
 
     const intervalKm = matchedBundle?.intervalKm || 10000;
     const intervalMonths = matchedBundle?.intervalMonths || 6;
 
-    // Extract start odometer
     const startOdo = parseInt(String(jo.odometer || "0").replace(/[^\d]/g, "")) || 0;
     setTargetOdometer(startOdo + intervalKm);
 
-    // Safely parse completion/creation date
     let baseDate = new Date();
     const rawDate = jo.completedAt || jo.updatedAt || jo.createdAt;
     if (rawDate) {
@@ -82,7 +103,6 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
       if (!isNaN(parsed.getTime())) baseDate = parsed;
     }
 
-    // Compute target date based on bundle intervalMonths
     const calculatedTarget = new Date(baseDate.getTime());
     calculatedTarget.setMonth(calculatedTarget.getMonth() + intervalMonths);
 
@@ -92,11 +112,28 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     setTargetDate(`${yyyy}-${mm}-${dd}`);
   };
 
+  const handleSelectJobOrder = (joId: string, availableJobs: any[], availableBundles: any[]) => {
+    setSelectedJoId(joId);
+    const jo = availableJobs.find((j) => j.id === joId);
+    if (!jo) return;
+
+    const initialServiceType = jo.serviceType || (availableBundles[0]?.packageName || "Basic PMS");
+    setSelectedServiceType(initialServiceType);
+    calculateTargetInfo(jo, initialServiceType, availableBundles);
+  };
+
+  const handleServiceTypeChange = (newServiceType: string) => {
+    setSelectedServiceType(newServiceType);
+    const jo = completedJobOrders.find((j) => j.id === selectedJoId);
+    if (jo) {
+      calculateTargetInfo(jo, newServiceType, bundles);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
     if (!reminder) {
-      // Fetch completed job orders and bundles for creation mode
       Promise.all([apiService.getJobOrders(), apiService.getBundles()])
         .then(([allJobs, allBundles]) => {
           const completed = (allJobs || []).filter((j: any) => j.status === "Job completed");
@@ -107,6 +144,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
             handleSelectJobOrder(completed[0].id, completed, allBundles || []);
           } else {
             setSelectedJoId("");
+            setSelectedServiceType("");
             const defaultDt = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000);
             const yyyy = defaultDt.getFullYear();
             const mm = String(defaultDt.getMonth() + 1).padStart(2, "0");
@@ -117,7 +155,6 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
         })
         .catch(console.error);
     } else {
-      // Edit mode
       if (reminder.targetDate) {
         const d = new Date(reminder.targetDate);
         if (!isNaN(d.getTime())) {
@@ -173,14 +210,15 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
 
   // Selected Job Order & Bundle object
   const selectedJo = completedJobOrders.find((j) => j.id === selectedJoId);
+  const activeServiceType = selectedServiceType || selectedJo?.serviceType || "";
   const matchedBundle = bundles.find(
-    (b) => b.packageName && selectedJo?.serviceType && b.packageName.toLowerCase() === selectedJo.serviceType.toLowerCase()
+    (b) => b.packageName && activeServiceType && b.packageName.toLowerCase() === activeServiceType.toLowerCase()
   );
 
   const selectedJoOdo = selectedJo ? parseInt(String(selectedJo.odometer || "0").replace(/[^\d]/g, "")) || 0 : 0;
   const selectedJoDate = selectedJo ? (selectedJo.completedAt || selectedJo.updatedAt || selectedJo.createdAt) : "";
 
-  // Vehicle option label matching wireframe: Vehicle Model | Plate Number
+  // Vehicle option labels
   const jobSelectOptions: SelectOption[] = completedJobOrders.map((j) => {
     const vName = j.vehicleModel || (j.vehicle ? `${j.vehicle.year || ''} ${j.vehicle.make || ''} ${j.vehicle.model || ''}`.trim() : '') || "Vehicle";
     const plate = j.plateNumber || j.plate_number || j.vehicle?.plate_number || "No Plate";
@@ -190,7 +228,13 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     };
   });
 
-  // Extract checklist items
+  // Service type select options (from Job Order Add form)
+  const serviceTypeOptions: SelectOption[] = (bundles || []).map((b) => ({
+    value: b.packageName,
+    label: b.packageName
+  }));
+
+  // Checklist items preview
   const checklistItems: string[] = selectedJo?.inspectionItems && selectedJo.inspectionItems.length > 0
     ? selectedJo.inspectionItems.map((item: any) => item.name || item.title || item.item_name || "Inspection Item")
     : matchedBundle?.servicesIncluded && matchedBundle.servicesIncluded.length > 0
@@ -215,7 +259,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           </button>
         </div>
 
-        {/* Form Body - Following Wireframe Sequence */}
+        {/* Form Body - Wireframe Layout */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
           {!reminder ? (
             <>
@@ -249,24 +293,28 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                 </h4>
               </div>
 
-              {/* 3. SERVICE TYPE */}
+              {/* 3. SERVICE TYPE (SELECTABLE CUSTOM SELECT FROM JOB ORDER FORM) */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Service type
                 </label>
-                <div className="px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold">
-                  {selectedJo?.serviceType || "Basic PMS"}
-                </div>
+                <CustomSelect
+                  options={serviceTypeOptions.length > 0 ? serviceTypeOptions : [{ value: activeServiceType, label: activeServiceType || "Basic PMS" }]}
+                  value={activeServiceType}
+                  onChange={handleServiceTypeChange}
+                  placeholder="Select service type..."
+                />
               </div>
 
-              {/* 4. SERVICE DETAILS CARD BOX (Service description & Checklist) */}
+              {/* 4. SERVICE DETAILS CARD BOX */}
               <div className="border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 bg-slate-50/70 dark:bg-slate-800/40 space-y-3">
                 <div>
                   <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
                     Service description:
                   </span>
                   <p className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-0.5">
-                    {matchedBundle?.targetInterval || matchedBundle?.description || "Every 10,000 KM or 6 Months"}
+                    {matchedBundle?.targetInterval || matchedBundle?.description || "Every 10 000 Km or 6 Months"}
+                    {matchedBundle?.packagePrice ? ` • ${formatCurrency(matchedBundle.packagePrice)}` : ""}
                   </p>
                 </div>
 
@@ -287,7 +335,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                 </div>
               </div>
 
-              {/* 5. METRIC ROW: LAST SERVICE & LAST ODOMETER (NO ICON OUTLINE) */}
+              {/* 5. METRICS: LAST SERVICE (SOCIAL MEDIA DATE) & LAST ODOMETER (SPACE DIGITS) */}
               <div className="grid grid-cols-2 gap-4 py-1">
                 {/* Last Service */}
                 <div className="flex items-center gap-3">
@@ -297,7 +345,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                       Last service
                     </span>
                     <span className="block text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                      {formatDateFriendly(selectedJoDate)}
+                      {formatSocialDate(selectedJoDate)}
                     </span>
                   </div>
                 </div>
@@ -328,7 +376,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
             </div>
           )}
 
-          {/* 6. DUE ODOMETER */}
+          {/* 6. DUE ODOMETER (SPACE DIGIT DISPLAY) */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Gauge className="w-3.5 h-3.5 text-slate-400" />
@@ -336,17 +384,20 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
             </label>
             <div className="relative">
               <input
-                type="number"
+                type="text"
                 required
-                value={targetOdometer}
-                onChange={(e) => setTargetOdometer(Number(e.target.value))}
+                value={formatNumberWithSpaces(targetOdometer)}
+                onChange={(e) => {
+                  const raw = parseInt(e.target.value.replace(/[^\d]/g, "")) || 0;
+                  setTargetOdometer(raw);
+                }}
                 className="w-full px-3.5 py-2.5 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all"
               />
               <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400">Km</span>
             </div>
           </div>
 
-          {/* 7. NEXT SCHEDULE */}
+          {/* 7. NEXT SCHEDULE (FRIENDLY FORMATTED DATE DISPLAY) */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
