@@ -40,12 +40,17 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
     try {
       const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
       if (isNaN(d.getTime())) return dateStr;
+
       const currentYear = new Date().getFullYear();
       const dateYear = d.getFullYear();
+      const datePart = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const timePart = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+
       if (dateYear === currentYear) {
-        return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+        return `${datePart} | ${timePart}`;
+      } else {
+        return `${datePart}, ${dateYear} | ${timePart}`;
       }
-      return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     } catch (e) {
       return dateStr;
     }

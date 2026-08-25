@@ -29,13 +29,23 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   const [targetOdometer, setTargetOdometer] = useState<number>(10000);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Format Month and Day only (e.g. "Aug 23")
-  const formatMonthDayOnly = (dateStr: string) => {
+  // Format social date e.g. "Aug 23 | 3:23 AM" for current year, "Aug 23, 2025 | 3:23 AM" for older years
+  const formatSocialDate = (dateStr: string) => {
     if (!dateStr) return "N/A";
     try {
       const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
       if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+      const currentYear = new Date().getFullYear();
+      const dateYear = d.getFullYear();
+      const datePart = d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const timePart = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+
+      if (dateYear === currentYear) {
+        return `${datePart} | ${timePart}`;
+      } else {
+        return `${datePart}, ${dateYear} | ${timePart}`;
+      }
     } catch (e) {
       return dateStr;
     }
@@ -339,7 +349,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                       Last service
                     </span>
                     <span className="block text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                      {formatMonthDayOnly(selectedJoDate)}
+                      {formatSocialDate(selectedJoDate)}
                     </span>
                   </div>
                 </div>
