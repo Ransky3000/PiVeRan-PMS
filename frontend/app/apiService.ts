@@ -67,6 +67,7 @@ export function normalizeJobOrder(be: any): any {
     inchargeMechanics: (be.mechanics || []).map((m: any) => typeof m === 'string' ? m : m.name),
     status: be.status,
     createdAt: be.created_at,
+    updatedAt: be.updated_at,
     vehiclePhotoUrl: be.vehicle_photo_url,
     mechanicFindings: be.mechanic_findings || "",
     discount: be.discount || 0,
