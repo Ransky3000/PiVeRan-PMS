@@ -203,7 +203,7 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
               <p className="text-xs text-slate-600 font-medium mb-4">
                 Owner: <span className="font-semibold text-slate-800">{r.ownerName || "Unknown Owner"}</span>
                 {" | "}
-                Plate no. <span className="font-mono font-semibold text-slate-800">{r.plateNumber || "N/A"}</span>
+                Plate no. <span className="font-semibold text-slate-800">{r.plateNumber || "N/A"}</span>
               </p>
 
               {/* TWO METRIC BOXES: Last Service & Last Odometer */}
@@ -228,7 +228,7 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                     <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
                       Last Odometer
                     </span>
-                    <span className="block text-sm font-bold text-slate-900 font-mono truncate">
+                    <span className="block text-sm font-bold text-slate-900 truncate">
                       {formatKm(r.startOdometer)}
                     </span>
                   </div>
@@ -242,13 +242,13 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-xs font-semibold text-slate-600">Due Odometer</span>
-                  <span className="font-bold font-mono text-slate-900 text-base">
+                  <span className="font-bold text-slate-900 text-base">
                     {formatKm(r.targetOdometer)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-xs font-semibold text-slate-600">Next Schedule</span>
-                  <span className="font-bold font-mono text-slate-900 text-base">
+                  <span className="font-bold text-slate-900 text-base">
                     {formatDate(r.targetDate)}
                   </span>
                 </div>

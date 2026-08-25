@@ -362,7 +362,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                     <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
                       Last Odometer
                     </span>
-                    <span className="block text-sm font-bold text-slate-900 dark:text-slate-100 font-mono truncate">
+                    <span className="block text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
                       {formatKm(selectedJoOdo)}
                     </span>
                   </div>
@@ -396,9 +396,9 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                   const raw = parseInt(e.target.value.replace(/[^\d]/g, "")) || 0;
                   setTargetOdometer(raw);
                 }}
-                className="w-full px-3.5 py-2.5 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all"
+                className="w-full px-3.5 py-2.5 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all"
               />
-              <span className="absolute right-3.5 top-2.5 text-xs font-mono text-slate-400">Km</span>
+              <span className="absolute right-3.5 top-2.5 text-xs text-slate-400">Km</span>
             </div>
           </div>
 
