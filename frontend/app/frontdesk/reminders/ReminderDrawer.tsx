@@ -270,13 +270,22 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
             <div className="mt-1 space-y-0.5 text-xs text-slate-600">
               <div>
                 <span className="font-medium text-slate-500">Phone: </span>
-                <span className="font-semibold text-slate-800">{reminder.ownerPhone || selectedJo?.ownerPhone || "09171234567"}</span>
+                <span className="font-semibold text-slate-800">
+                  {reminder.ownerPhone || selectedJo?.ownerPhone || selectedJo?.owner?.contact_number || "N/A"}
+                </span>
               </div>
               <div>
                 <span className="font-medium text-slate-500">FB Contact: </span>
                 {(() => {
-                  const fbVal = reminder.ownerFb || selectedJo?.ownerFb || "facebook.com/juandelacruz";
-                  const fbHref = fbVal.startsWith("http://") || fbVal.startsWith("https://") ? fbVal : `https://${fbVal}`;
+                  const fbVal = reminder.ownerFb || selectedJo?.ownerFb || selectedJo?.owner?.facebook || "";
+                  if (!fbVal || fbVal === "N/A") {
+                    return <span className="font-semibold text-slate-500">N/A</span>;
+                  }
+                  const fbHref = fbVal.startsWith("http://") || fbVal.startsWith("https://")
+                    ? fbVal
+                    : fbVal.includes("facebook.com")
+                    ? `https://${fbVal}`
+                    : `https://facebook.com/${fbVal}`;
                   return (
                     <a
                       href={fbHref}

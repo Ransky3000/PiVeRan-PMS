@@ -695,8 +695,8 @@ export const apiService = {
         vehicleName: r.vehicle ? `${r.vehicle.year || ""} ${r.vehicle.make || ""} ${r.vehicle.model || ""}`.trim() : "Unknown Vehicle",
         plateNumber: r.vehicle?.plate_number || "N/A",
         ownerName: r.owner?.name || "Unknown Owner",
-        ownerPhone: r.owner?.phone_number || "09171234567",
-        ownerFb: r.owner?.fb_contact || r.owner?.facebook_url || r.owner?.fb || "facebook.com/juandelacruz"
+        ownerPhone: r.owner?.contact_number || r.owner?.phone_number || "",
+        ownerFb: r.owner?.facebook || r.owner?.fb_contact || r.owner?.facebook_url || r.owner?.fb_handle || ""
       }));
     } catch (e) {
       console.warn("Backend unavailable, returning empty reminders list", e);
@@ -916,10 +916,10 @@ export const apiService = {
 };
 
 export const subscribeToJobOrders = (onUpdate: (data?: any) => void) => {
-  if (typeof window === "undefined") return () => {};
+  if (typeof window === "undefined") return () => { };
   const wsUrl = "ws://localhost:8000/ws/job-orders";
   let ws: WebSocket | null = null;
-  
+
   try {
     ws = new WebSocket(wsUrl);
     ws.onmessage = (event) => {
