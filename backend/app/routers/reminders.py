@@ -13,29 +13,6 @@ router = APIRouter(prefix="/api/reminders", tags=["reminders"])
 def get_reminders(status_filter: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(Reminder)
     reminders = query.order_by(Reminder.target_date.asc()).all()
-    
-    today = datetime.utcnow()
-    due_threshold = today + timedelta(days=30)
-    updated = False
-
-    # Dynamic status update based on target_date
-    for r in reminders:
-        if r.status != ReminderStatus.DONE:
-            if r.target_date.date() < today.date():
-                if r.status != ReminderStatus.OVERDUE:
-                    r.status = ReminderStatus.OVERDUE
-                    updated = True
-            elif r.target_date.date() <= due_threshold.date():
-                if r.status != ReminderStatus.DUE:
-                    r.status = ReminderStatus.DUE
-                    updated = True
-            else:
-                if r.status != ReminderStatus.PENDING:
-                    r.status = ReminderStatus.PENDING
-                    updated = True
-
-    if updated:
-        db.commit()
 
     if status_filter and status_filter.upper() != "ALL":
         reminders = [r for r in reminders if r.status.value.upper() == status_filter.upper()]
