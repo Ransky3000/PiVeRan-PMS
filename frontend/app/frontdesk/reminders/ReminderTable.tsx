@@ -128,19 +128,23 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
         return (
           <div
             key={r.id}
-            className="bg-white rounded-3xl border-2 border-slate-800 p-5 shadow-xs flex flex-col justify-between relative hover:shadow-md transition-shadow"
+            onClick={() => onSelectReminder && onSelectReminder(r)}
+            className="bg-white rounded-3xl border-2 border-slate-800 p-5 shadow-xs flex flex-col justify-between relative hover:shadow-md hover:border-emerald-600 transition-all cursor-pointer group"
           >
             <div>
               {/* HEADER: Vehicle Title & 3-Dot Actions */}
               <div className="flex items-start justify-between gap-2 mb-1">
-                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight line-clamp-1">
+                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight line-clamp-1 group-hover:text-emerald-700 transition-colors">
                   {r.vehicleName || "Unknown Vehicle"}
                 </h3>
 
                 {/* 3-Dot Action Menu */}
-                <div className="relative shrink-0">
+                <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
                   <button
-                    onClick={() => setActiveMenuId(isMenuOpen ? null : r.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMenuId(isMenuOpen ? null : r.id);
+                    }}
                     className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     aria-label="Actions menu"
                   >
