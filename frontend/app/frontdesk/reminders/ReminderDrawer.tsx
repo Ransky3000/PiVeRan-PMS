@@ -10,6 +10,7 @@ import {
   Wrench,
   Phone,
   Check,
+  Save,
   Trash2
 } from "lucide-react";
 import { ReminderItem } from "./ReminderTable";
@@ -187,6 +188,23 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
     const mm = String(calculatedTarget.getMonth() + 1).padStart(2, "0");
     const dd = String(calculatedTarget.getDate()).padStart(2, "0");
     setTargetDate(`${yyyy}-${mm}-${dd}`);
+  };
+
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    try {
+      if (onSave) {
+        await onSave(reminder.id, {
+          targetDate: targetDate ? new Date(targetDate).toISOString() : reminder.targetDate,
+          targetOdometer: Number(targetOdometer)
+        });
+      }
+      onClose();
+    } catch (e) {
+      console.error("Failed to save reminder changes", e);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSaveAndComplete = async () => {
@@ -432,6 +450,16 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleSaveChanges}
+              disabled={isSaving}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{isSaving ? "Saving..." : "Save Changes"}</span>
+            </button>
+
             {reminder.status !== "Done" && (
               <button
                 type="button"
