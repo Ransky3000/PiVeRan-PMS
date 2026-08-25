@@ -29,18 +29,13 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   const [targetOdometer, setTargetOdometer] = useState<number>(10000);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Social media style date formatting e.g. "August 24" (current year) or "August 24, 2025" (older years)
-  const formatSocialDate = (dateStr: string) => {
+  // Format Month and Day only (e.g. "Aug 23")
+  const formatMonthDayOnly = (dateStr: string) => {
     if (!dateStr) return "N/A";
     try {
       const d = new Date(dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`);
       if (isNaN(d.getTime())) return dateStr;
-      const currentYear = new Date().getFullYear();
-      const dateYear = d.getFullYear();
-      if (dateYear === currentYear) {
-        return d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
-      }
-      return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+      return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
     } catch (e) {
       return dateStr;
     }
@@ -306,36 +301,35 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                 />
               </div>
 
-              {/* 4. SERVICE DETAILS CARD BOX */}
+              {/* 4. SERVICE DETAILS CARD BOX (MATCHING SCREENSHOT 2 LAYOUT) */}
               <div className="border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4 bg-slate-50/70 dark:bg-slate-800/40 space-y-3">
-                <div>
-                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <div className="grid grid-cols-12 gap-3 items-center">
+                  <span className="col-span-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
                     Service description:
                   </span>
-                  <p className="text-xs font-medium text-slate-800 dark:text-slate-200 mt-0.5">
-                    {matchedBundle?.targetInterval || matchedBundle?.description || "Every 10 000 Km or 6 Months"}
-                    {matchedBundle?.packagePrice ? ` • ${formatCurrency(matchedBundle.packagePrice)}` : ""}
-                  </p>
+                  <span className="col-span-8 text-xs font-medium text-slate-800 dark:text-slate-200">
+                    {matchedBundle?.targetInterval || matchedBundle?.description || "Every 10,000 KM or 6 Months"}
+                  </span>
                 </div>
 
-                <hr className="border-t border-slate-200 dark:border-slate-700/60" />
+                <hr className="border-t border-slate-200/80 dark:border-slate-700/60" />
 
-                <div>
-                  <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">
+                <div className="grid grid-cols-12 gap-3 items-start">
+                  <span className="col-span-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
                     Checklist:
                   </span>
-                  <div className="space-y-1.5 pl-1">
-                    {checklistItems.slice(0, 5).map((itemStr, idx) => (
-                      <div key={idx} className="flex items-center gap-2 text-xs font-medium text-slate-800 dark:text-slate-200">
-                        <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="truncate">{itemStr}</span>
+                  <div className="col-span-8 space-y-2">
+                    {checklistItems.map((itemStr, idx) => (
+                      <div key={idx} className="flex items-center gap-2.5 text-xs font-medium text-slate-700 dark:text-slate-300">
+                        <div className="w-4 h-4 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 shrink-0" />
+                        <span>{itemStr}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* 5. METRICS: LAST SERVICE (SOCIAL MEDIA DATE) & LAST ODOMETER (SPACE DIGITS) */}
+              {/* 5. METRICS: LAST SERVICE (MONTH DAY ONLY e.g. "Aug 23") & LAST ODOMETER */}
               <div className="grid grid-cols-2 gap-4 py-1">
                 {/* Last Service */}
                 <div className="flex items-center gap-3">
@@ -345,7 +339,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                       Last service
                     </span>
                     <span className="block text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
-                      {formatSocialDate(selectedJoDate)}
+                      {formatMonthDayOnly(selectedJoDate)}
                     </span>
                   </div>
                 </div>
@@ -376,7 +370,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
             </div>
           )}
 
-          {/* 6. DUE ODOMETER (SPACE DIGIT DISPLAY) */}
+          {/* 6. DUE ODOMETER */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Gauge className="w-3.5 h-3.5 text-slate-400" />
@@ -397,7 +391,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
             </div>
           </div>
 
-          {/* 7. NEXT SCHEDULE (FRIENDLY FORMATTED DATE DISPLAY) */}
+          {/* 7. NEXT SCHEDULE (REMOVED BOLD FONT AS INSTRUCTED) */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
@@ -412,7 +406,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                   const el = document.getElementById("target-date-picker-input");
                   if (el && 'showPicker' in el) (el as any).showPicker();
                 }}
-                className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all cursor-pointer"
+                className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all cursor-pointer"
               />
               <input
                 id="target-date-picker-input"
