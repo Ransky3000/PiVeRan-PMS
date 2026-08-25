@@ -170,7 +170,14 @@ export const CreateJobOrderModal: React.FC<CreateJobOrderModalProps> = ({
                 </div>
                 <div>
                   <label className="block text-slate-500 font-medium mb-1">Odometer (Km)</label>
-                  <input type="number" required value={formOdometerKm || ""} onChange={(e) => setFormOdometerKm(e.target.value)} placeholder="62400" className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-normal text-slate-800 outline-none focus:border-emerald-600" />
+                  <input
+                    type="text"
+                    required
+                    value={formOdometerKm ? formOdometerKm.replace(/[^\d]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ") : ""}
+                    onChange={(e) => setFormOdometerKm(e.target.value.replace(/[^\d]/g, ""))}
+                    placeholder="62 400"
+                    className="w-full bg-white border border-slate-200 rounded-xl p-2 text-xs font-normal text-slate-800 outline-none focus:border-emerald-600"
+                  />
                 </div>
                 <div>
                   <label className="block text-slate-600 font-medium mb-1">Service Type</label>

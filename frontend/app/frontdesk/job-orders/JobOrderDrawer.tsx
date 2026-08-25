@@ -142,13 +142,15 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                 <span className="text-slate-500">Odometer</span>
                 {isEditingDrawer ? (
                   <input
-                    type="number"
-                    value={editOdometer}
-                    onChange={(e) => setEditOdometer(e.target.value)}
+                    type="text"
+                    value={editOdometer ? editOdometer.replace(/[^\d]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ") : ""}
+                    onChange={(e) => setEditOdometer(e.target.value.replace(/[^\d]/g, ""))}
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg p-1 text-xs outline-none focus:border-slate-400 mt-0.5"
                   />
                 ) : (
-                  <div className="font-medium text-slate-900">{drawerJobOrder.odometer}</div>
+                  <div className="font-medium text-slate-900">
+                    {drawerJobOrder.odometer ? `${drawerJobOrder.odometer.replace(/[^\d]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, " ")} KM` : ""}
+                  </div>
                 )}
               </div>
               <div>
