@@ -174,16 +174,6 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                         <button
                           onClick={() => {
                             setActiveMenuId(null);
-                            onEdit(r);
-                          }}
-                          className="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                        >
-                          <Edit3 className="w-4 h-4 text-slate-500" />
-                          <span>Edit</span>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setActiveMenuId(null);
                             onDelete(r.id);
                           }}
                           className="w-full text-left flex items-center gap-2 px-3 py-2 hover:bg-rose-50 hover:text-rose-700 transition-colors"
