@@ -1,26 +1,25 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   X,
-  FileText,
-  Bell,
-  ClipboardCheck,
-  ChevronRight,
+  Car,
+  Gauge,
+  Calendar,
+  Wrench,
+  Phone,
   Check,
-  Edit3,
-  Trash2,
-  Phone
+  Trash2
 } from "lucide-react";
 import { ReminderItem } from "./ReminderTable";
 import { apiService } from "@/app/apiService";
-import { getServiceDescription, INSPECTION_STATUS_ICON, getItemNote, getItemPhotos } from "../job-orders/jobOrderHelpers";
+import { CustomSelect, SelectOption } from "@/components/CustomSelect";
 
 interface ReminderDrawerProps {
   reminder: ReminderItem | null;
   onClose: () => void;
-  onEdit: (reminder: ReminderItem) => void;
+  onSave?: (id: string, updates: Partial<ReminderItem>) => Promise<void>;
   onDelete: (id: string) => void;
   onMarkCompleted: (reminder: ReminderItem) => void;
 }
@@ -28,35 +27,104 @@ interface ReminderDrawerProps {
 export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
   reminder,
   onClose,
-  onEdit,
+  onSave,
   onDelete,
   onMarkCompleted
 }) => {
-  const [drawerJobOrder, setDrawerJobOrder] = useState<any | null>(null);
-  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
+  const [completedJobOrders, setCompletedJobOrders] = useState<any[]>([]);
+  const [bundles, setBundles] = useState<any[]>([]);
+  const [selectedJoId, setSelectedJoId] = useState("");
+  const [selectedServiceType, setSelectedServiceType] = useState("");
+  const [targetDate, setTargetDate] = useState("");
+  const [targetOdometer, setTargetOdometer] = useState<number>(10000);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!reminder || !reminder.joId) {
-      setDrawerJobOrder(null);
-      return;
-    }
-    let isMounted = true;
-    apiService.getJobOrders()
-      .then((jobs) => {
-        if (!isMounted) return;
-        const matched = (jobs || []).find((j: any) => j.id === reminder.joId || j.joId === reminder.joId);
-        setDrawerJobOrder(matched || null);
-      })
-      .catch((e) => {
-        console.warn("Failed to fetch linked job order for reminder drawer", e);
-      });
+    if (!reminder) return;
 
-    return () => { isMounted = false; };
-  }, [reminder?.joId]);
+    // Load available bundles & job orders for fallback or matching
+    Promise.all([apiService.getJobOrders(), apiService.getBundles()])
+      .then(([allJobs, allBundles]) => {
+        const completed = (allJobs || []).filter((j: any) => j.status === "Job completed");
+        setCompletedJobOrders(completed);
+        setBundles(allBundles || []);
+
+        const matchedJo = (allJobs || []).find((j: any) => j.id === reminder.joId || j.joId === reminder.joId);
+        if (matchedJo) {
+          setSelectedJoId(matchedJo.id);
+          setSelectedServiceType(matchedJo.serviceType || (allBundles[0]?.packageName || "Basic PMS"));
+        } else if (completed.length > 0) {
+          setSelectedJoId(completed[0].id);
+          setSelectedServiceType(completed[0].serviceType || (allBundles[0]?.packageName || "Basic PMS"));
+        }
+      })
+      .catch(console.error);
+
+    // Populate dates and odometer
+    if (reminder.targetDate) {
+      const d = new Date(reminder.targetDate);
+      if (!isNaN(d.getTime())) {
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        setTargetDate(`${yyyy}-${mm}-${dd}`);
+      }
+    }
+    setTargetOdometer(reminder.targetOdometer || 10000);
+  }, [reminder]);
 
   if (!reminder) return null;
 
-  // Format numbers with spaces (e.g. 20 000 Km)
+  // Selected Job Order & Bundle object
+  const selectedJo = completedJobOrders.find((j) => j.id === selectedJoId);
+  const activeServiceType = selectedServiceType || selectedJo?.serviceType || "Basic PMS";
+  const matchedBundle = bundles.find(
+    (b) => b.packageName && activeServiceType && b.packageName.toLowerCase() === activeServiceType.toLowerCase()
+  );
+
+  const selectedJoOdo = reminder.startOdometer || (selectedJo ? parseInt(String(selectedJo.odometer || "0").replace(/[^\d]/g, "")) || 0 : 0);
+  const selectedJoDate = reminder.startDate || (selectedJo ? (selectedJo.completedAt || selectedJo.updatedAt || selectedJo.createdAt) : "");
+
+  // Vehicle option labels
+  const jobSelectOptions: SelectOption[] = completedJobOrders.length > 0
+    ? completedJobOrders.map((j) => {
+        const vName = j.vehicleModel || (j.vehicle ? `${j.vehicle.year || ''} ${j.vehicle.make || ''} ${j.vehicle.model || ''}`.trim() : '') || "Vehicle";
+        const plate = j.plateNumber || j.plate_number || j.vehicle?.plate_number || "No Plate";
+        return {
+          value: j.id,
+          label: `${vName} | ${plate}`
+        };
+      })
+    : [{ value: reminder.joId || "1", label: `${reminder.vehicleName} | ${reminder.plateNumber}` }];
+
+  // Service type select options
+  const serviceTypeOptions: SelectOption[] = (bundles || []).length > 0
+    ? (bundles || []).map((b) => ({
+        value: b.packageName,
+        label: b.packageName
+      }))
+    : [{ value: activeServiceType, label: activeServiceType }];
+
+  // Checklist items preview
+  const checklistItems: string[] = matchedBundle?.servicesIncluded && matchedBundle.servicesIncluded.length > 0
+    ? matchedBundle.servicesIncluded
+    : selectedJo?.inspectionItems && selectedJo.inspectionItems.length > 0
+    ? selectedJo.inspectionItems.map((item: any) => item.name || item.title || item.item_name || "Inspection Item")
+    : [
+        "Full ECU Scanning",
+        "Diagnose",
+        "Inspect Battery",
+        "Replace Sparkplug",
+        "Replace Air Filter",
+        "Replace Cabin Filter",
+        "Fluid Flushing",
+        "Inspect/Replace Brake pads and disk",
+        "Inspect and Clean brake lining and drum",
+        "Change Oil",
+        "Replace Oil Filter"
+      ];
+
+  // Digit formatting with space thousands separators (e.g. 20 000 Km)
   const formatNumberWithSpaces = (numVal?: number | string) => {
     if (numVal === undefined || numVal === null || numVal === "") return "0";
     const num = typeof numVal === "number" ? numVal : parseInt(String(numVal).replace(/[^\d]/g, "")) || 0;
@@ -64,7 +132,7 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
   };
 
   const formatKm = (kmVal?: number | string) => {
-    return `${formatNumberWithSpaces(kmVal)} KM`;
+    return `${formatNumberWithSpaces(kmVal)} Km`;
   };
 
   const formatDateFriendly = (dateStr: string) => {
@@ -99,8 +167,47 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
     }
   };
 
-  const serviceCategory = drawerJobOrder?.serviceType || "Basic PMS";
-  const serviceDesc = getServiceDescription(serviceCategory, drawerJobOrder?.serviceDescription);
+  const handleServiceTypeChange = (newServiceType: string) => {
+    setSelectedServiceType(newServiceType);
+    const matchedB = bundles.find(
+      (b) => b.packageName && newServiceType && b.packageName.toLowerCase() === newServiceType.toLowerCase()
+    );
+    const intervalKm = matchedB?.intervalKm || 10000;
+    const intervalMonths = matchedB?.intervalMonths || 6;
+    setTargetOdometer(selectedJoOdo + intervalKm);
+
+    let baseDate = new Date();
+    if (selectedJoDate) {
+      const parsed = new Date(selectedJoDate);
+      if (!isNaN(parsed.getTime())) baseDate = parsed;
+    }
+    const calculatedTarget = new Date(baseDate.getTime());
+    calculatedTarget.setMonth(calculatedTarget.getMonth() + intervalMonths);
+    const yyyy = calculatedTarget.getFullYear();
+    const mm = String(calculatedTarget.getMonth() + 1).padStart(2, "0");
+    const dd = String(calculatedTarget.getDate()).padStart(2, "0");
+    setTargetDate(`${yyyy}-${mm}-${dd}`);
+  };
+
+  const handleSaveAndComplete = async () => {
+    setIsSaving(true);
+    try {
+      if (onSave) {
+        await onSave(reminder.id, {
+          targetDate: targetDate ? new Date(targetDate).toISOString() : reminder.targetDate,
+          targetOdometer: Number(targetOdometer),
+          status: "Done"
+        });
+      } else {
+        onMarkCompleted(reminder);
+      }
+      onClose();
+    } catch (e) {
+      console.error("Failed to complete reminder", e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <>
@@ -119,166 +226,184 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
         animate={{ x: 0 }}
         exit={{ x: "100%" }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[500px] bg-white border-l border-slate-200 shadow-2xl flex flex-col"
+        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[480px] bg-white border-l border-slate-200 shadow-2xl flex flex-col"
       >
         {/* ── DRAWER HEADER ── */}
-        <div className="shrink-0 px-5 py-4 border-b border-slate-200 bg-white">
+        <div className="shrink-0 px-6 py-4 border-b border-slate-200 bg-white">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <h2 className="text-base font-bold text-slate-900 truncate">
-                {reminder.vehicleName}
-              </h2>
-            </div>
-
+            <h3 className="text-lg font-bold text-slate-900">
+              Maintenance Reminder
+            </h3>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* ── DRAWER BODY (SCROLLABLE) ── */}
-        <div className="flex-1 overflow-y-auto">
+        {/* ── DRAWER BODY (SCROLLABLE - MATCHING CREATE REMINDER FORM CONTENT) ── */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 text-xs">
+          {/* 1. SELECT VEHICLE ON JOB COMPLETED */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <Car className="w-3.5 h-3.5 text-slate-400" />
+              Select Vehicle on Job Completed
+            </label>
+            <CustomSelect
+              options={jobSelectOptions}
+              value={selectedJoId || jobSelectOptions[0]?.value || ""}
+              onChange={(val) => setSelectedJoId(val)}
+              placeholder="Select completed job vehicle..."
+            />
+          </div>
 
-          {/* SECTION 1: Vehicle Info */}
-          <div className="px-5 py-4 border-b border-slate-100 space-y-3 text-xs">
-            <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[10px] tracking-wide uppercase mb-1">
-              <FileText className="w-3.5 h-3.5" /> Vehicle Info
-            </div>
-            <div className="grid grid-cols-2 gap-y-2.5 gap-x-4">
-              <div><span className="text-slate-500">Owner</span><div className="font-medium text-slate-900">{reminder.ownerName}</div></div>
-              <div><span className="text-slate-500">Phone</span><div className="font-medium text-slate-900">{reminder.ownerPhone || "N/A"}</div></div>
-              <div><span className="text-slate-500">Plate</span><div className="font-medium text-slate-900">{reminder.plateNumber}</div></div>
-              <div><span className="text-slate-500">Odometer</span><div className="font-medium text-slate-900">{formatKm(reminder.startOdometer)}</div></div>
-              <div><span className="text-slate-500">Service Category</span><div className="font-medium text-slate-900">{serviceCategory}</div></div>
+          {/* 2. OWNER */}
+          <div>
+            <span className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
+              Owner
+            </span>
+            <h4 className="text-xl font-bold text-slate-900">
+              {reminder.ownerName || selectedJo?.ownerName || "Juan Dela Cruz"}
+            </h4>
+          </div>
+
+          {/* 3. SERVICE TYPE */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
+              Service type
+            </label>
+            <CustomSelect
+              options={serviceTypeOptions}
+              value={activeServiceType}
+              onChange={handleServiceTypeChange}
+              placeholder="Select service type..."
+            />
+          </div>
+
+          {/* 4. SERVICE DETAILS CARD BOX (MATCHING SCREENSHOT 1) */}
+          <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/70 space-y-3">
+            <div className="grid grid-cols-12 gap-3 items-center">
+              <span className="col-span-4 text-xs font-semibold text-slate-500">
+                Service description:
+              </span>
+              <span className="col-span-8 text-xs font-medium text-slate-800">
+                {matchedBundle?.targetInterval || matchedBundle?.description || "Every 10,000 KM or 3 Months"}
+              </span>
             </div>
 
-            <div className="pt-2 border-t border-slate-100/80">
-              <span className="text-slate-500 font-medium text-xs block">Service Description</span>
-              <div className="font-semibold text-slate-800 text-xs mt-0.5">
-                {serviceDesc}
+            <hr className="border-t border-slate-200/80" />
+
+            <div className="grid grid-cols-12 gap-3 items-start">
+              <span className="col-span-4 text-xs font-semibold text-slate-500">
+                Checklist:
+              </span>
+              <div className="col-span-8 space-y-2">
+                {checklistItems.map((itemStr, idx) => (
+                  <div key={idx} className="flex items-center gap-2.5 text-xs font-medium text-slate-700">
+                    <div className="w-4 h-4 rounded border border-slate-300 bg-white shrink-0" />
+                    <span>{itemStr}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* SECTION 2: Maintenance Schedule */}
-          <div className="px-5 py-4 border-b border-slate-100 space-y-3 text-xs">
-            <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[10px] tracking-wide uppercase mb-1">
-              <Bell className="w-3.5 h-3.5" /> Maintenance Schedule
+          {/* 5. METRICS: LAST SERVICE & LAST ODOMETER */}
+          <div className="grid grid-cols-2 gap-4 py-1">
+            {/* Last Service */}
+            <div className="flex items-center gap-3">
+              <Wrench className="w-6 h-6 text-slate-800 shrink-0" />
+              <div className="min-w-0">
+                <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
+                  Last service
+                </span>
+                <span className="block text-sm font-bold text-slate-900 truncate">
+                  {formatSocialDate(selectedJoDate)}
+                </span>
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-y-2.5 gap-x-4">
-              <div><span className="text-slate-500">Last Service</span><div className="font-medium text-slate-900">{formatSocialDate(reminder.startDate)}</div></div>
-              <div><span className="text-slate-500">Last Odometer</span><div className="font-medium text-slate-900">{formatKm(reminder.startOdometer)}</div></div>
-              <div><span className="text-slate-500">Due Odometer</span><div className="font-medium text-slate-900">{formatKm(reminder.targetOdometer)}</div></div>
-              <div><span className="text-slate-500">Next Schedule</span><div className="font-medium text-slate-900">{formatDateFriendly(reminder.targetDate)}</div></div>
+
+            {/* Last Odometer */}
+            <div className="flex items-center gap-3">
+              <Gauge className="w-6 h-6 text-slate-800 shrink-0" />
+              <div className="min-w-0">
+                <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
+                  Last Odometer
+                </span>
+                <span className="block text-sm font-bold text-slate-900 truncate">
+                  {formatKm(selectedJoOdo)}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* SECTION 3: Inspection Checklist Results */}
-          {drawerJobOrder?.inspectionItems && drawerJobOrder.inspectionItems.length > 0 && (
-            <div className="px-5 py-4 border-b border-slate-100 space-y-3 text-xs">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[10px] tracking-wide uppercase">
-                  <ClipboardCheck className="w-3.5 h-3.5" /> Inspection Checklist
-                </div>
-              </div>
-
-              {/* ACCORDION CHECKLIST STACK */}
-              <div className="space-y-2.5">
-                {drawerJobOrder.inspectionItems.map((item: any, idx: number) => {
-                  const itemId = item.id || item.name || `item-${idx}`;
-                  const effectiveStatus = item.status || "PENDING";
-                  const isExpanded = expandedItemId === itemId;
-                  const photos = getItemPhotos(item, effectiveStatus);
-                  const currentNote = getItemNote(item, effectiveStatus);
-
-                  const statusLabel =
-                    effectiveStatus === "GOOD" ? "Good" :
-                    effectiveStatus === "ISSUE" ? "Issue" :
-                    effectiveStatus === "MONITOR" ? "Monitor" : "Pending";
-
-                  const statusColorClass =
-                    effectiveStatus === "GOOD" ? "text-emerald-600" :
-                    effectiveStatus === "ISSUE" ? "text-red-600" :
-                    effectiveStatus === "MONITOR" ? "text-amber-600" : "text-slate-500";
-
-                  return (
-                    <div
-                      key={itemId}
-                      className={`border rounded-2xl transition-all overflow-hidden bg-white ${
-                        isExpanded ? "border-slate-300 shadow-xs" : "border-slate-200"
-                      }`}
-                    >
-                      <div
-                        onClick={() => setExpandedItemId(isExpanded ? null : itemId)}
-                        className={`px-4 py-3 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
-                          isExpanded ? "bg-slate-100" : "bg-slate-50/70 hover:bg-slate-100/80"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="shrink-0">{INSPECTION_STATUS_ICON[effectiveStatus || "PENDING"]}</div>
-                          <span className="font-bold text-slate-800 text-xs truncate">{item.name}</span>
-                        </div>
-                        <ChevronRight className={`w-4 h-4 text-slate-400 shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
-                      </div>
-
-                      <AnimatePresence initial={false}>
-                        {isExpanded && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                            className="overflow-hidden"
-                          >
-                            <div className="px-4 pb-4 pt-3 bg-white space-y-4 text-xs rounded-b-2xl">
-                              <div>
-                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                                  STATUS
-                                </div>
-                                <div className={`text-sm font-bold ${statusColorClass}`}>
-                                  {statusLabel}
-                                </div>
-                              </div>
-
-                              {currentNote && (
-                                <div>
-                                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-                                    NOTES
-                                  </div>
-                                  <p className="text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                    {currentNote}
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  );
-                })}
-              </div>
+          {/* 6. DUE ODOMETER */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <Gauge className="w-3.5 h-3.5 text-slate-400" />
+              Due odometer
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                required
+                value={formatNumberWithSpaces(targetOdometer)}
+                onChange={(e) => {
+                  const raw = parseInt(e.target.value.replace(/[^\d]/g, "")) || 0;
+                  setTargetOdometer(raw);
+                }}
+                className="w-full px-3.5 py-2.5 pr-12 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all"
+              />
+              <span className="absolute right-3.5 top-2.5 text-xs text-slate-400">Km</span>
             </div>
-          )}
+          </div>
 
+          {/* 7. NEXT SCHEDULE */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+              Next schedule
+            </label>
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                readOnly
+                value={formatDateFriendly(targetDate)}
+                onClick={() => {
+                  const el = document.getElementById("drawer-target-date-picker");
+                  if (el && 'showPicker' in el) (el as any).showPicker();
+                }}
+                className="w-full px-3.5 py-2.5 pr-10 rounded-xl border border-slate-200 bg-white text-slate-900 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-emerald-600 transition-all cursor-pointer"
+              />
+              <input
+                id="drawer-target-date-picker"
+                type="date"
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
+                className="absolute right-3 opacity-0 w-6 h-6 cursor-pointer"
+              />
+              <Calendar className="w-4 h-4 text-slate-500 absolute right-3.5 pointer-events-none" />
+            </div>
+          </div>
         </div>
 
-        {/* ── DRAWER FOOTER ── */}
-        <div className="shrink-0 px-5 py-4 border-t border-slate-200 bg-white flex items-center justify-between">
+        {/* ── DRAWER FOOTER (MATCHING SCREENSHOT 2 - NO EDIT BUTTON) ── */}
+        <div className="shrink-0 px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-between">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-xl transition-all cursor-pointer"
           >
             Close
           </button>
+
           <div className="flex items-center gap-2">
             {reminder.ownerPhone && (
               <a
                 href={`tel:${reminder.ownerPhone}`}
-                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium text-xs rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-xs rounded-xl border border-slate-200/80 flex items-center gap-1.5 transition-all cursor-pointer"
               >
                 <Phone className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Call</span>
@@ -287,29 +412,18 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
 
             {reminder.status !== "Done" && (
               <button
-                onClick={() => {
-                  onMarkCompleted(reminder);
-                  onClose();
-                }}
-                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                type="button"
+                onClick={handleSaveAndComplete}
+                disabled={isSaving}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
               >
                 <Check className="w-4 h-4" />
-                <span>Complete</span>
+                <span>{isSaving ? "Saving..." : "Complete"}</span>
               </button>
             )}
 
             <button
-              onClick={() => {
-                onEdit(reminder);
-                onClose();
-              }}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit</span>
-            </button>
-
-            <button
+              type="button"
               onClick={() => {
                 if (confirm(`Are you sure you want to delete reminder for ${reminder.vehicleName}?`)) {
                   onDelete(reminder.id);

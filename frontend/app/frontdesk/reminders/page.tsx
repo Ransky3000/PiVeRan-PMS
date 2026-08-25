@@ -193,10 +193,7 @@ export default function RemindersPage() {
             <ReminderDrawer
               reminder={drawerReminder}
               onClose={() => setDrawerReminder(null)}
-              onEdit={(r) => {
-                setSelectedReminder(r);
-                setIsModalOpen(true);
-              }}
+              onSave={handleSaveReminder}
               onDelete={handleDeleteReminder}
               onMarkCompleted={(r) => handleSaveReminder(r.id, { status: "Done" })}
             />
