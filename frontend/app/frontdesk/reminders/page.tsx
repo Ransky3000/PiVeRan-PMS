@@ -5,9 +5,10 @@ import { TailAdminLayout } from "@/components/TailAdminLayout";
 import { useDevRole } from "@/context/DevRoleContext";
 import { ReminderTable, ReminderItem } from "./ReminderTable";
 import { ReminderModal } from "./ReminderModal";
+import { ReminderDrawer } from "./ReminderDrawer";
 import { apiService, subscribeToJobOrders } from "@/app/apiService";
 import { Search, Plus, Bell } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function RemindersPage() {
   const devContext = useDevRole();
@@ -16,6 +17,7 @@ export default function RemindersPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [selectedReminder, setSelectedReminder] = useState<ReminderItem | null>(null);
+  const [drawerReminder, setDrawerReminder] = useState<ReminderItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [isHeaderVisible, setIsHeaderVisible] = useState<boolean>(true);
 
@@ -166,6 +168,7 @@ export default function RemindersPage() {
         <section className="mt-6">
           <ReminderTable
             reminders={filteredReminders}
+            onSelectReminder={(r) => setDrawerReminder(r)}
             onEdit={(r) => {
               setSelectedReminder(r);
               setIsModalOpen(true);
@@ -183,6 +186,22 @@ export default function RemindersPage() {
           onSave={handleSaveReminder}
           onCreate={handleCreateReminder}
         />
+
+        {/* REMINDER SIDE DRAWER */}
+        <AnimatePresence>
+          {drawerReminder && (
+            <ReminderDrawer
+              reminder={drawerReminder}
+              onClose={() => setDrawerReminder(null)}
+              onEdit={(r) => {
+                setSelectedReminder(r);
+                setIsModalOpen(true);
+              }}
+              onDelete={handleDeleteReminder}
+              onMarkCompleted={(r) => handleSaveReminder(r.id, { status: "Done" })}
+            />
+          )}
+        </AnimatePresence>
       </div>
     </TailAdminLayout>
   );
