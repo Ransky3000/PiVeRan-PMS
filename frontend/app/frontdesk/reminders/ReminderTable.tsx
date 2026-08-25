@@ -194,38 +194,6 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                 Plate no. <span className="font-semibold text-slate-800">{r.plateNumber || "N/A"}</span>
               </p>
 
-              {/* TWO METRIC BOXES: Last Service & Last Odometer */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                {/* Last Service */}
-                <div className="flex items-center gap-3 py-1">
-                  <Wrench className="w-6 h-6 text-slate-800 shrink-0" />
-                  <div className="min-w-0">
-                    <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
-                      Last Service
-                    </span>
-                    <span className="block text-sm font-bold text-slate-900 truncate">
-                      {formatSocialDate(r.startDate)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Last Odometer */}
-                <div className="flex items-center gap-3 py-1">
-                  <Gauge className="w-6 h-6 text-slate-800 shrink-0" />
-                  <div className="min-w-0">
-                    <span className="block text-[11px] font-semibold text-slate-500 leading-tight">
-                      Last Odometer
-                    </span>
-                    <span className="block text-sm font-bold text-slate-900 truncate">
-                      {formatKm(r.startOdometer)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* DIVIDER */}
-              <hr className="border-t border-slate-300 mb-3" />
-
               {/* DUE ODOMETER & NEXT SCHEDULE ROWS */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
