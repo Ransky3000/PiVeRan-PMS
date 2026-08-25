@@ -267,6 +267,16 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
             <h4 className="text-xl font-bold text-slate-900">
               {reminder.ownerName || selectedJo?.ownerName || "Juan Dela Cruz"}
             </h4>
+            <div className="mt-1 space-y-0.5 text-xs text-slate-600">
+              <div>
+                <span className="font-medium text-slate-500">Phone: </span>
+                <span className="font-semibold text-slate-800">{reminder.ownerPhone || selectedJo?.ownerPhone || "09171234567"}</span>
+              </div>
+              <div>
+                <span className="font-medium text-slate-500">FB Contact: </span>
+                <span className="font-semibold text-emerald-700">{reminder.ownerFb || selectedJo?.ownerFb || "facebook.com/juandelacruz"}</span>
+              </div>
+            </div>
           </div>
 
           {/* 3. SERVICE TYPE */}
@@ -400,16 +410,6 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
-            {reminder.ownerPhone && (
-              <a
-                href={`tel:${reminder.ownerPhone}`}
-                className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium text-xs rounded-xl border border-slate-200/80 flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Phone className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Call</span>
-              </a>
-            )}
-
             {reminder.status !== "Done" && (
               <button
                 type="button"

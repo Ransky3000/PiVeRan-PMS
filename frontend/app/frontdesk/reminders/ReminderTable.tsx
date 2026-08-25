@@ -18,6 +18,7 @@ export interface ReminderItem {
   plateNumber?: string;
   ownerName?: string;
   ownerPhone?: string;
+  ownerFb?: string;
 }
 
 interface ReminderTableProps {
@@ -158,15 +159,6 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                         onClick={() => setActiveMenuId(null)}
                       />
                       <div className="absolute right-0 top-8 z-20 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 text-xs font-semibold text-slate-700">
-                        {r.ownerPhone && (
-                          <a
-                            href={`tel:${r.ownerPhone}`}
-                            className="flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
-                          >
-                            <Phone className="w-4 h-4 text-emerald-600" />
-                            <span>Call Owner</span>
-                          </a>
-                        )}
                         {r.status !== "Done" && (
                           <button
                             onClick={() => {

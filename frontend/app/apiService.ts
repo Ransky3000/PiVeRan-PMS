@@ -695,7 +695,8 @@ export const apiService = {
         vehicleName: r.vehicle ? `${r.vehicle.year || ""} ${r.vehicle.make || ""} ${r.vehicle.model || ""}`.trim() : "Unknown Vehicle",
         plateNumber: r.vehicle?.plate_number || "N/A",
         ownerName: r.owner?.name || "Unknown Owner",
-        ownerPhone: r.owner?.phone_number || "N/A"
+        ownerPhone: r.owner?.phone_number || "09171234567",
+        ownerFb: r.owner?.fb_contact || r.owner?.facebook_url || r.owner?.fb || "facebook.com/juandelacruz"
       }));
     } catch (e) {
       console.warn("Backend unavailable, returning empty reminders list", e);
