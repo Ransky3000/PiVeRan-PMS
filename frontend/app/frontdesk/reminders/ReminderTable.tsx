@@ -126,19 +126,23 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
         return (
           <div
             key={r.id}
-            className="bg-white rounded-3xl border-2 border-slate-800 p-5 shadow-xs flex flex-col justify-between relative hover:shadow-md transition-shadow"
+            onClick={() => onEdit(r)}
+            className="bg-white rounded-3xl border-2 border-slate-800 p-5 shadow-xs flex flex-col justify-between relative hover:shadow-md transition-all cursor-pointer group"
           >
             <div>
               {/* HEADER: Vehicle Title & 3-Dot Actions */}
               <div className="flex items-start justify-between gap-2 mb-1">
-                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight line-clamp-1">
+                <h3 className="text-xl font-extrabold text-slate-900 tracking-tight line-clamp-1 group-hover:text-emerald-700 transition-colors">
                   {r.vehicleName || "Unknown Vehicle"}
                 </h3>
 
                 {/* 3-Dot Action Menu */}
-                <div className="relative shrink-0">
+                <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
                   <button
-                    onClick={() => setActiveMenuId(isMenuOpen ? null : r.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMenuId(isMenuOpen ? null : r.id);
+                    }}
                     className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                     aria-label="Actions menu"
                   >
@@ -149,12 +153,16 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                     <>
                       <div
                         className="fixed inset-0 z-10"
-                        onClick={() => setActiveMenuId(null)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuId(null);
+                        }}
                       />
                       <div className="absolute right-0 top-8 z-20 w-36 bg-white border border-slate-200 rounded-xl shadow-lg py-1.5 text-xs font-semibold text-slate-700">
                         {r.ownerPhone && (
                           <a
                             href={`tel:${r.ownerPhone}`}
+                            onClick={(e) => e.stopPropagation()}
                             className="flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
                           >
                             <Phone className="w-4 h-4 text-emerald-600" />
@@ -163,7 +171,8 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                         )}
                         {r.status !== "Done" && (
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setActiveMenuId(null);
                               onEdit({ ...r, status: "Done" });
                             }}
@@ -174,7 +183,8 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                           </button>
                         )}
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setActiveMenuId(null);
                             onEdit(r);
                           }}
@@ -184,7 +194,8 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
                           <span>Edit</span>
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setActiveMenuId(null);
                             onDelete(r.id);
                           }}
