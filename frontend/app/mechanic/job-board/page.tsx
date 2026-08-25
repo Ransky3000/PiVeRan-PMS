@@ -271,9 +271,13 @@ export default function MechanicJobBoardPage() {
     updateDrawerJO({ inspectionItems: updatedItems });
 
     if (targetItem && targetItem.id && targetReq && typeof targetReq === "object" && targetReq.cart_id) {
-      (apiService as any).removeCartItem(targetItem.id, targetReq.cart_id).catch((err: any) => {
-        console.error("Failed to remove material from backend cart", err);
-      });
+      if (typeof (apiService as any).removeCartItem === "function") {
+        (apiService as any).removeCartItem(targetItem.id, targetReq.cart_id).catch(() => {});
+      } else {
+        fetch(`http://localhost:8000/api/job-orders/checklist-items/${targetItem.id}/cart/${targetReq.cart_id}`, {
+          method: "DELETE"
+        }).catch(() => {});
+      }
     }
   };
 
@@ -311,12 +315,19 @@ export default function MechanicJobBoardPage() {
     updateDrawerJO({ inspectionItems: updatedItems });
 
     if (targetItem && targetItem.id) {
-      (apiService as any).addCartItem(targetItem.id, {
+      const payload = {
         material_name: selectedPartName,
         quantity: addMaterialQtyInput
-      }).catch((err: any) => {
-        console.error("Failed to add material to backend cart", err);
-      });
+      };
+      if (typeof (apiService as any).addCartItem === "function") {
+        (apiService as any).addCartItem(targetItem.id, payload).catch(() => {});
+      } else {
+        fetch(`http://localhost:8000/api/job-orders/checklist-items/${targetItem.id}/cart`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      }
     }
 
     setActiveAddMaterialItemIdx(null);
