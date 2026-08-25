@@ -12,6 +12,7 @@ interface ReminderModalProps {
   reminder: ReminderItem | null;
   onSave: (id: string, updates: Partial<ReminderItem>) => Promise<void>;
   onCreate?: (newReminder: any) => Promise<void>;
+  initialJoId?: string;
 }
 
 export const ReminderModal: React.FC<ReminderModalProps> = ({
@@ -19,7 +20,8 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   onClose,
   reminder,
   onSave,
-  onCreate
+  onCreate,
+  initialJoId
 }) => {
   const [completedJobOrders, setCompletedJobOrders] = useState<any[]>([]);
   const [bundles, setBundles] = useState<any[]>([]);
@@ -147,7 +149,8 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           setBundles(allBundles || []);
 
           if (completed.length > 0) {
-            handleSelectJobOrder(completed[0].id, completed, allBundles || []);
+            const targetJoId = (initialJoId && completed.some((j: any) => j.id === initialJoId)) ? initialJoId : completed[0].id;
+            handleSelectJobOrder(targetJoId, completed, allBundles || []);
           } else {
             setSelectedJoId("");
             setSelectedServiceType("");

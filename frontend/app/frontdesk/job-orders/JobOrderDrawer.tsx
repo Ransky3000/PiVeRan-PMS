@@ -13,6 +13,7 @@ import {
 import { apiService } from "@/app/apiService";
 import { JobOrder, InspectionItem, EstimateLineItem } from "@/app/types";
 import { CustomSelect, SelectOption } from "@/components/CustomSelect";
+import { ReminderModal } from "../reminders/ReminderModal";
 import {
   getServiceDescription,
   getEffectiveEstimateItems,
@@ -69,7 +70,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
   onMarkCompleted
 }) => {
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
-  const [isAddingReminder, setIsAddingReminder] = useState(false);
+  const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
   const [hasReminder, setHasReminder] = useState(false);
   const [checkingReminder, setCheckingReminder] = useState(false);
 
@@ -643,37 +644,15 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                   </button>
                 ) : (
                   <button
-                    onClick={async () => {
-                      if (isAddingReminder || checkingReminder) return;
-                      setIsAddingReminder(true);
-                      try {
-                        const startOdo = parseInt(String(drawerJobOrder.odometer || "0").replace(/[^\d]/g, "")) || 0;
-                        const targetOdo = startOdo + 10000;
-                        const targetDt = new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
-                        await apiService.createReminder({
-                          joId: drawerJobOrder.id || drawerJobOrder.joId,
-                          vehicleId: drawerJobOrder.vehicleId,
-                          ownerId: drawerJobOrder.ownerId,
-                          startDate: new Date().toISOString(),
-                          targetDate: targetDt,
-                          startOdometer: startOdo,
-                          targetOdometer: targetOdo,
-                          status: "Pending"
-                        });
-                        setHasReminder(true);
-                        alert("Service reminder created successfully!");
-                      } catch (e) {
-                        console.error("Failed to create reminder from drawer", e);
-                        alert("Failed to create service reminder.");
-                      } finally {
-                        setIsAddingReminder(false);
-                      }
+                    onClick={() => {
+                      if (checkingReminder) return;
+                      setIsReminderModalOpen(true);
                     }}
-                    disabled={isAddingReminder || checkingReminder}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                    disabled={checkingReminder}
+                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
                   >
                     <Bell className="w-4 h-4" />
-                    <span>{checkingReminder ? "Checking..." : isAddingReminder ? "Adding..." : "+ Add Reminder"}</span>
+                    <span>{checkingReminder ? "Checking..." : "+ Add Reminder"}</span>
                   </button>
                 )
               )}
@@ -705,6 +684,20 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
           )}
         </div>
       </motion.div>
+
+      {/* CREATE REMINDER FORM MODAL */}
+      <ReminderModal
+        isOpen={isReminderModalOpen}
+        onClose={() => setIsReminderModalOpen(false)}
+        reminder={null}
+        initialJoId={drawerJobOrder.id || drawerJobOrder.joId}
+        onSave={async () => {}}
+        onCreate={async (newReminder) => {
+          await apiService.createReminder(newReminder);
+          setHasReminder(true);
+          setIsReminderModalOpen(false);
+        }}
+      />
     </>
   );
 };
