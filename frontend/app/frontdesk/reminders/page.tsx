@@ -24,7 +24,7 @@ export default function RemindersPage() {
   const fetchReminders = async () => {
     setIsLoading(true);
     try {
-      const data = await apiService.getReminders(filterStatus);
+      const data = await apiService.getReminders();
       setReminders(data || []);
     } catch (e) {
       console.error("Failed to load reminders", e);
@@ -39,7 +39,7 @@ export default function RemindersPage() {
       fetchReminders();
     });
     return () => unsubscribe();
-  }, [filterStatus]);
+  }, []);
 
   const handleSaveReminder = async (id: string, updates: Partial<ReminderItem>) => {
     try {
@@ -71,6 +71,14 @@ export default function RemindersPage() {
   };
 
   const filteredReminders = reminders.filter((r) => {
+    const statusUpper = (r.status || "").toUpperCase();
+    const tabUpper = filterStatus.toUpperCase();
+    const matchesStatus = (tabUpper === "DONE" || tabUpper === "COMPLETED")
+      ? (statusUpper === "DONE" || statusUpper === "COMPLETED")
+      : statusUpper === tabUpper;
+
+    if (!matchesStatus) return false;
+
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -81,8 +89,15 @@ export default function RemindersPage() {
     );
   });
 
-  const getStatusCount = (status: string) => {
-    return reminders.filter((r) => r.status.toUpperCase() === status.toUpperCase()).length;
+  const getStatusCount = (tabId: string) => {
+    const tabUpper = tabId.toUpperCase();
+    return reminders.filter((r) => {
+      const statusUpper = (r.status || "").toUpperCase();
+      if (tabUpper === "DONE" || tabUpper === "COMPLETED") {
+        return statusUpper === "DONE" || statusUpper === "COMPLETED";
+      }
+      return statusUpper === tabUpper;
+    }).length;
   };
 
   const statusTabs = [
