@@ -82,17 +82,31 @@ export const ReminderTable: React.FC<ReminderTableProps> = ({
     if (!r.startDate || !r.targetDate) return 0;
 
     const start = new Date(r.startDate).getTime();
-    const target = new Date(r.targetDate).getTime();
+    const targetDateObj = new Date(r.targetDate);
+    const target = targetDateObj.getTime();
     const now = Date.now();
 
-    if (isNaN(start) || isNaN(target) || target <= start) return 0;
-    if (now >= target) return 100;
+    if (isNaN(start) || isNaN(target)) return 0;
 
-    const daysUntilTarget = (target - now) / (1000 * 60 * 60 * 24);
+    // Normalize dates to start-of-day for calendar-based comparison
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const targetDayStart = new Date(targetDateObj);
+    targetDayStart.setHours(0, 0, 0, 0);
+
+    // If target date is today or in the past, or now >= target, return 100%
+    if (targetDayStart.getTime() <= todayStart.getTime() || now >= target) {
+      return 100;
+    }
+
+    const daysUntilTarget = (targetDayStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24);
 
     // If item is Due Soon (status is 'Due' or target date within 30 days), floor progress to at least 88%
     if (r.status === "Due" || daysUntilTarget <= 30) {
-      const pct = ((now - start) / (target - start)) * 100;
+      const totalDuration = target - start;
+      const elapsed = now - start;
+      const pct = totalDuration > 0 ? (elapsed / totalDuration) * 100 : 88;
       return Math.min(100, Math.max(pct || 0, 88));
     }
 
