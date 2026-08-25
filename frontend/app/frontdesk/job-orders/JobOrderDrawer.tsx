@@ -637,7 +637,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                     className="px-4 py-2 bg-emerald-100 text-emerald-800 font-semibold text-xs rounded-xl shadow-2xs flex items-center gap-1.5 cursor-not-allowed opacity-90 border border-emerald-300"
                   >
                     <Check className="w-4 h-4 text-emerald-700" />
-                    <span>✓ Reminder Added</span>
+                    <span>Reminder Added</span>
                   </button>
                 ) : (
                   <button
