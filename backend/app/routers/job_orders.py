@@ -207,6 +207,9 @@ async def update_job_order_status(jo_id: str, payload: dict, db: Session = Depen
             new_status = JobOrderStatus(payload["status"])
             jo.status = new_status
 
+            if new_status != JobOrderStatus.JOB_COMPLETED:
+                db.query(Reminder).filter(Reminder.jo_id == jo_id).delete()
+
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid status value")
             
