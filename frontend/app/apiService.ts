@@ -958,6 +958,61 @@ export const authService = {
     if (typeof window === "undefined") return;
     localStorage.removeItem("piveran_current_user");
     localStorage.removeItem("piveran_pending_user");
+  },
+
+  // CHECKLIST ITEM & CART ENDPOINTS
+  updateInspectionItem: async (cdId: string, payload: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cdId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Failed to update checklist item");
+      return await res.json();
+    } catch (e) {
+      console.warn("Failed to update checklist item", e);
+    }
+  },
+
+  addCartItem: async (cdId: string, payload: { material_id?: string; material_name?: string; quantity?: number }) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cdId}/cart`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error("Failed to add material to cart");
+      return await res.json();
+    } catch (e) {
+      console.warn("Failed to add material to cart", e);
+    }
+  },
+
+  removeCartItem: async (cdId: string, cartId: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cdId}/cart/${cartId}`, {
+        method: "DELETE"
+      });
+      if (!res.ok) throw new Error("Failed to remove material from cart");
+      return await res.json();
+    } catch (e) {
+      console.warn("Failed to remove material from cart", e);
+    }
+  },
+
+  updateCartDecision: async (cdId: string, cartId: string, decision: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cdId}/cart/${cartId}/decision`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision })
+      });
+      if (!res.ok) throw new Error("Failed to update cart decision");
+      return await res.json();
+    } catch (e) {
+      console.warn("Failed to update cart decision", e);
+    }
   }
 };
 

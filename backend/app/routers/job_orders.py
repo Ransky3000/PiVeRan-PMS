@@ -340,19 +340,29 @@ async def add_cart_item(cd_id: str, payload: dict, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Checklist item not found")
 
     material_id = payload.get("material_id")
+    material_name = payload.get("material_name") or payload.get("name")
     quantity = payload.get("quantity", 1)
 
-    material = db.query(Material).filter(Material.materials_id == material_id).first()
+    material = None
+    if material_id:
+        material = db.query(Material).filter(Material.materials_id == material_id).first()
+    if not material and material_name:
+        material = db.query(Material).filter(Material.name.ilike(material_name)).first()
+    if not material and material_name:
+        material = Material(name=material_name, price=payload.get("price", 500.0))
+        db.add(material)
+        db.flush()
+
     if not material:
         raise HTTPException(status_code=404, detail="Material not found")
 
-    existing = db.query(Cart).filter(Cart.cd_id == cd_id, Cart.materials_id == material_id).first()
+    existing = db.query(Cart).filter(Cart.cd_id == cd_id, Cart.materials_id == material.materials_id).first()
     if existing:
         existing.quantity += quantity
     else:
         new_cart = Cart(
             cd_id=cd_id,
-            materials_id=material_id,
+            materials_id=material.materials_id,
             quantity=quantity,
             price=material.price,
             decision=CartDecision.NO

@@ -256,6 +256,11 @@ export default function MechanicJobBoardPage() {
     if (!targetItem) return;
 
     const existingReqs = targetItem.requiredMaterials || [];
+    const targetReq = existingReqs.find((m) => {
+      const name = typeof m === "object" ? m.name : m;
+      return name.toLowerCase() === matName.toLowerCase();
+    });
+
     const updatedReqs = existingReqs.filter((m) => {
       const name = typeof m === "object" ? m.name : m;
       return name.toLowerCase() !== matName.toLowerCase();
@@ -264,6 +269,12 @@ export default function MechanicJobBoardPage() {
     const updatedItems = [...items];
     updatedItems[itemIdx] = { ...targetItem, requiredMaterials: updatedReqs };
     updateDrawerJO({ inspectionItems: updatedItems });
+
+    if (targetItem && targetItem.id && targetReq && typeof targetReq === "object" && targetReq.cart_id) {
+      (apiService as any).removeCartItem(targetItem.id, targetReq.cart_id).catch((err: any) => {
+        console.error("Failed to remove material from backend cart", err);
+      });
+    }
   };
 
   const confirmAddMaterial = (itemIdx: number) => {
@@ -298,6 +309,15 @@ export default function MechanicJobBoardPage() {
     const updatedItems = [...items];
     updatedItems[itemIdx] = { ...targetItem, requiredMaterials: updatedReqs };
     updateDrawerJO({ inspectionItems: updatedItems });
+
+    if (targetItem && targetItem.id) {
+      (apiService as any).addCartItem(targetItem.id, {
+        material_name: selectedPartName,
+        quantity: addMaterialQtyInput
+      }).catch((err: any) => {
+        console.error("Failed to add material to backend cart", err);
+      });
+    }
 
     setActiveAddMaterialItemIdx(null);
     setSelectedPartName(null);
