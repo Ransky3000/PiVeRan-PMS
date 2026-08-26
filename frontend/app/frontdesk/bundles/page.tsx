@@ -299,7 +299,6 @@ export default function AdminServicesPage() {
   };
 
   const devContext = useDevRole();
-  const { mockDataState } = devContext;
 
   const filteredLaborItems = useMemo(() => {
     return laborItems.filter((item) => {
@@ -310,14 +309,12 @@ export default function AdminServicesPage() {
   }, [laborItems, searchTerm, categoryFilter]);
 
   const displayedLaborItems = useMemo(() => {
-    if (mockDataState === "empty") return [];
     return filteredLaborItems;
-  }, [mockDataState, filteredLaborItems]);
+  }, [filteredLaborItems]);
 
   const displayedPackages = useMemo(() => {
-    if (mockDataState === "empty") return [];
     return packages.filter((pkg) => pkg.packageName.toLowerCase().includes(searchTerm.toLowerCase()));
-  }, [mockDataState, packages, searchTerm]);
+  }, [packages, searchTerm]);
 
   return (
     <TailAdminLayout userRole={devContext.activeRole} userName={devContext.currentProfile.name} userEmail={devContext.currentProfile.email}>
@@ -471,33 +468,21 @@ export default function AdminServicesPage() {
                 <Wrench className="w-8 h-8 text-slate-300 mx-auto" />
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold text-slate-900">
-                    {mockDataState === "empty" ? "No labor services found" : "No matching items found"}
+                    No labor services found
                   </h4>
                   <p className="text-xs text-slate-400">
-                    {mockDataState === "empty"
-                      ? "Get started by adding your shop's first labor service."
-                      : `No labor items matched "${searchTerm}".`}
+                    No labor items matched your search query or filter.
                   </p>
                 </div>
-                {mockDataState === "empty" ? (
-                  <button
-                    onClick={() => setIsAddLaborModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition-all shadow-xs cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Labor Service</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      setSearchTerm("");
-                      setCategoryFilter("ALL");
-                    }}
-                    className="text-xs text-emerald-600 font-semibold hover:underline cursor-pointer"
-                  >
-                    Reset search & filters
-                  </button>
-                )}
+                <button
+                  onClick={() => {
+                    setSearchTerm("");
+                    setCategoryFilter("ALL");
+                  }}
+                  className="text-xs text-emerald-600 font-semibold hover:underline cursor-pointer"
+                >
+                  Reset search & filters
+                </button>
               </div>
             ) : (
               <div className="divide-y divide-slate-100 text-xs">
@@ -516,30 +501,18 @@ export default function AdminServicesPage() {
                 <Package className="w-8 h-8 text-slate-300 mx-auto" />
                 <div className="space-y-1">
                   <h4 className="text-sm font-semibold text-slate-900">
-                    {mockDataState === "empty" ? "No package bundles found" : "No matching packages found"}
+                    No package bundles found
                   </h4>
                   <p className="text-xs text-slate-400">
-                    {mockDataState === "empty"
-                      ? "Bundle individual labor rates into flat-priced PMS packages."
-                      : `No packages matched "${searchTerm}".`}
+                    No packages matched your search query.
                   </p>
                 </div>
-                {mockDataState === "empty" ? (
-                  <button
-                    onClick={openCreatePackageModal}
-                    className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs px-3.5 py-2 rounded-xl transition-all shadow-xs cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Create Package</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setSearchTerm("")}
-                    className="text-xs text-emerald-600 font-semibold hover:underline cursor-pointer"
-                  >
-                    Reset search
-                  </button>
-                )}
+                <button
+                  onClick={() => setSearchTerm("")}
+                  className="text-xs text-emerald-600 font-semibold hover:underline cursor-pointer"
+                >
+                  Reset search
+                </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-3">

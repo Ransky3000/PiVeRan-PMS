@@ -283,13 +283,9 @@ export default function MechanicJobBoardPage() {
     updateDrawerJO({ inspectionItems: updatedItems });
 
     if (targetItem && targetItem.id && targetReq && typeof targetReq === "object" && targetReq.cart_id) {
-      if (typeof (apiService as any).removeCartItem === "function") {
-        (apiService as any).removeCartItem(targetItem.id, targetReq.cart_id).catch(() => {});
-      } else {
-        fetch(`http://localhost:8000/api/job-orders/checklist-items/${targetItem.id}/cart/${targetReq.cart_id}`, {
-          method: "DELETE"
-        }).catch(() => {});
-      }
+      apiService.removeCartItem(targetItem.id, targetReq.cart_id).catch((err) => {
+        console.error("Failed to remove cart item on backend", err);
+      });
     }
   };
 
@@ -331,15 +327,9 @@ export default function MechanicJobBoardPage() {
         material_name: selectedPartName,
         quantity: addMaterialQtyInput
       };
-      if (typeof (apiService as any).addCartItem === "function") {
-        (apiService as any).addCartItem(targetItem.id, payload).catch(() => {});
-      } else {
-        fetch(`http://localhost:8000/api/job-orders/checklist-items/${targetItem.id}/cart`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        }).catch(() => {});
-      }
+      apiService.addCartItem(targetItem.id, payload).catch((err) => {
+        console.error("Failed to add cart item on backend", err);
+      });
     }
 
     setActiveAddMaterialItemIdx(null);
@@ -349,7 +339,7 @@ export default function MechanicJobBoardPage() {
   };
 
   return (
-    <TailAdminLayout userRole="Mechanic" userName="Bay Tablet #1" userEmail="bay1@piveran.com">
+    <TailAdminLayout userRole="Mechanic">
       <div className="space-y-4">
         {/* HEADER SECTION */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-3">

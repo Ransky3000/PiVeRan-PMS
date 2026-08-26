@@ -104,18 +104,13 @@ export const apiService = {
 
   updateJobOrderStatus: async (id: string, statusOrPayload: string | { status?: string }) => {
     const payload = typeof statusOrPayload === "string" ? { status: statusOrPayload } : statusOrPayload;
-    try {
-      const res = await fetch(`${API_BASE_URL}/job-orders/${id}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error("Failed to update status");
-      return await res.json();
-    } catch (e) {
-      console.warn(`Backend unavailable, mock updating job order status ${id}`, e);
-      return { message: "Updated (mock)", id, ...payload };
-    }
+    const res = await fetch(`${API_BASE_URL}/job-orders/${id}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error("Failed to update status");
+    return await res.json();
   },
 
   updateInspectionItem: async (id: string | number, payload: {
@@ -126,37 +121,27 @@ export const apiService = {
     statusPhotos?: Record<string, string[]>;
     visual_proof?: string;
   }) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) throw new Error("Failed to update inspection item");
-      return await res.json();
-    } catch (e) {
-      console.warn(`Backend unavailable, mock updating inspection item ${id}`, e);
-      return { message: "Updated (mock)", id, ...payload };
-    }
+    const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error("Failed to update inspection item");
+    return await res.json();
   },
 
   addMaterialToCart: async (cd_id: string | number, material_id_or_payload: any, quantity: number = 1) => {
-    try {
-      const bodyPayload = typeof material_id_or_payload === "object"
-        ? material_id_or_payload
-        : { material_id: material_id_or_payload, quantity };
+    const bodyPayload = typeof material_id_or_payload === "object"
+      ? material_id_or_payload
+      : { material_id: material_id_or_payload, quantity };
 
-      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(bodyPayload)
-      });
-      if (!res.ok) throw new Error("Failed to add material to cart");
-      return await res.json();
-    } catch (e) {
-      console.warn(`Backend unavailable, mock adding material to cart`, e);
-      return { message: "Added material (mock)", cd_id, material_id_or_payload, quantity };
-    }
+    const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyPayload)
+    });
+    if (!res.ok) throw new Error("Failed to add material to cart");
+    return await res.json();
   },
 
   addCartItem: async (cdId: string | number, payload: any) => {
@@ -172,31 +157,21 @@ export const apiService = {
   },
 
   removeMaterialFromCart: async (cd_id: string | number, cart_id: string) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart/${cart_id}`, {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Failed to remove material from cart");
-      return await res.json();
-    } catch (e) {
-      console.warn(`Backend unavailable, mock removing material from cart`, e);
-      return { message: "Removed material (mock)", cd_id, cart_id };
-    }
+    const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart/${cart_id}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) throw new Error("Failed to remove material from cart");
+    return await res.json();
   },
 
   updateCartItemDecision: async (cd_id: string | number, cart_id: string, decision: "Buy" | "No") => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart/${cart_id}/decision`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision })
-      });
-      if (!res.ok) throw new Error("Failed to update cart item decision");
-      return await res.json();
-    } catch (e) {
-      console.warn(`Backend unavailable, mock updating cart decision`, e);
-      return { message: "Updated cart decision (mock)", cd_id, cart_id, decision };
-    }
+    const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart/${cart_id}/decision`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ decision })
+    });
+    if (!res.ok) throw new Error("Failed to update cart item decision");
+    return await res.json();
   },
 
   createJobOrder: async (jobOrder: {
@@ -206,34 +181,24 @@ export const apiService = {
     odometer: number;
     mechanic_names: string[];
   }) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/job-orders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(jobOrder)
-      });
-      if (!res.ok) throw new Error("Failed to create job order");
-      const data = await res.json();
-      return normalizeJobOrder(data);
-    } catch (e) {
-      console.warn("Backend unavailable, mock creating job order", e);
-      throw e;
-    }
+    const res = await fetch(`${API_BASE_URL}/job-orders`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(jobOrder)
+    });
+    if (!res.ok) throw new Error("Failed to create job order");
+    const data = await res.json();
+    return normalizeJobOrder(data);
   },
 
   updateCartItem: async (cd_id: string | number, cart_id: string, updates: { quantity?: number; price?: number }) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart/${cart_id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates)
-      });
-      if (!res.ok) throw new Error("Failed to update cart item");
-      return await res.json();
-    } catch (e) {
-      console.warn(`Backend unavailable, mock updating cart item`, e);
-      return { message: "Updated cart item (mock)", cd_id, cart_id, ...updates };
-    }
+    const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart/${cart_id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error("Failed to update cart item");
+    return await res.json();
   },
 
   updateJobOrder: async (id: string, payload: {
@@ -289,62 +254,47 @@ export const apiService = {
   },
 
   createMaterial: async (material: any) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/materials`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: material.name,
-          description: material.description || "",
-          price: parseFloat(material.price || 0)
-        })
-      });
-      if (!res.ok) throw new Error("Failed to create material");
-      const m = await res.json();
-      return {
-        id: m.materials_id,
-        name: m.name,
-        description: m.description || "",
-        price: m.price
-      };
-    } catch (e) {
-      console.warn("Backend unavailable, mock creating material", e);
-      return { ...material, id: `MAT-${Math.random().toString(36).substr(2, 9)}` };
-    }
+    const res = await fetch(`${API_BASE_URL}/master/materials`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: material.name,
+        description: material.description || "",
+        price: parseFloat(material.price || 0)
+      })
+    });
+    if (!res.ok) throw new Error("Failed to create material");
+    const m = await res.json();
+    return {
+      id: m.materials_id,
+      name: m.name,
+      description: m.description || "",
+      price: m.price
+    };
   },
 
   updateMaterial: async (materialId: string, updates: any) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/materials/${materialId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates)
-      });
-      if (!res.ok) throw new Error("Failed to update material");
-      const m = await res.json();
-      return {
-        id: m.materials_id,
-        name: m.name,
-        description: m.description || "",
-        price: m.price
-      };
-    } catch (e) {
-      console.warn("Backend unavailable, mock updating material", e);
-      return null;
-    }
+    const res = await fetch(`${API_BASE_URL}/master/materials/${materialId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error("Failed to update material");
+    const m = await res.json();
+    return {
+      id: m.materials_id,
+      name: m.name,
+      description: m.description || "",
+      price: m.price
+    };
   },
 
   deleteMaterial: async (materialId: string) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/materials/${materialId}`, {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Failed to delete material");
-      return true;
-    } catch (e) {
-      console.warn("Backend unavailable, mock deleting material", e);
-      return false;
-    }
+    const res = await fetch(`${API_BASE_URL}/master/materials/${materialId}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) throw new Error("Failed to delete material");
+    return true;
   },
 
   getOwners: async () => {
@@ -371,47 +321,42 @@ export const apiService = {
         }))
       }));
     } catch (e) {
-      console.warn("Backend unavailable, returning empty owners array", e);
+      console.warn("Failed to fetch owners list", e);
       return [];
     }
   },
 
   createOwner: async (owner: any) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/owners`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: owner.name,
-          facebook: owner.fb_handle || "",
-          contact_number: owner.phone,
-          vehicle_ids: owner.vehicle_ids || []
-        })
-      });
-      if (!res.ok) throw new Error("Failed to create owner");
-      const o = await res.json();
-      return {
-        id: o.owner_id,
-        name: o.name,
-        phone: o.contact_number,
-        fb_handle: o.facebook || "",
-        vehicles: (o.vehicles || []).map((v: any) => ({
-          id: v.vehicle_id || v.id,
-          vehicle_id: v.vehicle_id || v.id,
-          plate_number: v.plate_number || v.plate,
-          plate: v.plate_number || v.plate,
-          make: v.make,
-          model: v.model,
-          year: v.year,
-          color: v.color,
-          photo_url: v.photo_url || v.photoUrl || null,
-          photoUrl: v.photo_url || v.photoUrl || null
-        }))
-      };
-    } catch (e) {
-      console.warn("Backend unavailable, mock creating owner", e);
-      return { ...owner, id: `OWN-${Math.random().toString(36).substr(2, 4)}` };
-    }
+    const res = await fetch(`${API_BASE_URL}/master/owners`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: owner.name,
+        facebook: owner.fb_handle || "",
+        contact_number: owner.phone,
+        vehicle_ids: owner.vehicle_ids || []
+      })
+    });
+    if (!res.ok) throw new Error("Failed to create owner");
+    const o = await res.json();
+    return {
+      id: o.owner_id,
+      name: o.name,
+      phone: o.contact_number,
+      fb_handle: o.facebook || "",
+      vehicles: (o.vehicles || []).map((v: any) => ({
+        id: v.vehicle_id || v.id,
+        vehicle_id: v.vehicle_id || v.id,
+        plate_number: v.plate_number || v.plate,
+        plate: v.plate_number || v.plate,
+        make: v.make,
+        model: v.model,
+        year: v.year,
+        color: v.color,
+        photo_url: v.photo_url || v.photoUrl || null,
+        photoUrl: v.photo_url || v.photoUrl || null
+      }))
+    };
   },
 
   getVehicles: async () => {
@@ -438,97 +383,82 @@ export const apiService = {
         }))
       }));
     } catch (e) {
-      console.warn("Backend unavailable, returning empty vehicles array", e);
+      console.warn("Failed to fetch vehicles list", e);
       return [];
     }
   },
 
   createVehicle: async (vehicle: any) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/vehicles`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          make: vehicle.make || vehicle.model?.split(" ")[0] || "Unknown",
-          model: vehicle.model || "Unknown",
-          year: parseInt(vehicle.year) || 2020,
-          color: vehicle.color || "Black",
-          plate_number: vehicle.plate_number,
-          photo_url: vehicle.photo_url || null,
-          owner_id: vehicle.owner_id || null,
-          owner_ids: vehicle.owner_ids || (vehicle.owner_id ? [vehicle.owner_id] : [])
-        })
-      });
-      if (!res.ok) throw new Error("Failed to create vehicle");
-      const v = await res.json();
-      return {
-        id: v.vehicle_id,
-        vehicle_id: v.vehicle_id,
-        plate_number: v.plate_number,
-        plate: v.plate_number,
-        make: v.make,
-        model: v.model,
-        year: v.year,
-        color: v.color,
-        photo_url: v.photo_url || null,
-        photoUrl: v.photo_url || null,
-        owners: (v.owners || []).map((o: any) => ({
-          id: o.owner_id,
-          name: o.name,
-          phone: o.contact_number,
-          fb_handle: o.facebook || ""
-        }))
-      };
-    } catch (e) {
-      console.warn("Backend unavailable, mock creating vehicle", e);
-      return { ...vehicle, id: `VEH-${Math.random().toString(36).substr(2, 4)}` };
-    }
+    const res = await fetch(`${API_BASE_URL}/master/vehicles`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        make: vehicle.make || vehicle.model?.split(" ")[0] || "Unknown",
+        model: vehicle.model || "Unknown",
+        year: parseInt(vehicle.year) || 2020,
+        color: vehicle.color || "Black",
+        plate_number: vehicle.plate_number,
+        photo_url: vehicle.photo_url || null,
+        owner_id: vehicle.owner_id || null,
+        owner_ids: vehicle.owner_ids || (vehicle.owner_id ? [vehicle.owner_id] : [])
+      })
+    });
+    if (!res.ok) throw new Error("Failed to create vehicle");
+    const v = await res.json();
+    return {
+      id: v.vehicle_id,
+      vehicle_id: v.vehicle_id,
+      plate_number: v.plate_number,
+      plate: v.plate_number,
+      make: v.make,
+      model: v.model,
+      year: v.year,
+      color: v.color,
+      photo_url: v.photo_url || null,
+      photoUrl: v.photo_url || null,
+      owners: (v.owners || []).map((o: any) => ({
+        id: o.owner_id,
+        name: o.name,
+        phone: o.contact_number,
+        fb_handle: o.facebook || ""
+      }))
+    };
   },
 
   updateVehicle: async (vehicleId: string, updates: any) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/vehicles/${vehicleId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates)
-      });
-      if (!res.ok) throw new Error("Failed to update vehicle");
-      const v = await res.json();
-      return {
-        id: v.vehicle_id,
-        vehicle_id: v.vehicle_id,
-        plate_number: v.plate_number,
-        plate: v.plate_number,
-        make: v.make,
-        model: v.model,
-        year: v.year,
-        color: v.color,
-        photo_url: v.photo_url || null,
-        photoUrl: v.photo_url || null,
-        owners: (v.owners || []).map((o: any) => ({
-          id: o.owner_id,
-          name: o.name,
-          phone: o.contact_number,
-          fb_handle: o.facebook || ""
-        }))
-      };
-    } catch (e) {
-      console.warn("Backend unavailable, mock updating vehicle", e);
-      return null;
-    }
+    const res = await fetch(`${API_BASE_URL}/master/vehicles/${vehicleId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error("Failed to update vehicle");
+    const v = await res.json();
+    return {
+      id: v.vehicle_id,
+      vehicle_id: v.vehicle_id,
+      plate_number: v.plate_number,
+      plate: v.plate_number,
+      make: v.make,
+      model: v.model,
+      year: v.year,
+      color: v.color,
+      photo_url: v.photo_url || null,
+      photoUrl: v.photo_url || null,
+      owners: (v.owners || []).map((o: any) => ({
+        id: o.owner_id,
+        name: o.name,
+        phone: o.contact_number,
+        fb_handle: o.facebook || ""
+      }))
+    };
   },
 
   deleteVehicle: async (vehicleId: string) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/vehicles/${vehicleId}`, {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Failed to delete vehicle");
-      return true;
-    } catch (e) {
-      console.warn("Backend unavailable, mock deleting vehicle", e);
-      return false;
-    }
+    const res = await fetch(`${API_BASE_URL}/master/vehicles/${vehicleId}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) throw new Error("Failed to delete vehicle");
+    return true;
   },
 
   getLabor: async () => {
@@ -546,73 +476,58 @@ export const apiService = {
         recommendedMaterials: (l.materials || []).map((m: any) => m.name)
       }));
     } catch (e) {
-      console.warn("Backend unavailable, falling back to mock labor");
-      return null;
+      console.warn("Failed to fetch labor items", e);
+      return [];
     }
   },
 
   createLabor: async (labor: any) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/labor`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          labor_name: labor.name,
-          price: parseFloat(labor.price.replace(/[₱,]/g, "")),
-          category: labor.category,
-          description: labor.description || ""
-        })
-      });
-      if (!res.ok) throw new Error("Failed to create labor");
-      const l = await res.json();
-      return {
-        id: l.labor_id,
-        name: l.labor_name,
-        price: `₱${parseFloat(l.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-        category: l.category,
-        description: l.description || "",
-        status: "Active" as const
-      };
-    } catch (e) {
-      console.warn("Backend unavailable, mock creating labor", e);
-      return { ...labor, id: `PMS-${Math.random().toString(36).substr(2, 4)}` };
-    }
+    const res = await fetch(`${API_BASE_URL}/master/labor`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        labor_name: labor.name,
+        price: parseFloat(labor.price.replace(/[₱,]/g, "")),
+        category: labor.category,
+        description: labor.description || ""
+      })
+    });
+    if (!res.ok) throw new Error("Failed to create labor");
+    const l = await res.json();
+    return {
+      id: l.labor_id,
+      name: l.labor_name,
+      price: `₱${parseFloat(l.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      category: l.category,
+      description: l.description || "",
+      status: "Active" as const
+    };
   },
 
   updateLabor: async (laborId: string, updates: any) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/labor/${laborId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates)
-      });
-      if (!res.ok) throw new Error("Failed to update labor");
-      const l = await res.json();
-      return {
-        id: l.labor_id,
-        name: l.labor_name,
-        price: `₱${parseFloat(l.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-        category: l.category,
-        description: l.description || "",
-        status: "Active" as const
-      };
-    } catch (e) {
-      console.warn("Backend unavailable, mock updating labor", e);
-      return null;
-    }
+    const res = await fetch(`${API_BASE_URL}/master/labor/${laborId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error("Failed to update labor");
+    const l = await res.json();
+    return {
+      id: l.labor_id,
+      name: l.labor_name,
+      price: `₱${parseFloat(l.price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      category: l.category,
+      description: l.description || "",
+      status: "Active" as const
+    };
   },
 
   deleteLabor: async (laborId: string) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/labor/${laborId}`, {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Failed to delete labor");
-      return true;
-    } catch (e) {
-      console.warn("Backend unavailable, mock deleting labor", e);
-      return false;
-    }
+    const res = await fetch(`${API_BASE_URL}/master/labor/${laborId}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) throw new Error("Failed to delete labor");
+    return true;
   },
 
   getBundles: async () => {
@@ -633,45 +548,40 @@ export const apiService = {
         popularBadge: false
       }));
     } catch (e) {
-      console.warn("Backend unavailable, falling back to empty bundles");
+      console.warn("Failed to fetch bundles", e);
       return [];
     }
   },
 
   createBundle: async (bundle: any) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/bundles`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bundle_name: bundle.packageName,
-          interval_km: bundle.intervalKm || 10000,
-          interval_months: bundle.intervalMonths || 6,
-          interval: bundle.targetInterval,
-          description: bundle.description || "",
-          original_price: typeof bundle.standaloneSum === "number" ? bundle.standaloneSum : parseFloat(bundle.standaloneSum?.replace(/[₱,]/g, "") || "0"),
-          discounted_price: typeof bundle.packagePrice === "number" ? bundle.packagePrice : parseFloat(bundle.packagePrice?.replace(/[₱,]/g, "") || "0"),
-          labor_ids: bundle.laborIds || []
-        })
-      });
-      if (!res.ok) throw new Error("Failed to create bundle");
-      const b = await res.json();
-      return {
-        id: b.bundle_id,
-        packageName: b.bundle_name,
-        targetInterval: b.interval,
-        intervalKm: b.interval_km || 10000,
-        intervalMonths: b.interval_months || 6,
-        description: b.description || "",
-        servicesIncluded: (b.services || []).map((s: any) => s.labor_name),
-        packagePrice: `₱${parseFloat(b.discounted_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-        standaloneSum: `₱${parseFloat(b.original_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-        popularBadge: false
-      };
-    } catch (e) {
-      console.warn("Backend unavailable, mock creating bundle", e);
-      return { ...bundle, id: `PKG-${Math.random().toString(36).substr(2, 4)}` };
-    }
+    const res = await fetch(`${API_BASE_URL}/master/bundles`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bundle_name: bundle.packageName,
+        interval_km: bundle.intervalKm || 10000,
+        interval_months: bundle.intervalMonths || 6,
+        interval: bundle.targetInterval,
+        description: bundle.description || "",
+        original_price: typeof bundle.standaloneSum === "number" ? bundle.standaloneSum : parseFloat(bundle.standaloneSum?.replace(/[₱,]/g, "") || "0"),
+        discounted_price: typeof bundle.packagePrice === "number" ? bundle.packagePrice : parseFloat(bundle.packagePrice?.replace(/[₱,]/g, "") || "0"),
+        labor_ids: bundle.laborIds || []
+      })
+    });
+    if (!res.ok) throw new Error("Failed to create bundle");
+    const b = await res.json();
+    return {
+      id: b.bundle_id,
+      packageName: b.bundle_name,
+      targetInterval: b.interval,
+      intervalKm: b.interval_km || 10000,
+      intervalMonths: b.interval_months || 6,
+      description: b.description || "",
+      servicesIncluded: (b.services || []).map((s: any) => s.labor_name),
+      packagePrice: `₱${parseFloat(b.discounted_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      standaloneSum: `₱${parseFloat(b.original_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      popularBadge: false
+    };
   },
 
   // REMINDERS API
@@ -763,41 +673,31 @@ export const apiService = {
   },
 
   updateBundle: async (bundleId: string, updates: any) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/bundles/${bundleId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates)
-      });
-      if (!res.ok) throw new Error("Failed to update bundle");
-      const b = await res.json();
-      return {
-        id: b.bundle_id,
-        packageName: b.bundle_name,
-        targetInterval: b.interval,
-        description: b.description || "",
-        servicesIncluded: (b.services || []).map((s: any) => s.labor_name),
-        packagePrice: `₱${parseFloat(b.discounted_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-        standaloneSum: `₱${parseFloat(b.original_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-        popularBadge: false
-      };
-    } catch (e) {
-      console.warn("Backend unavailable, mock updating bundle", e);
-      return null;
-    }
+    const res = await fetch(`${API_BASE_URL}/master/bundles/${bundleId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates)
+    });
+    if (!res.ok) throw new Error("Failed to update bundle");
+    const b = await res.json();
+    return {
+      id: b.bundle_id,
+      packageName: b.bundle_name,
+      targetInterval: b.interval,
+      description: b.description || "",
+      servicesIncluded: (b.services || []).map((s: any) => s.labor_name),
+      packagePrice: `₱${parseFloat(b.discounted_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      standaloneSum: `₱${parseFloat(b.original_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+      popularBadge: false
+    };
   },
 
   deleteBundle: async (bundleId: string) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/bundles/${bundleId}`, {
-        method: "DELETE"
-      });
-      if (!res.ok) throw new Error("Failed to delete bundle");
-      return true;
-    } catch (e) {
-      console.warn("Backend unavailable, mock deleting bundle", e);
-      return false;
-    }
+    const res = await fetch(`${API_BASE_URL}/master/bundles/${bundleId}`, {
+      method: "DELETE"
+    });
+    if (!res.ok) throw new Error("Failed to delete bundle");
+    return true;
   },
 
   getMechanics: async () => {

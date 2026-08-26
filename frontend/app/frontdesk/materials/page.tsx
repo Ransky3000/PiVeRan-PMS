@@ -140,10 +140,9 @@ function MaterialDetailDrawer({
               <div className="space-y-1">
                 <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Price (₱)</span>
                 <input
-                  type="number"
-                  step="0.01"
-                  value={editPrice}
-                  onChange={(e) => setEditPrice(e.target.value)}
+                  type="text"
+                  value={editPrice ? editPrice.replace(/[^\d.]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""}
+                  onChange={(e) => setEditPrice(e.target.value.replace(/[^\d.]/g, ""))}
                   className={`${inputCls} text-emerald-700 font-semibold`}
                 />
               </div>
@@ -416,12 +415,11 @@ export default function MaterialsPage() {
                 <div className="space-y-1">
                   <label className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Price (₱)</label>
                   <input
-                    type="number"
-                    step="0.01"
+                    type="text"
                     required
-                    value={newPrice}
-                    onChange={(e) => setNewPrice(e.target.value)}
-                    placeholder="e.g. 1500"
+                    value={newPrice ? newPrice.replace(/[^\d.]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""}
+                    onChange={(e) => setNewPrice(e.target.value.replace(/[^\d.]/g, ""))}
+                    placeholder="e.g. 1 500"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-xs outline-none focus:border-emerald-600 focus:bg-white transition-all text-slate-900 font-medium"
                   />
                 </div>

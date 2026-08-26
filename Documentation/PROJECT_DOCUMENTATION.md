@@ -7,7 +7,7 @@
 | Field | Details |
 | :--- | :--- |
 | **Project Name** | **PiVeRan PMS** (Preventive Maintenance System) |
-| **Document Version** | `v1.3.0` (Document Restructure) |
+| **Document Version** | `v1.4.0` (Mock Data Purge, Formatted Inputs, & Reminder Conversion Engine) |
 | **Primary Owner** | Ranian J. Rulona |
 | **Current SDLC Phase** | **Phase 4: Implementation & Coding** `[ACTIVE]` |
 | **Last Updated** | August 26, 2026 |
@@ -18,10 +18,10 @@
 
 | Document | Description | Status |
 | :--- | :--- | :--- |
-| 📄 **[PROJECT_DOCUMENTATION.md](file:///c:/Users/USER/Desktop/Ranian's%20file/PiVeRan-PMS/PROJECT_DOCUMENTATION.md)** | SDLC Master Tracker, Phase History, and Engineering Principles | `[ACTIVE]` |
-| 📄 **[SRS.md](file:///c:/Users/USER/Desktop/Ranian's%20file/PiVeRan-PMS/SRS.md)** | Software Requirements Specification (User Personas, Business Rules, Functional Requirements) | `[ACTIVE]` |
-| 📄 **[DDS.md](file:///c:/Users/USER/Desktop/Ranian's%20file/PiVeRan-PMS/DDS.md)** | Detailed Design Specification (System Architecture, Component Hierarchy, DB Schemas, API Endpoints) | `[ACTIVE]` |
-| 📄 **[MASTER_PMS_LEVEL_PACKAGES.md](file:///c:/Users/USER/Desktop/Ranian's%20file/PiVeRan-PMS/MASTER_PMS_LEVEL_PACKAGES_AND_INSPECTION_SEQUENCE.md)** | Inspection Sequences & PMS Level Package Matrix | `[ACTIVE]` |
+| 📄 **[PROJECT_DOCUMENTATION.md](file:///c:/Users/USER/Desktop/Ranian's%20file/PiVeRan-PMS/Documentation/PROJECT_DOCUMENTATION.md)** | SDLC Master Tracker, Phase History, and Engineering Principles | `[ACTIVE]` |
+| 📄 **[SRS.md](file:///c:/Users/USER/Desktop/Ranian's%20file/PiVeRan-PMS/Documentation/SRS.md)** | Software Requirements Specification (User Personas, Business Rules, Functional Requirements) | `[ACTIVE]` |
+| 📄 **[DDS.md](file:///c:/Users/USER/Desktop/Ranian's%20file/PiVeRan-PMS/Documentation/DDS.md)** | Detailed Design Specification (System Architecture, Component Hierarchy, DB Schemas, API Endpoints) | `[ACTIVE]` |
+| 📄 **[MASTER_PMS_LEVEL_PACKAGES.md](file:///c:/Users/USER/Desktop/Ranian's%20file/PiVeRan-PMS/Documentation/MASTER_PMS_LEVEL_PACKAGES_AND_INSPECTION_SEQUENCE.md)** | Inspection Sequences & PMS Level Package Matrix | `[ACTIVE]` |
 
 ---
 
@@ -43,7 +43,10 @@
 | **Aug 20, 2026** | **Phase 4: Implementation** | Built decoupled Next.js frontend, FastAPI backend REST endpoints, SQLite ORM models, and user authentication flow. | `[COMPLETED]` |
 | **Aug 25, 2026** | **Phase 4: Implementation** | Implemented Reminders module with **Approach A: Pure Linear Timeline** progress bar ($\frac{\text{Current}-\text{Start}}{\text{Target}-\text{Start}}\times 100\%$) and **7-day early notice** status rule. | `[COMPLETED]` |
 | **Aug 26, 2026** | **Phase 4: Implementation** | Restructured documentation into dedicated `PROJECT_DOCUMENTATION.md` (SDLC Tracker), `SRS.md` (Requirements), and `DDS.md` (Detailed Design). | `[COMPLETED]` |
-| **Aug 26, 2026** | **Phase 4: Implementation** | **[IN PROGRESS]** Developer Role (`DEVELOPER`) with fixed seed account (`dev@piveran.com` / `#include<piveran123>`) & Account Impersonation engine. | `[ACTIVE]` |
+| **Aug 26, 2026** | **Phase 4: Implementation** | Developer Role (`DEVELOPER`) with fixed seed account (`dev@piveran.com` / `#include<piveran123>`) & Account Impersonation engine. | `[COMPLETED]` |
+| **Aug 26, 2026** | **Phase 4: Implementation** | **Mock Data Purge**: Removed fake mock return objects, hardcoded user props, and dead `mockDataState` logic across `apiService.ts`, `DevRoleContext.tsx`, and frontend layouts. | `[COMPLETED]` |
+| **Aug 26, 2026** | **Phase 4: Implementation** | **Formatted Number Inputs**: Added global CSS spinner suppression and space separators for `Interval (KM)`, `Interval (Months)`, and `Price` inputs across package/labor modals. | `[COMPLETED]` |
+| **Aug 26, 2026** | **Phase 4: Implementation** | **[ACTIVE] Completed Reminder Conversion Engine**: Formulated workflow & technical implementation spec to convert completed maintenance reminders into pre-filled Job Orders (`/frontdesk/job-orders?create=true...`). | `[ACTIVE]` |
 
 ---
 

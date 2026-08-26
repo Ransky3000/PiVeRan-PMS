@@ -66,6 +66,7 @@ The system supports 5 distinct role personas:
   $$\text{Progress \%} = \frac{\text{Current Date} - \text{Start Date}}{\text{Target Date} - \text{Start Date}} \times 100\%$$
   - Progress bar reflects exact un-clamped timeline ratio between Last Service (`startDate`) and Next Schedule (`targetDate`).
 - **FR-3.4:** Reminder Drawer permits editing target date and odometer with a **Save Changes** button without prematurely completing the reminder.
+- **FR-3.5 (Completed Reminder Conversion to Job Order):** When inspecting a reminder under the `Completed` status tab, the drawer displays a primary `"Create Job Order"` action button (replacing `"Save Changes"`). Clicking this button redirects the user to `/frontdesk/job-orders` and automatically opens the Create Job Order modal with pre-filled `Owner`, `Vehicle`, `Service Type`, and `Odometer` parameters.
 
 ### FR-4: Job Order Management & Lifecycle
 - **FR-4.1:** Front Desk creates Job Orders by selecting Owner, Vehicle, Bundle package, assigned Mechanics, and odometer reading.
@@ -94,6 +95,7 @@ The system supports 5 distinct role personas:
 - **FR-8.3 (Materials):** Item Name, Unit Price, Description specs.
 - **FR-8.4 (Labor & Categories):** Labor task name, base cost, category (`PMS`, `AIRCON SERVICES`, `MAJOR WORK`, `UNDER CHASSIS`, `COOLING SYSTEM RESTORATION`).
 - **FR-8.5 (Bundles):** Bundle title, service interval, constituent labor list, baseline standalone sum, package discounted rate.
+- **FR-8.6 (Formatted Number Inputs & Spinner Removal):** All numerical inputs for Interval (KM), Interval (Months), and Prices (Package Rate, Labor Price, Material Price) use clean text inputs with digit-only validation, live space/comma thousands separators, and global CSS spinner suppression (`-webkit-appearance: none; -moz-appearance: textfield;`).
 
 ---
 

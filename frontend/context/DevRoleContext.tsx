@@ -4,7 +4,6 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 export type RoleType = "Developer" | "Admin" | "FrontDesk" | "Mechanic" | "Customer" | "Public";
-export type MockDataState = "populated" | "empty";
 
 export interface RoleProfile {
   role: RoleType;
@@ -18,7 +17,7 @@ export interface RoleProfile {
 export const ROLE_PROFILES: Record<RoleType, RoleProfile> = {
   Developer: {
     role: "Developer",
-    name: "Developer Admin",
+    name: "System Developer",
     email: "dev@piveran.com",
     title: "System Engineer",
     avatarBadge: "🛠️ Developer",
@@ -26,7 +25,7 @@ export const ROLE_PROFILES: Record<RoleType, RoleProfile> = {
   },
   Admin: {
     role: "Admin",
-    name: "Sir Keith",
+    name: "System Administrator",
     email: "admin@piveran.com",
     title: "System Owner",
     avatarBadge: "👑 Admin",
@@ -34,7 +33,7 @@ export const ROLE_PROFILES: Record<RoleType, RoleProfile> = {
   },
   FrontDesk: {
     role: "FrontDesk",
-    name: "Sir Cedrick",
+    name: "Front Desk Staff",
     email: "frontdesk@piveran.com",
     title: "Front Desk Manager",
     avatarBadge: "🖥️ Front Desk",
@@ -42,7 +41,7 @@ export const ROLE_PROFILES: Record<RoleType, RoleProfile> = {
   },
   Mechanic: {
     role: "Mechanic",
-    name: "Bay Tablet #1",
+    name: "Staff Mechanic",
     email: "mechanic@piveran.com",
     title: "Mechanic",
     avatarBadge: "📱 Mechanic",
@@ -50,8 +49,8 @@ export const ROLE_PROFILES: Record<RoleType, RoleProfile> = {
   },
   Customer: {
     role: "Customer",
-    name: "Car Owner Preview",
-    email: "customer@gmail.com",
+    name: "Vehicle Owner",
+    email: "owner@piveran.com",
     title: "Vehicle Owner",
     avatarBadge: "📲 Customer",
     defaultRoute: "/customer/approve/demo",
@@ -59,7 +58,7 @@ export const ROLE_PROFILES: Record<RoleType, RoleProfile> = {
   Public: {
     role: "Public",
     name: "Guest User",
-    email: "unauthenticated@piveran.com",
+    email: "public@piveran.com",
     title: "Public / Unauthenticated",
     avatarBadge: "🔑 Public",
     defaultRoute: "/login",
@@ -78,9 +77,6 @@ interface DevRoleContextType {
   currentProfile: RoleProfile;
   setRole: (role: RoleType) => void;
   switchRoleAndNavigate: (role: RoleType) => void;
-  mockDataState: MockDataState;
-  setMockDataState: (state: MockDataState) => void;
-  toggleMockDataState: () => void;
   isDevBarVisible: boolean;
   toggleDevBar: () => void;
   impersonatedMechanic: string | null;
@@ -93,7 +89,6 @@ const DevRoleContext = createContext<DevRoleContextType | undefined>(undefined);
 
 export function DevRoleProvider({ children }: { children: React.ReactNode }) {
   const [activeRole, setActiveRoleState] = useState<RoleType>("Developer");
-  const [mockDataState, setMockDataState] = useState<MockDataState>("populated");
   const [isDevBarVisible, setIsDevBarVisible] = useState(true);
   const [impersonatedMechanic, setImpersonatedMechanicState] = useState<string | null>(null);
   const [impersonatedAccount, setImpersonatedAccountState] = useState<ImpersonatedAccount | null>(null);
@@ -103,10 +98,6 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
     const savedRole = localStorage.getItem("piveran_dev_role") as RoleType | null;
     if (savedRole && ROLE_PROFILES[savedRole]) {
       setActiveRoleState(savedRole);
-    }
-    const savedState = localStorage.getItem("piveran_mock_state") as MockDataState | null;
-    if (savedState) {
-      setMockDataState(savedState);
     }
     const savedMech = localStorage.getItem("piveran_impersonated_mech");
     if (savedMech) {
@@ -143,16 +134,6 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const setMockState = (state: MockDataState) => {
-    setMockDataState(state);
-    localStorage.setItem("piveran_mock_state", state);
-  };
-
-  const toggleMockDataState = () => {
-    const nextState = mockDataState === "populated" ? "empty" : "populated";
-    setMockState(nextState);
-  };
-
   const switchRoleAndNavigate = (role: RoleType) => {
     setRole(role);
     setImpersonatedAccount(null);
@@ -181,9 +162,6 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
         currentProfile,
         setRole,
         switchRoleAndNavigate,
-        mockDataState,
-        setMockDataState: setMockState,
-        toggleMockDataState,
         isDevBarVisible,
         toggleDevBar,
         impersonatedMechanic,

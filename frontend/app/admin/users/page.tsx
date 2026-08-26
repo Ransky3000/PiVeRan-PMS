@@ -43,7 +43,6 @@ function mapBackendUserToFrontend(user: any): UserAccount {
 }
 
 export default function AdminUsersPage() {
-  const { mockDataState } = useDevRole();
   const [activeTab, setActiveTab] = useState<"APPLICANTS" | "ACTIVE_STAFF">("APPLICANTS");
   const [searchTerm, setSearchTerm] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -95,8 +94,6 @@ export default function AdminUsersPage() {
   const activeStaffCount = userList.filter((i) => i.status === "ACTIVE" && i.role !== "Admin").length;
 
   const displayedUsers = useMemo(() => {
-    if (mockDataState === "empty") return [];
-
     return userList.filter((item) => {
       const matchesSearch =
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -110,7 +107,7 @@ export default function AdminUsersPage() {
 
       return matchesSearch && matchesTab;
     });
-  }, [mockDataState, userList, searchTerm, activeTab]);
+  }, [userList, searchTerm, activeTab]);
 
   const handleApprove = async (id: string, name: string) => {
     try {

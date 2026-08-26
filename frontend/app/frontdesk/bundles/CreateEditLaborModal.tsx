@@ -131,10 +131,10 @@ export const CreateEditLaborModal: React.FC<CreateEditLaborModalProps> = ({
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Price (₱)</label>
               <input
-                type="number"
+                type="text"
                 required
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
+                value={price ? price.replace(/[^\d.]/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""}
+                onChange={(e) => setPrice(e.target.value.replace(/[^\d.]/g, ""))}
                 placeholder="650"
                 className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs text-emerald-800 font-extrabold outline-none focus:border-emerald-600 focus:bg-white transition-all"
               />

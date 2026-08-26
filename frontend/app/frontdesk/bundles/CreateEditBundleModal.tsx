@@ -25,6 +25,22 @@ interface CreateEditBundleModalProps {
   onDeletePackage: (id: string, name: string) => void;
 }
 
+export function formatKmWithSpaces(val: string | number): string {
+  if (val === undefined || val === null || val === "") return "";
+  const raw = String(val).replace(/[^\d]/g, "");
+  if (!raw) return "";
+  return raw.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
+export function formatPriceWithCommas(val: string | number): string {
+  if (val === undefined || val === null || val === "") return "";
+  const str = String(val).replace(/[^\d.]/g, "");
+  if (!str) return "";
+  const parts = str.split(".");
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return parts.slice(0, 2).join(".");
+}
+
 export const CreateEditBundleModal: React.FC<CreateEditBundleModalProps> = ({
   isOpen,
   onClose,
@@ -92,7 +108,7 @@ export const CreateEditBundleModal: React.FC<CreateEditBundleModalProps> = ({
               value={pkgTitle}
               onChange={(e) => setPkgTitle(e.target.value)}
               placeholder="Add title"
-              className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl p-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 font-bold"
+              className="w-full bg-white border border-slate-300 focus:border-emerald-600 rounded-xl p-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 font-bold"
             />
           </div>
 
@@ -104,7 +120,7 @@ export const CreateEditBundleModal: React.FC<CreateEditBundleModalProps> = ({
               value={pkgDescription}
               onChange={(e) => setPkgDescription(e.target.value)}
               placeholder="Add description"
-              className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl p-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 font-normal"
+              className="w-full bg-white border border-slate-300 focus:border-emerald-600 rounded-xl p-3.5 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 font-normal"
             />
           </div>
 
@@ -113,35 +129,35 @@ export const CreateEditBundleModal: React.FC<CreateEditBundleModalProps> = ({
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Interval (KM)</label>
               <input
-                type="number"
+                type="text"
                 required
-                value={pkgIntervalKm}
-                onChange={(e) => setPkgIntervalKm(e.target.value)}
-                placeholder="10000"
-                className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl p-2.5 text-xs text-slate-900 font-mono outline-none font-semibold"
+                value={formatKmWithSpaces(pkgIntervalKm)}
+                onChange={(e) => setPkgIntervalKm(e.target.value.replace(/[^\d]/g, ""))}
+                placeholder="10 000"
+                className="w-full bg-white border border-slate-300 focus:border-emerald-600 rounded-xl p-2.5 text-xs text-slate-900 font-sans outline-none font-semibold"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Interval (Months)</label>
               <input
-                type="number"
+                type="text"
                 required
                 value={pkgIntervalMonths}
-                onChange={(e) => setPkgIntervalMonths(e.target.value)}
+                onChange={(e) => setPkgIntervalMonths(e.target.value.replace(/[^\d]/g, ""))}
                 placeholder="6"
-                className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl p-2.5 text-xs text-slate-900 font-mono outline-none font-semibold"
+                className="w-full bg-white border border-slate-300 focus:border-emerald-600 rounded-xl p-2.5 text-xs text-slate-900 font-sans outline-none font-semibold"
               />
             </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">Package Rate (₱)</label>
               <input
-                type="number"
-                value={pkgFlatPrice}
-                onChange={(e) => setPkgFlatPrice(e.target.value)}
-                placeholder={`Default: ₱${standaloneSum}`}
-                className="w-full bg-white border border-slate-300 focus:border-slate-900 rounded-xl p-2.5 text-xs font-mono font-extrabold text-emerald-800 outline-none"
+                type="text"
+                value={pkgFlatPrice ? formatPriceWithCommas(pkgFlatPrice) : ""}
+                onChange={(e) => setPkgFlatPrice(e.target.value.replace(/[^\d.]/g, ""))}
+                placeholder={`Default: ₱${standaloneSum.toLocaleString()}`}
+                className="w-full bg-white border border-slate-300 focus:border-emerald-600 rounded-xl p-2.5 text-xs font-mono font-extrabold text-emerald-800 outline-none"
               />
             </div>
           </div>

@@ -76,8 +76,8 @@ frontend/app/
 ### 2.2 Shared Components & Contexts
 - **`components/TailAdminLayout.tsx`:** Primary workspace wrapper with responsive dark navy sidebar (`#0F172A`), active role card, navigation links, search bar, and user profile footer.
 - **`components/DevRoleBar.tsx`:** Floating inspector widget for dev mode role switching and account impersonation.
-- **`context/DevRoleContext.tsx`:** Manages `activeRole`, `currentProfile`, `activeImpersonatedUser`, and `mockDataState`.
-- **`app/apiService.ts`:** Decoupled REST client providing strongly-typed methods for all backend endpoints.
+- **`context/DevRoleContext.tsx`:** Manages `activeRole`, `currentProfile`, `impersonatedAccount`, `impersonatedMechanic`, and role switching state (purged legacy `mockDataState`).
+- **`app/apiService.ts`:** Decoupled REST client providing strongly-typed methods for all backend endpoints with true error propagation and zero fake mock returns.
 
 ---
 

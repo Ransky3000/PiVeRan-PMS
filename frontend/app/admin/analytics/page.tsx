@@ -5,7 +5,7 @@ import { TailAdminLayout } from "@/components/TailAdminLayout";
 
 export default function AdminAnalyticsPage() {
   return (
-    <TailAdminLayout userRole="Admin" userName="Sir Keith" userEmail="admin@piveran.com">
+    <TailAdminLayout userRole="Admin">
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
