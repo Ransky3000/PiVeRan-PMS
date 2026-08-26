@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useDevRole, RoleType, ImpersonatedAccount } from "@/context/DevRoleContext";
 import { usePathname, useRouter } from "next/navigation";
-import { apiService } from "@/app/apiService";
+import { apiService, authService } from "@/app/apiService";
 import { UserAccount } from "@/app/types";
 import {
   ShieldAlert,
@@ -130,8 +130,14 @@ export function DevRoleBar() {
     }
   };
 
+  const currentUser = authService.getCurrentUser();
+  const isDeveloperSession =
+    currentUser?.email === "dev@piveran.com" ||
+    (currentUser?.role || "").toUpperCase() === "DEVELOPER" ||
+    activeRole === "Developer";
   const isPublicRoute = ["/login", "/signup", "/pending-approval"].includes(pathname);
-  if (isPublicRoute || activeRole !== "Developer") {
+
+  if (isPublicRoute || !isDeveloperSession) {
     return null;
   }
 
@@ -275,6 +281,10 @@ export function DevRoleBar() {
           onClick={() => {
             setImpersonatedAccount(null);
             setImpersonatedMechanic(null);
+            authService.clearSession();
+            localStorage.removeItem("piveran_dev_role");
+            localStorage.removeItem("piveran_impersonated_account");
+            localStorage.removeItem("piveran_impersonated_mech");
             switchRoleAndNavigate("Public");
           }}
           className="w-full flex items-center justify-center gap-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer"
