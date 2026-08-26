@@ -62,16 +62,20 @@ export default function LoginPage() {
           setTimeout(() => {
             router.push("/mechanic/job-board");
           }, 1200);
-        } else {
-          setRole("Public");
+        } else if (user.role === "Admin") {
+          setRole("Admin");
           setTimeout(() => {
-            if (user.role === "Admin") {
-              router.push("/admin/analytics");
-            } else if (user.role === "Front Desk") {
-              router.push("/frontdesk/job-orders");
-            } else if (user.role === "Mechanic") {
-              router.push("/mechanic/job-board");
-            }
+            router.push("/admin/analytics");
+          }, 1200);
+        } else if (user.role === "Front Desk") {
+          setRole("FrontDesk");
+          setTimeout(() => {
+            router.push("/frontdesk/job-orders");
+          }, 1200);
+        } else if (user.role === "Mechanic") {
+          setRole("Mechanic");
+          setTimeout(() => {
+            router.push("/mechanic/job-board");
           }, 1200);
         }
       }

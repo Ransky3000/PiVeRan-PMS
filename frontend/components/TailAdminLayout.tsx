@@ -130,12 +130,11 @@ export function TailAdminLayout({
     ? (currentUser.role === "Front Desk" ? "FrontDesk" : currentUser.role)
     : "Public");
 
-  const profile = devContext.currentProfile || ROLE_PROFILES[activeRole];
-
-  const userName = profile?.name || (currentUser ? currentUser.name : propName);
-  const userEmail = profile?.email || (currentUser ? currentUser.email : propEmail);
-  const userTitle = profile?.title || (currentUser ? (currentUser.role === "Front Desk" ? "Front Desk Manager" : currentUser.role === "Mechanic" ? "Mechanic" : "System Owner") : "");
-  const avatarBadge = profile?.avatarBadge || "";
+  const impersonated = devContext.impersonatedAccount;
+  const userName = impersonated?.name || (currentUser ? currentUser.name : (devContext.currentProfile?.name || propName));
+  const userEmail = impersonated?.email || (currentUser ? currentUser.email : (devContext.currentProfile?.email || propEmail));
+  const userTitle = impersonated ? impersonated.role : (currentUser ? (currentUser.role === "Front Desk" ? "Front Desk Manager" : currentUser.role === "Mechanic" ? "Mechanic" : "System Owner") : (devContext.currentProfile?.title || ""));
+  const avatarBadge = devContext.currentProfile?.avatarBadge || "";
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
