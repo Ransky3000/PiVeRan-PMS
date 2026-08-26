@@ -134,7 +134,7 @@ export function TailAdminLayout({
 
   const userName = profile?.name || (currentUser ? currentUser.name : propName);
   const userEmail = profile?.email || (currentUser ? currentUser.email : propEmail);
-  const userTitle = profile?.title || (currentUser ? (currentUser.role === "Front Desk" ? "Front Desk Manager" : currentUser.role === "Mechanic" ? "Service Technician" : "System Owner") : "");
+  const userTitle = profile?.title || (currentUser ? (currentUser.role === "Front Desk" ? "Front Desk Manager" : currentUser.role === "Mechanic" ? "Mechanic" : "System Owner") : "");
   const avatarBadge = profile?.avatarBadge || "";
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);

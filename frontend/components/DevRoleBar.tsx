@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useDevRole, RoleType } from "@/context/DevRoleContext";
 import { usePathname, useRouter } from "next/navigation";
+import { apiService } from "@/app/apiService";
 import {
   ShieldAlert,
   ChevronDown,
   ExternalLink,
-  Eye,
   Minimize2,
   Maximize2,
   Sparkles,
@@ -16,8 +16,8 @@ import {
   Smartphone,
   CheckCircle2,
   Key,
-  X,
-  Compass
+  Compass,
+  LogOut
 } from "lucide-react";
 
 const QUICK_ROUTES = [
@@ -33,7 +33,6 @@ const QUICK_ROUTES = [
   { group: "Front Desk Role", label: "Owner", href: "/frontdesk/owners" },
   { group: "Front Desk Role", label: "Mechanic", href: "/frontdesk/mechanics" },
   { group: "Mechanic Role", label: "Garage Bay Job Board", href: "/mechanic/job-board" },
-  { group: "Mechanic Role", label: "DVI Inspection Sheet", href: "/mechanic/dvi" },
   { group: "Customer Portal", label: "Web Approval Portal", href: "/customer/approve/demo" },
 ];
 
@@ -42,8 +41,6 @@ export function DevRoleBar() {
     activeRole,
     currentProfile,
     switchRoleAndNavigate,
-    mockDataState,
-    setMockDataState,
     impersonatedMechanic,
     setImpersonatedMechanic,
   } = useDevRole();
@@ -51,9 +48,31 @@ export function DevRoleBar() {
   const router = useRouter();
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mechanicsList, setMechanicsList] = useState<string[]>(["Mark Rey", "Rodel Santos", "Chif Rey"]);
+
+  useEffect(() => {
+    const loadMechanics = async () => {
+      try {
+        const users = await apiService.getUsers("APPROVED");
+        const mechUsers = users
+          .filter((u: any) => (u.role || "").toUpperCase() === "MECHANIC")
+          .map((u: any) => u.name);
+
+        const jobOrders = await apiService.getJobOrders();
+        const joMechanics = jobOrders.flatMap((j: any) => j.inchargeMechanics || []);
+
+        const uniqueMechs = Array.from(new Set([...mechUsers, ...joMechanics].filter(Boolean)));
+        if (uniqueMechs.length > 0) {
+          setMechanicsList(uniqueMechs);
+        }
+      } catch (err) {
+        console.error("Failed to load dynamic mechanics for DevRoleBar", err);
+      }
+    };
+    loadMechanics();
+  }, []);
 
   const rolesList: { type: RoleType; icon: React.ElementType; label: string }[] = [
-    { type: "Developer", icon: Sparkles, label: "🛠️ Developer" },
     { type: "Admin", icon: ShieldAlert, label: "👑 Admin" },
     { type: "FrontDesk", icon: Monitor, label: "🖥️ Front Desk" },
     { type: "Mechanic", icon: Smartphone, label: "📱 Mechanic" },
@@ -94,9 +113,9 @@ export function DevRoleBar() {
               <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
             </div>
             <div>
-              <div className="font-extrabold text-white text-xs tracking-tight">Mockup Role Controller</div>
+              <div className="font-extrabold text-white text-xs tracking-tight">Dev Inspector Toolbar</div>
               <div className="text-[10px] text-slate-400 truncate">
-                Active: <strong className="text-emerald-400">{currentProfile.name}</strong>
+                Active View: <strong className="text-emerald-400">{currentProfile.name}</strong>
               </div>
             </div>
           </div>
@@ -113,7 +132,7 @@ export function DevRoleBar() {
         {/* ROLE SELECTOR GRID */}
         <div>
           <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2 flex items-center justify-between">
-            <span>Select Perspective</span>
+            <span>Select Persona Perspective</span>
             <span className="text-emerald-400 font-normal">{currentProfile.avatarBadge}</span>
           </div>
 
@@ -153,45 +172,14 @@ export function DevRoleBar() {
               className="w-full bg-slate-900 border border-slate-800 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer"
             >
               <option value="">🌐 All Mechanics View (All JOs)</option>
-              <option value="Mark Rey">🔧 Mark Rey (Service Tech)</option>
-              <option value="Rodel Santos">🔧 Rodel Santos (Service Tech)</option>
-              <option value="John Uy">🔧 John Uy (Service Tech)</option>
+              {mechanicsList.map((name) => (
+                <option key={name} value={name}>
+                  🔧 {name}
+                </option>
+              ))}
             </select>
           </div>
         )}
-
-        {/* MOCK DATA STATE SWITCHER */}
-        <div className="pt-2 border-t border-slate-800/80">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
-            <span>Simulated Data Mode</span>
-            <span className={mockDataState === "empty" ? "text-amber-400 font-bold" : "text-emerald-400 font-bold"}>
-              {mockDataState === "empty" ? "📭 Empty State" : "📊 Populated"}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
-            <button
-              onClick={() => setMockDataState("populated")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                mockDataState === "populated"
-                  ? "bg-emerald-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              📊 Populated
-            </button>
-            <button
-              onClick={() => setMockDataState("empty")}
-              className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                mockDataState === "empty"
-                  ? "bg-amber-600 text-white shadow-xs font-bold"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              📭 Empty (0 Records)
-            </button>
-          </div>
-        </div>
 
         {/* QUICK JUMP DROPDOWN MENU */}
         <div className="pt-1 border-t border-slate-800/80">
@@ -243,6 +231,20 @@ export function DevRoleBar() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* SIGN OUT ACTION */}
+        <div className="pt-2 border-t border-slate-800/80">
+          <button
+            onClick={() => {
+              setImpersonatedMechanic(null);
+              switchRoleAndNavigate("Public");
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border border-rose-500/30 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out / Log Out</span>
+          </button>
         </div>
 
       </div>

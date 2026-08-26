@@ -44,7 +44,7 @@ export const ROLE_PROFILES: Record<RoleType, RoleProfile> = {
     role: "Mechanic",
     name: "Bay Tablet #1",
     email: "mechanic@piveran.com",
-    title: "Service Technician",
+    title: "Mechanic",
     avatarBadge: "📱 Mechanic",
     defaultRoute: "/mechanic/job-board",
   },
