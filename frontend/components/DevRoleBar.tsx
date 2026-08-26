@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useDevRole, RoleType } from "@/context/DevRoleContext";
+import { useDevRole, RoleType, ImpersonatedAccount } from "@/context/DevRoleContext";
 import { usePathname, useRouter } from "next/navigation";
 import { apiService } from "@/app/apiService";
+import { UserAccount } from "@/app/types";
 import {
   ShieldAlert,
   ChevronDown,
@@ -43,33 +44,36 @@ export function DevRoleBar() {
     switchRoleAndNavigate,
     impersonatedMechanic,
     setImpersonatedMechanic,
+    impersonatedAccount,
+    setImpersonatedAccount,
   } = useDevRole();
   const pathname = usePathname();
   const router = useRouter();
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [mechanicsList, setMechanicsList] = useState<string[]>(["Mark Rey", "Rodel Santos", "Chif Rey"]);
+  
+  // Live Database Accounts (Zero Dummy Fallback Arrays)
+  const [dbAccounts, setDbAccounts] = useState<UserAccount[]>([]);
+  const [jobOrderMechanicNames, setJobOrderMechanicNames] = useState<string[]>([]);
+  const [isLoadingDB, setIsLoadingDB] = useState<boolean>(false);
 
   useEffect(() => {
-    const loadMechanics = async () => {
+    const loadLiveDBAccounts = async () => {
+      setIsLoadingDB(true);
       try {
-        const users = await apiService.getUsers("APPROVED");
-        const mechUsers = users
-          .filter((u: any) => (u.role || "").toUpperCase() === "MECHANIC")
-          .map((u: any) => u.name);
+        const users: UserAccount[] = await apiService.getUsers("APPROVED");
+        setDbAccounts(users || []);
 
         const jobOrders = await apiService.getJobOrders();
-        const joMechanics = jobOrders.flatMap((j: any) => j.inchargeMechanics || []);
-
-        const uniqueMechs = Array.from(new Set([...mechUsers, ...joMechanics].filter(Boolean)));
-        if (uniqueMechs.length > 0) {
-          setMechanicsList(uniqueMechs);
-        }
+        const joMechs = jobOrders.flatMap((j: any) => j.inchargeMechanics || []).filter(Boolean);
+        setJobOrderMechanicNames(Array.from(new Set(joMechs)));
       } catch (err) {
-        console.error("Failed to load dynamic mechanics for DevRoleBar", err);
+        console.error("Failed to fetch live database users for DevRoleBar", err);
+      } finally {
+        setIsLoadingDB(false);
       }
     };
-    loadMechanics();
+    loadLiveDBAccounts();
   }, []);
 
   const rolesList: { type: RoleType; icon: React.ElementType; label: string }[] = [
@@ -79,6 +83,56 @@ export function DevRoleBar() {
     { type: "Customer", icon: UserCheck, label: "📲 Customer" },
     { type: "Public", icon: Key, label: "🔑 Public" },
   ];
+
+  // Derive active persona options based on selected role perspective
+  const getPersonaOptions = () => {
+    if (activeRole === "Admin") {
+      return dbAccounts.filter((u) => u.role === "Admin" || u.role === "Developer");
+    }
+    if (activeRole === "FrontDesk") {
+      return dbAccounts.filter((u) => u.role === "Front Desk");
+    }
+    if (activeRole === "Mechanic") {
+      const mechAccounts = dbAccounts.filter((u) => u.role === "Mechanic");
+      // Merge accounts with active inchargeMechanics names from JOs
+      const existingNames = new Set(mechAccounts.map((a) => a.name));
+      const extraMechs: UserAccount[] = jobOrderMechanicNames
+        .filter((name) => !existingNames.has(name))
+        .map((name) => ({
+          user_id: name,
+          name: name,
+          email: `${name.toLowerCase().replace(/\s+/g, ".")}@piveran.com`,
+          phone_number: "09170000000",
+          role: "Mechanic",
+          status: "APPROVED",
+        }));
+      return [...mechAccounts, ...extraMechs];
+    }
+    return [];
+  };
+
+  const personaOptions = getPersonaOptions();
+
+  const handleSelectAccount = (selectedId: string) => {
+    if (!selectedId) {
+      setImpersonatedAccount(null);
+      setImpersonatedMechanic(null);
+      return;
+    }
+    const target = personaOptions.find((a) => a.user_id === selectedId || a.name === selectedId);
+    if (target) {
+      const accountData: ImpersonatedAccount = {
+        user_id: target.user_id,
+        name: target.name,
+        email: target.email,
+        role: target.role,
+      };
+      setImpersonatedAccount(accountData);
+      if (activeRole === "Mechanic") {
+        setImpersonatedMechanic(target.name);
+      }
+    }
+  };
 
   // MINIMIZED FLOATING BADGE (BOTTOM-RIGHT CORNER)
   if (isMinimized) {
@@ -90,9 +144,9 @@ export function DevRoleBar() {
         >
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
           <span>Role View: <strong className="text-emerald-400 font-extrabold">{currentProfile.avatarBadge}</strong></span>
-          {impersonatedMechanic && (
+          {impersonatedAccount && (
             <span className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/30 font-semibold">
-              [{impersonatedMechanic}]
+              [{impersonatedAccount.name}]
             </span>
           )}
           <Maximize2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-colors" />
@@ -132,7 +186,7 @@ export function DevRoleBar() {
         {/* ROLE SELECTOR GRID */}
         <div>
           <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-2 flex items-center justify-between">
-            <span>Select Persona Perspective</span>
+            <span>Select Perspective</span>
             <span className="text-emerald-400 font-normal">{currentProfile.avatarBadge}</span>
           </div>
 
@@ -157,26 +211,34 @@ export function DevRoleBar() {
           </div>
         </div>
 
-        {/* MECHANIC PERSONA IMPERSONATION SELECTOR */}
-        {(activeRole === "Developer" || activeRole === "Mechanic") && (
+        {/* MULTI-ROLE PERSONA IMPERSONATION SELECTOR */}
+        {(activeRole === "Admin" || activeRole === "FrontDesk" || activeRole === "Mechanic") && (
           <div className="pt-2 border-t border-slate-800/80">
             <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
-              <span>Inspect Mechanic Persona</span>
+              <span>Inspect {activeRole} Account</span>
               <span className="text-emerald-400 font-bold">
-                {impersonatedMechanic || "All Mechanics"}
+                {impersonatedAccount ? impersonatedAccount.name : "Default View"}
               </span>
             </div>
+
             <select
-              value={impersonatedMechanic || ""}
-              onChange={(e) => setImpersonatedMechanic(e.target.value || null)}
-              className="w-full bg-slate-900 border border-slate-800 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer"
+              value={impersonatedAccount ? impersonatedAccount.user_id || impersonatedAccount.name : ""}
+              onChange={(e) => handleSelectAccount(e.target.value)}
+              disabled={isLoadingDB || personaOptions.length === 0}
+              className="w-full bg-slate-900 border border-slate-800 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <option value="">🌐 All Mechanics View (All JOs)</option>
-              {mechanicsList.map((name) => (
-                <option key={name} value={name}>
-                  🔧 {name}
-                </option>
-              ))}
+              <option value="">🌐 Default Role View (General)</option>
+              {isLoadingDB ? (
+                <option disabled>Loading accounts from DB...</option>
+              ) : personaOptions.length === 0 ? (
+                <option disabled value="">(No registered accounts in DB)</option>
+              ) : (
+                personaOptions.map((acc) => (
+                  <option key={acc.user_id || acc.name} value={acc.user_id || acc.name}>
+                    👤 {acc.name} ({acc.email})
+                  </option>
+                ))
+              )}
             </select>
           </div>
         )}
@@ -237,6 +299,7 @@ export function DevRoleBar() {
         <div className="pt-2 border-t border-slate-800/80">
           <button
             onClick={() => {
+              setImpersonatedAccount(null);
               setImpersonatedMechanic(null);
               switchRoleAndNavigate("Public");
             }}

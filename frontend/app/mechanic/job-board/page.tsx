@@ -105,15 +105,16 @@ export default function MechanicJobBoardPage() {
     triggerToast(`Added new material: ${matName}`);
   };
 
-  const { impersonatedMechanic } = useDevRole();
+  const { impersonatedMechanic, impersonatedAccount } = useDevRole();
+  const activeMechanicName = impersonatedAccount?.name || impersonatedMechanic;
 
   const activeMechanicsJobs = useMemo(() => {
-    if (!impersonatedMechanic) return jobOrders;
-    const lowerMech = impersonatedMechanic.toLowerCase();
+    if (!activeMechanicName) return jobOrders;
+    const lowerMech = activeMechanicName.toLowerCase();
     return jobOrders.filter((j) =>
       j.inchargeMechanics && j.inchargeMechanics.some((m) => m.toLowerCase().includes(lowerMech))
     );
-  }, [jobOrders, impersonatedMechanic]);
+  }, [jobOrders, activeMechanicName]);
 
   const newJobsList = useMemo(() => activeMechanicsJobs.filter((j) => j.status === "New"), [activeMechanicsJobs]);
   const wipJobsList = useMemo(() => activeMechanicsJobs.filter((j) => j.status === "Work in progress"), [activeMechanicsJobs]);
@@ -357,8 +358,8 @@ export default function MechanicJobBoardPage() {
             <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
               <span>
-                {impersonatedMechanic
-                  ? `Impersonating Tech View: ${impersonatedMechanic}`
+                {activeMechanicName
+                  ? `Impersonating Tech View: ${activeMechanicName}`
                   : "Garage Bay View (All Technicians)"}
               </span>
             </p>

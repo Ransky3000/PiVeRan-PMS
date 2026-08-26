@@ -130,7 +130,7 @@ export function TailAdminLayout({
     ? (currentUser.role === "Front Desk" ? "FrontDesk" : currentUser.role)
     : "Public");
 
-  const profile = ROLE_PROFILES[activeRole] || devContext.currentProfile;
+  const profile = devContext.currentProfile || ROLE_PROFILES[activeRole];
 
   const userName = profile?.name || (currentUser ? currentUser.name : propName);
   const userEmail = profile?.email || (currentUser ? currentUser.email : propEmail);

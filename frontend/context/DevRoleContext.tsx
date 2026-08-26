@@ -66,6 +66,13 @@ export const ROLE_PROFILES: Record<RoleType, RoleProfile> = {
   },
 };
 
+export interface ImpersonatedAccount {
+  user_id?: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 interface DevRoleContextType {
   activeRole: RoleType;
   currentProfile: RoleProfile;
@@ -78,6 +85,8 @@ interface DevRoleContextType {
   toggleDevBar: () => void;
   impersonatedMechanic: string | null;
   setImpersonatedMechanic: (name: string | null) => void;
+  impersonatedAccount: ImpersonatedAccount | null;
+  setImpersonatedAccount: (account: ImpersonatedAccount | null) => void;
 }
 
 const DevRoleContext = createContext<DevRoleContextType | undefined>(undefined);
@@ -87,6 +96,7 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
   const [mockDataState, setMockDataState] = useState<MockDataState>("populated");
   const [isDevBarVisible, setIsDevBarVisible] = useState(true);
   const [impersonatedMechanic, setImpersonatedMechanicState] = useState<string | null>(null);
+  const [impersonatedAccount, setImpersonatedAccountState] = useState<ImpersonatedAccount | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -101,6 +111,12 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
     const savedMech = localStorage.getItem("piveran_impersonated_mech");
     if (savedMech) {
       setImpersonatedMechanicState(savedMech);
+    }
+    const savedAccountStr = localStorage.getItem("piveran_impersonated_account");
+    if (savedAccountStr) {
+      try {
+        setImpersonatedAccountState(JSON.parse(savedAccountStr));
+      } catch (e) {}
     }
   }, []);
 
@@ -118,6 +134,15 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const setImpersonatedAccount = (account: ImpersonatedAccount | null) => {
+    setImpersonatedAccountState(account);
+    if (account) {
+      localStorage.setItem("piveran_impersonated_account", JSON.stringify(account));
+    } else {
+      localStorage.removeItem("piveran_impersonated_account");
+    }
+  };
+
   const setMockState = (state: MockDataState) => {
     setMockDataState(state);
     localStorage.setItem("piveran_mock_state", state);
@@ -130,6 +155,8 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
 
   const switchRoleAndNavigate = (role: RoleType) => {
     setRole(role);
+    setImpersonatedAccount(null);
+    setImpersonatedMechanic(null);
     const targetRoute = ROLE_PROFILES[role].defaultRoute;
     router.push(targetRoute);
   };
@@ -138,7 +165,14 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
     setIsDevBarVisible((prev) => !prev);
   };
 
-  const currentProfile = ROLE_PROFILES[activeRole];
+  const baseProfile = ROLE_PROFILES[activeRole];
+  const currentProfile: RoleProfile = impersonatedAccount
+    ? {
+        ...baseProfile,
+        name: impersonatedAccount.name,
+        email: impersonatedAccount.email,
+      }
+    : baseProfile;
 
   return (
     <DevRoleContext.Provider
@@ -154,6 +188,8 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
         toggleDevBar,
         impersonatedMechanic,
         setImpersonatedMechanic,
+        impersonatedAccount,
+        setImpersonatedAccount,
       }}
     >
       {children}

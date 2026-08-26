@@ -68,3 +68,13 @@ export interface JobOrder {
   discount?: number;
   estimateComment?: string;
 }
+
+export interface UserAccount {
+  user_id: string;
+  email: string;
+  name: string;
+  phone_number: string;
+  role: "Developer" | "Admin" | "Front Desk" | "Mechanic";
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  created_at?: string;
+}
