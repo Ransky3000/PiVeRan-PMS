@@ -130,6 +130,11 @@ export function DevRoleBar() {
     }
   };
 
+  const isPublicRoute = ["/login", "/signup", "/pending-approval"].includes(pathname);
+  if (isPublicRoute || activeRole !== "Developer") {
+    return null;
+  }
+
   // MINIMIZED FLOATING BADGE
   if (isMinimized) {
     return (
@@ -193,29 +198,27 @@ export function DevRoleBar() {
         </div>
 
         {/* DYNAMIC ACCOUNT PERSONA SELECTOR */}
-        {(activeRole === "Admin" || activeRole === "FrontDesk" || activeRole === "Mechanic") && (
-          <div>
-            <select
-              value={impersonatedAccount ? impersonatedAccount.user_id || impersonatedAccount.name : ""}
-              onChange={(e) => handleSelectAccount(e.target.value)}
-              disabled={isLoadingDB || personaOptions.length === 0}
-              className="w-full bg-slate-900 border border-slate-800 text-slate-200 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer disabled:opacity-50"
-            >
-              <option value="">🌐 Default Role View ({activeRole})</option>
-              {isLoadingDB ? (
-                <option disabled>Loading DB accounts...</option>
-              ) : personaOptions.length === 0 ? (
-                <option disabled value="">(No registered accounts in DB)</option>
-              ) : (
-                personaOptions.map((acc) => (
-                  <option key={acc.user_id || acc.name} value={acc.user_id || acc.name}>
-                    👤 {acc.name} ({acc.email})
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
-        )}
+        <div>
+          <select
+            value={impersonatedAccount ? impersonatedAccount.user_id || impersonatedAccount.name : ""}
+            onChange={(e) => handleSelectAccount(e.target.value)}
+            disabled={isLoadingDB || personaOptions.length === 0}
+            className="w-full bg-slate-900 border border-slate-800 text-slate-200 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer disabled:opacity-50"
+          >
+            <option value="">🌐 Default Role View ({activeRole})</option>
+            {isLoadingDB ? (
+              <option disabled>Loading DB accounts...</option>
+            ) : personaOptions.length === 0 ? (
+              <option disabled value="">(No registered accounts in DB)</option>
+            ) : (
+              personaOptions.map((acc) => (
+                <option key={acc.user_id || acc.name} value={acc.user_id || acc.name}>
+                  👤 {acc.name} ({acc.email})
+                </option>
+              ))
+            )}
+          </select>
+        </div>
 
         {/* QUICK JUMP DROPDOWN */}
         <div className="relative">

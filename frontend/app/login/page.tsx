@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Flame, Eye, EyeOff, CheckCircle2 } from "lucide-react";
 import { apiService, authService } from "../apiService";
+import { useDevRole } from "@/context/DevRoleContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { setRole } = useDevRole();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -55,15 +57,23 @@ export default function LoginPage() {
         authService.setPendingUser(null);
         triggerToast(`Authenticated! Welcome back (${user.name})`);
         
-        setTimeout(() => {
-          if (user.role === "Admin") {
-            router.push("/admin/analytics");
-          } else if (user.role === "Front Desk") {
-            router.push("/frontdesk/job-orders");
-          } else if (user.role === "Mechanic") {
+        if (user.role === "Developer" || user.email === "dev@piveran.com") {
+          setRole("Developer");
+          setTimeout(() => {
             router.push("/mechanic/job-board");
-          }
-        }, 1200);
+          }, 1200);
+        } else {
+          setRole("Public");
+          setTimeout(() => {
+            if (user.role === "Admin") {
+              router.push("/admin/analytics");
+            } else if (user.role === "Front Desk") {
+              router.push("/frontdesk/job-orders");
+            } else if (user.role === "Mechanic") {
+              router.push("/mechanic/job-board");
+            }
+          }, 1200);
+        }
       }
     } catch (err: any) {
       triggerToast(err.message || "Invalid email or password.");
