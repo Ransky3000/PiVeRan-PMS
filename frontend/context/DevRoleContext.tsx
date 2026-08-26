@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-export type RoleType = "Admin" | "FrontDesk" | "Mechanic" | "Customer" | "Public";
+export type RoleType = "Developer" | "Admin" | "FrontDesk" | "Mechanic" | "Customer" | "Public";
 export type MockDataState = "populated" | "empty";
 
 export interface RoleProfile {
@@ -16,6 +16,14 @@ export interface RoleProfile {
 }
 
 export const ROLE_PROFILES: Record<RoleType, RoleProfile> = {
+  Developer: {
+    role: "Developer",
+    name: "Developer Admin",
+    email: "dev@piveran.com",
+    title: "System Engineer",
+    avatarBadge: "🛠️ Developer",
+    defaultRoute: "/mechanic/job-board",
+  },
   Admin: {
     role: "Admin",
     name: "Sir Keith",
@@ -68,14 +76,17 @@ interface DevRoleContextType {
   toggleMockDataState: () => void;
   isDevBarVisible: boolean;
   toggleDevBar: () => void;
+  impersonatedMechanic: string | null;
+  setImpersonatedMechanic: (name: string | null) => void;
 }
 
 const DevRoleContext = createContext<DevRoleContextType | undefined>(undefined);
 
 export function DevRoleProvider({ children }: { children: React.ReactNode }) {
-  const [activeRole, setActiveRoleState] = useState<RoleType>("Admin");
+  const [activeRole, setActiveRoleState] = useState<RoleType>("Developer");
   const [mockDataState, setMockDataState] = useState<MockDataState>("populated");
   const [isDevBarVisible, setIsDevBarVisible] = useState(true);
+  const [impersonatedMechanic, setImpersonatedMechanicState] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -87,11 +98,24 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
     if (savedState) {
       setMockDataState(savedState);
     }
+    const savedMech = localStorage.getItem("piveran_impersonated_mech");
+    if (savedMech) {
+      setImpersonatedMechanicState(savedMech);
+    }
   }, []);
 
   const setRole = (role: RoleType) => {
     setActiveRoleState(role);
     localStorage.setItem("piveran_dev_role", role);
+  };
+
+  const setImpersonatedMechanic = (name: string | null) => {
+    setImpersonatedMechanicState(name);
+    if (name) {
+      localStorage.setItem("piveran_impersonated_mech", name);
+    } else {
+      localStorage.removeItem("piveran_impersonated_mech");
+    }
   };
 
   const setMockState = (state: MockDataState) => {
@@ -128,6 +152,8 @@ export function DevRoleProvider({ children }: { children: React.ReactNode }) {
         toggleMockDataState,
         isDevBarVisible,
         toggleDevBar,
+        impersonatedMechanic,
+        setImpersonatedMechanic,
       }}
     >
       {children}

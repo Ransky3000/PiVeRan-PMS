@@ -38,13 +38,22 @@ const QUICK_ROUTES = [
 ];
 
 export function DevRoleBar() {
-  const { activeRole, currentProfile, switchRoleAndNavigate, mockDataState, setMockDataState } = useDevRole();
+  const {
+    activeRole,
+    currentProfile,
+    switchRoleAndNavigate,
+    mockDataState,
+    setMockDataState,
+    impersonatedMechanic,
+    setImpersonatedMechanic,
+  } = useDevRole();
   const pathname = usePathname();
   const router = useRouter();
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const rolesList: { type: RoleType; icon: React.ElementType; label: string }[] = [
+    { type: "Developer", icon: Sparkles, label: "🛠️ Developer" },
     { type: "Admin", icon: ShieldAlert, label: "👑 Admin" },
     { type: "FrontDesk", icon: Monitor, label: "🖥️ Front Desk" },
     { type: "Mechanic", icon: Smartphone, label: "📱 Mechanic" },
@@ -62,6 +71,11 @@ export function DevRoleBar() {
         >
           <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
           <span>Role View: <strong className="text-emerald-400 font-extrabold">{currentProfile.avatarBadge}</strong></span>
+          {impersonatedMechanic && (
+            <span className="text-[10px] text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/30 font-semibold">
+              [{impersonatedMechanic}]
+            </span>
+          )}
           <Maximize2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-colors" />
         </button>
       </div>
@@ -123,6 +137,28 @@ export function DevRoleBar() {
             })}
           </div>
         </div>
+
+        {/* MECHANIC PERSONA IMPERSONATION SELECTOR */}
+        {(activeRole === "Developer" || activeRole === "Mechanic") && (
+          <div className="pt-2 border-t border-slate-800/80">
+            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+              <span>Inspect Mechanic Persona</span>
+              <span className="text-emerald-400 font-bold">
+                {impersonatedMechanic || "All Mechanics"}
+              </span>
+            </div>
+            <select
+              value={impersonatedMechanic || ""}
+              onChange={(e) => setImpersonatedMechanic(e.target.value || null)}
+              className="w-full bg-slate-900 border border-slate-800 text-slate-200 px-3 py-1.5 rounded-xl text-xs font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer"
+            >
+              <option value="">🌐 All Mechanics View (All JOs)</option>
+              <option value="Mark Rey">🔧 Mark Rey (Service Tech)</option>
+              <option value="Rodel Santos">🔧 Rodel Santos (Service Tech)</option>
+              <option value="John Uy">🔧 John Uy (Service Tech)</option>
+            </select>
+          </div>
+        )}
 
         {/* MOCK DATA STATE SWITCHER */}
         <div className="pt-2 border-t border-slate-800/80">

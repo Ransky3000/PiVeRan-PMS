@@ -4,8 +4,9 @@ import React, { useState, useEffect, useMemo } from "react";
 import { TailAdminLayout } from "@/components/TailAdminLayout";
 import { apiService, subscribeToJobOrders } from "@/app/apiService";
 import { SelectOption } from "@/components/CustomSelect";
-import { Search, CheckCircle2, Wrench } from "lucide-react";
+import { Search, CheckCircle2, Wrench, UserCheck } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useDevRole } from "@/context/DevRoleContext";
 
 import { JobOrder, InspectionItem, MaterialRequirement } from "../../types";
 import { getItemPhotos, getItemNote } from "./mechanicHelpers";
@@ -104,9 +105,19 @@ export default function MechanicJobBoardPage() {
     triggerToast(`Added new material: ${matName}`);
   };
 
-  const newJobsList = useMemo(() => jobOrders.filter((j) => j.status === "New"), [jobOrders]);
-  const wipJobsList = useMemo(() => jobOrders.filter((j) => j.status === "Work in progress"), [jobOrders]);
-  const jobCompletedList = useMemo(() => jobOrders.filter((j) => j.status === "Job completed"), [jobOrders]);
+  const { impersonatedMechanic } = useDevRole();
+
+  const activeMechanicsJobs = useMemo(() => {
+    if (!impersonatedMechanic) return jobOrders;
+    const lowerMech = impersonatedMechanic.toLowerCase();
+    return jobOrders.filter((j) =>
+      j.inchargeMechanics && j.inchargeMechanics.some((m) => m.toLowerCase().includes(lowerMech))
+    );
+  }, [jobOrders, impersonatedMechanic]);
+
+  const newJobsList = useMemo(() => activeMechanicsJobs.filter((j) => j.status === "New"), [activeMechanicsJobs]);
+  const wipJobsList = useMemo(() => activeMechanicsJobs.filter((j) => j.status === "Work in progress"), [activeMechanicsJobs]);
+  const jobCompletedList = useMemo(() => activeMechanicsJobs.filter((j) => j.status === "Job completed"), [activeMechanicsJobs]);
 
   const filteredJobs = useMemo(() => {
     const list = activeTab === "NEW" ? newJobsList : activeTab === "WIP" ? wipJobsList : jobCompletedList;
@@ -345,7 +356,11 @@ export default function MechanicJobBoardPage() {
             <h1 className="text-xl font-bold text-slate-900">Garage Bay Job Board</h1>
             <p className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
-              <span>Bay Tablet #1 View (Mark Rey / Rodel Santos)</span>
+              <span>
+                {impersonatedMechanic
+                  ? `Impersonating Tech View: ${impersonatedMechanic}`
+                  : "Garage Bay View (All Technicians)"}
+              </span>
             </p>
           </div>
         </div>

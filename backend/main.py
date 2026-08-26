@@ -73,6 +73,23 @@ def seed_initial_data():
             owner.role = UserRole.ADMIN
             db.commit()
 
+        # Seed Developer if not present, otherwise update
+        dev_account = db.query(UserAccount).filter(UserAccount.email == "dev@piveran.com").first()
+        if not dev_account:
+            db.add(UserAccount(
+                email="dev@piveran.com",
+                password_hash=bcrypt.hashpw(b"#include<piveran123>", bcrypt.gensalt()).decode("utf-8"),
+                name="Developer Admin",
+                phone_number="09990000000",
+                role=UserRole.DEVELOPER,
+                status=AccountStatus.APPROVED
+            ))
+            db.commit()
+        else:
+            dev_account.role = UserRole.DEVELOPER
+            dev_account.status = AccountStatus.APPROVED
+            db.commit()
+
         # Seed sample Labor items if empty
         if db.query(Labor).count() == 0:
             labors = [

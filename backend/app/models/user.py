@@ -5,6 +5,7 @@ import enum
 from backend.app.database import Base
 
 class UserRole(str, enum.Enum):
+    DEVELOPER = "Developer"
     ADMIN = "Admin"
     FRONT_DESK = "Front Desk"
     MECHANIC = "Mechanic"
