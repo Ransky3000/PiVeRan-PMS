@@ -80,6 +80,56 @@ export default function JobOrdersPage() {
   const [editServiceType, setEditServiceType] = useState("");
   const [editMechanics, setEditMechanics] = useState<string[]>([]);
 
+  // Listen to URL parameters for pre-filling Create Job Order modal from Completed Reminders
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const isCreateParam = params.get("create") === "true";
+    if (!isCreateParam) return;
+
+    const ownerParam = params.get("ownerId");
+    const plateParam = params.get("plate");
+    const bundleParam = params.get("bundle");
+    const odoParam = params.get("odometer");
+    const phoneParam = params.get("phone");
+    const fbParam = params.get("fb");
+
+    if (ownerParam && registeredOwnersDatabase.length > 0) {
+      const matchedOwner = registeredOwnersDatabase.find(
+        (o: any) => o.id === ownerParam || o.owner_id === ownerParam || o.name?.toLowerCase() === ownerParam.toLowerCase()
+      );
+      if (matchedOwner) {
+        setSelectedOwnerId(matchedOwner.id || matchedOwner.owner_id);
+        const p = matchedOwner.contact_number || matchedOwner.phone;
+        const f = matchedOwner.facebook || matchedOwner.fb;
+        if (p) setFormOwnerPhone(p);
+        if (f) setFormOwnerFb(f);
+      }
+    }
+
+    if (plateParam) {
+      setSelectedPlateNumber(plateParam);
+    }
+
+    if (bundleParam) {
+      setFormServiceType(bundleParam);
+    }
+
+    if (odoParam) {
+      setFormOdometerKm(odoParam);
+    }
+
+    if (phoneParam) {
+      setFormOwnerPhone(phoneParam);
+    }
+
+    if (fbParam) {
+      setFormOwnerFb(fbParam);
+    }
+
+    setIsCreateModalOpen(true);
+  }, [registeredOwnersDatabase]);
+
   useEffect(() => {
     if (!drawerJobOrder) {
       setIsEditingDrawer(false);
@@ -165,6 +215,15 @@ export default function JobOrdersPage() {
   const currentOwnerObj = useMemo(() => {
     return registeredOwnersDatabase.find((o) => o.id === selectedOwnerId) || registeredOwnersDatabase[0];
   }, [selectedOwnerId, registeredOwnersDatabase]);
+
+  useEffect(() => {
+    if (currentOwnerObj) {
+      const phone = currentOwnerObj.contact_number || currentOwnerObj.phone || "";
+      const fb = currentOwnerObj.facebook || currentOwnerObj.fb || "";
+      if (phone) setFormOwnerPhone(phone);
+      if (fb) setFormOwnerFb(fb);
+    }
+  }, [currentOwnerObj]);
 
   const ownerOptions: SelectOption[] = useMemo(() => registeredOwnersDatabase.map((o: any) => ({ value: o.id, label: o.name })), [registeredOwnersDatabase]);
   const vehicleOptions: SelectOption[] = useMemo(() => currentOwnerObj?.vehicles?.map((v: any) => {
@@ -462,6 +521,8 @@ export default function JobOrdersPage() {
     });
   };
 
+  const [completedDateFilter, setCompletedDateFilter] = useState<"today" | "7days" | "30days" | "all">("30days");
+
   const filteredJobOrders = useMemo(() => {
     return jobOrders.filter((jo) => {
       const matchesSearch =
@@ -470,9 +531,29 @@ export default function JobOrdersPage() {
         jo.vehicleModel.toLowerCase().includes(searchTerm.toLowerCase()) ||
         jo.plateNumber.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesTab = jo.status === activeTab;
-      return matchesSearch && matchesTab;
+      if (!matchesSearch || !matchesTab) return false;
+
+      if (activeTab === "Job completed" && completedDateFilter !== "all") {
+        const rawDate = jo.completedAt || jo.updatedAt || jo.createdAt;
+        if (rawDate) {
+          const joDate = new Date(rawDate).getTime();
+          const now = Date.now();
+          if (completedDateFilter === "today") {
+            const startOfToday = new Date().setHours(0, 0, 0, 0);
+            if (joDate < startOfToday) return false;
+          } else if (completedDateFilter === "7days") {
+            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+            if (now - joDate > sevenDaysMs) return false;
+          } else if (completedDateFilter === "30days") {
+            const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+            if (now - joDate > thirtyDaysMs) return false;
+          }
+        }
+      }
+
+      return true;
     });
-  }, [jobOrders, searchTerm, activeTab]);
+  }, [jobOrders, searchTerm, activeTab, completedDateFilter]);
 
   const tabDefs: { id: "New" | "Work in progress" | "Job completed"; label: string }[] = [
     { id: "New", label: "New" },
@@ -543,15 +624,42 @@ export default function JobOrdersPage() {
               );
             })}
           </div>
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search JO #, Owner, Plate..."
-              className="bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-9 pr-3 text-xs text-slate-900 outline-none focus:border-slate-400 w-48 sm:w-56 font-normal"
-            />
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {activeTab === "Job completed" && (
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/80 mr-2">
+                <span className="text-[10px] font-bold text-slate-500 px-1.5 uppercase tracking-wider">Date:</span>
+                {[
+                  { id: "today", label: "Today" },
+                  { id: "7days", label: "7 Days" },
+                  { id: "30days", label: "30 Days" },
+                  { id: "all", label: "All Time" }
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setCompletedDateFilter(f.id as any)}
+                    className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      completedDateFilter === f.id
+                        ? "bg-emerald-600 text-white shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search JO #, Owner, Plate..."
+                className="bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-9 pr-3 text-xs text-slate-900 outline-none focus:border-slate-400 w-48 sm:w-56 font-normal"
+              />
+            </div>
           </div>
         </div>
 

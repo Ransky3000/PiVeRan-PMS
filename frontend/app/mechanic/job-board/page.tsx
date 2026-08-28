@@ -120,8 +120,32 @@ export default function MechanicJobBoardPage() {
   const wipJobsList = useMemo(() => activeMechanicsJobs.filter((j) => j.status === "Work in progress"), [activeMechanicsJobs]);
   const jobCompletedList = useMemo(() => activeMechanicsJobs.filter((j) => j.status === "Job completed"), [activeMechanicsJobs]);
 
+  const [completedDateFilter, setCompletedDateFilter] = useState<"today" | "7days" | "30days" | "all">("7days");
+
   const filteredJobs = useMemo(() => {
-    const list = activeTab === "NEW" ? newJobsList : activeTab === "WIP" ? wipJobsList : jobCompletedList;
+    let list = activeTab === "NEW" ? newJobsList : activeTab === "WIP" ? wipJobsList : jobCompletedList;
+
+    if (activeTab === "JOB_COMPLETED" && completedDateFilter !== "all") {
+      const now = Date.now();
+      list = list.filter((j) => {
+        const rawDate = j.completedAt || j.updatedAt || j.createdAt;
+        if (!rawDate) return true;
+        const joDate = new Date(rawDate).getTime();
+
+        if (completedDateFilter === "today") {
+          const startOfToday = new Date().setHours(0, 0, 0, 0);
+          return joDate >= startOfToday;
+        } else if (completedDateFilter === "7days") {
+          const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+          return now - joDate <= sevenDaysMs;
+        } else if (completedDateFilter === "30days") {
+          const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+          return now - joDate <= thirtyDaysMs;
+        }
+        return true;
+      });
+    }
+
     return list.filter((j) => {
       return (
         j.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -130,7 +154,7 @@ export default function MechanicJobBoardPage() {
         j.plateNumber.toLowerCase().includes(searchTerm.toLowerCase())
       );
     });
-  }, [activeTab, newJobsList, wipJobsList, jobCompletedList, searchTerm]);
+  }, [activeTab, newJobsList, wipJobsList, jobCompletedList, searchTerm, completedDateFilter]);
 
   const updateDrawerJO = (updates: Partial<JobOrder>) => {
     if (!drawerJobOrder) return;
@@ -165,16 +189,6 @@ export default function MechanicJobBoardPage() {
     const statusNotes = { ...(targetItem.statusNotes || {}), [currentStatus]: note };
     updatedItems[idx] = { ...targetItem, mechanicNote: note, statusNotes };
     updateDrawerJO({ inspectionItems: updatedItems });
-
-    if (targetItem && targetItem.id) {
-      apiService.updateInspectionItem(targetItem.id, {
-        status: targetItem.status,
-        statusNotes,
-        statusPhotos: targetItem.statusPhotos || {}
-      }).catch(err => {
-        console.error("Failed to update inspection item note in backend", err);
-      });
-    }
   };
 
   const handleAddPhotoToItem = (idx: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -247,10 +261,15 @@ export default function MechanicJobBoardPage() {
     if (!targetItem) return;
 
     const existingReqs = targetItem.requiredMaterials || [];
+    let targetCartId: string | undefined = undefined;
+
     const updatedReqs = existingReqs.map((m) => {
       const name = typeof m === "object" ? m.name : m;
       const baseObj: MaterialRequirement = typeof m === "object" ? m : { name, qty: 1 };
       if (name.toLowerCase() === matName.toLowerCase()) {
+        if (typeof m === "object" && m.cart_id) {
+          targetCartId = m.cart_id;
+        }
         return { ...baseObj, qty: newQty };
       }
       return baseObj;
@@ -259,6 +278,12 @@ export default function MechanicJobBoardPage() {
     const updatedItems = [...items];
     updatedItems[itemIdx] = { ...targetItem, requiredMaterials: updatedReqs };
     updateDrawerJO({ inspectionItems: updatedItems });
+
+    if (targetItem && targetItem.id && targetCartId && newQty > 0) {
+      apiService.updateCartItemQuantity(targetItem.id, targetCartId, newQty).catch((err) => {
+        console.error("Failed to update cart item quantity on backend", err);
+      });
+    }
   };
 
   const removeMaterialItem = (itemIdx: number, matName: string) => {
@@ -336,6 +361,21 @@ export default function MechanicJobBoardPage() {
     setSelectedPartName(null);
     setAddMaterialQtyInput(1);
     setMaterialSearchQuery("");
+  };  const handleCloseDrawer = () => {
+    if (drawerJobOrder && drawerJobOrder.inspectionItems) {
+      drawerJobOrder.inspectionItems.forEach((item) => {
+        if (item.id) {
+          apiService.updateInspectionItem(item.id, {
+            status: item.status,
+            statusNotes: item.statusNotes || {},
+            statusPhotos: item.statusPhotos || {}
+          }).catch(err => {
+            console.error("Failed to sync item note on drawer close", err);
+          });
+        }
+      });
+    }
+    setDrawerJobOrder(null);
   };
 
   return (
@@ -409,15 +449,42 @@ export default function MechanicJobBoardPage() {
             </button>
           </div>
 
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search assigned JO #, Plate..."
-              className="bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-9 pr-3 text-xs text-slate-900 outline-none focus:border-slate-400 w-48 sm:w-56 font-normal"
-            />
+          <div className="flex items-center gap-2 overflow-x-auto">
+            {activeTab === "JOB_COMPLETED" && (
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/80 mr-2">
+                <span className="text-[10px] font-bold text-slate-500 px-1.5 uppercase tracking-wider">Date:</span>
+                {[
+                  { id: "today", label: "Today" },
+                  { id: "7days", label: "7 Days" },
+                  { id: "30days", label: "30 Days" },
+                  { id: "all", label: "All Time" }
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setCompletedDateFilter(f.id as any)}
+                    className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                      completedDateFilter === f.id
+                        ? "bg-emerald-600 text-white shadow-2xs"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:text-slate-200"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search assigned JO #, Plate..."
+                className="bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-9 pr-3 text-xs text-slate-900 outline-none focus:border-slate-400 w-48 sm:w-56 font-normal"
+              />
+            </div>
           </div>
         </div>
 
@@ -449,7 +516,7 @@ export default function MechanicJobBoardPage() {
           <InspectionDrawer
             key={drawerJobOrder.id}
             drawerJobOrder={drawerJobOrder}
-            onClose={() => setDrawerJobOrder(null)}
+            onClose={handleCloseDrawer}
             updateInspectionItemStatus={updateInspectionItemStatus}
             updateInspectionItemNote={updateInspectionItemNote}
             handleAddPhotoToItem={handleAddPhotoToItem}

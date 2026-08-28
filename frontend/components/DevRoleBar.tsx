@@ -90,14 +90,16 @@ export function DevRoleBar() {
       return dbAccounts.filter((u) => u.role === "Front Desk");
     }
     if (activeRole === "Mechanic") {
-      const mechAccounts = dbAccounts.filter((u) => u.role === "Mechanic");
+      const mechAccounts = dbAccounts.filter(
+        (u) => u.role === "Mechanic" && (u.status === "APPROVED" || u.status !== "PENDING")
+      );
       const existingNames = new Set(mechAccounts.map((a) => a.name));
       const extraMechs: UserAccount[] = jobOrderMechanicNames
         .filter((name) => !existingNames.has(name))
         .map((name) => ({
           user_id: name,
           name: name,
-          email: `${name.toLowerCase().replace(/\s+/g, ".")}@piveran.com`,
+          email: `${name.toLowerCase().split(" ")[0]}@reyauto.com`,
           phone_number: "09170000000",
           role: "Mechanic",
           status: "APPROVED",

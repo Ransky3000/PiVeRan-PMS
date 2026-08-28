@@ -152,8 +152,18 @@ export const apiService = {
     return apiService.removeMaterialFromCart(cdId, cartId);
   },
 
-  updateCartDecision: async (cdId: string | number, cartId: string, decision: any) => {
-    return apiService.updateCartItemDecision(cdId, cartId, decision);
+  updateCartQuantity: async (cdId: string | number, cartId: string, quantity: number) => {
+    return apiService.updateCartItemQuantity(cdId, cartId, quantity);
+  },
+
+  updateCartItemQuantity: async (cd_id: string | number, cart_id: string, quantity: number) => {
+    const res = await fetch(`${API_BASE_URL}/job-orders/checklist-items/${cd_id}/cart/${cart_id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quantity })
+    });
+    if (!res.ok) throw new Error("Failed to update cart item quantity");
+    return await res.json();
   },
 
   removeMaterialFromCart: async (cd_id: string | number, cart_id: string) => {
@@ -705,7 +715,11 @@ export const apiService = {
       const res = await fetch(`${API_BASE_URL}/users`);
       if (!res.ok) throw new Error("Failed to fetch mechanics");
       const users = await res.json();
-      return (users || []).filter((u: any) => u.role === "Mechanic");
+      return (users || []).filter(
+        (u: any) =>
+          u.role === "Mechanic" &&
+          (u.status === "APPROVED" || u.status !== "PENDING")
+      );
     } catch (e) {
       console.warn("Backend unavailable, returning empty mechanics array", e);
       return [];

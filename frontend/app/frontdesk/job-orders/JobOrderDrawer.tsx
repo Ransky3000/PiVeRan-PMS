@@ -27,47 +27,51 @@ import {
 interface JobOrderDrawerProps {
   drawerJobOrder: JobOrder | null;
   onClose: () => void;
-  isEditingDrawer: boolean;
-  setIsEditingDrawer: (editing: boolean) => void;
-  editOdometer: string;
-  setEditOdometer: (val: string) => void;
-  editServiceType: string;
-  setEditServiceType: (val: string) => void;
-  editMechanics: string[];
-  setEditMechanics: (val: string[]) => void;
-  serviceTypeOptions: SelectOption[];
-  mechanicOptions: SelectOption[];
-  handleSaveEditDrawer: () => void;
-  handleDeleteDrawer: () => void;
-  handleStartEditDrawer: () => void;
-  updateEstimateLine: (lineId: string, updates: Partial<EstimateLineItem>) => void;
+  readOnly?: boolean;
+  inline?: boolean;
+  isEditingDrawer?: boolean;
+  setIsEditingDrawer?: (editing: boolean) => void;
+  editOdometer?: string;
+  setEditOdometer?: (val: string) => void;
+  editServiceType?: string;
+  setEditServiceType?: (val: string) => void;
+  editMechanics?: string[];
+  setEditMechanics?: (val: string[]) => void;
+  serviceTypeOptions?: SelectOption[];
+  mechanicOptions?: SelectOption[];
+  handleSaveEditDrawer?: () => void;
+  handleDeleteDrawer?: () => void;
+  handleStartEditDrawer?: () => void;
+  updateEstimateLine?: (lineId: string, updates: Partial<EstimateLineItem>) => void;
   onBuyAllToggle?: (isAllBuy: boolean) => void;
-  updateDrawerJO: (updates: Partial<JobOrder>) => void;
-  setLightboxData: (data: { itemIdx: number; photoIdx: number } | null) => void;
-  onMarkCompleted: () => void;
+  updateDrawerJO?: (updates: Partial<JobOrder>) => void;
+  setLightboxData?: (data: { itemIdx: number; photoIdx: number } | null) => void;
+  onMarkCompleted?: () => void;
 }
 
 export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
   drawerJobOrder,
   onClose,
-  isEditingDrawer,
-  setIsEditingDrawer,
-  editOdometer,
-  setEditOdometer,
-  editServiceType,
-  setEditServiceType,
-  editMechanics,
-  setEditMechanics,
-  serviceTypeOptions,
-  mechanicOptions,
-  handleSaveEditDrawer,
-  handleDeleteDrawer,
-  handleStartEditDrawer,
-  updateEstimateLine,
+  readOnly = false,
+  inline = false,
+  isEditingDrawer = false,
+  setIsEditingDrawer = () => {},
+  editOdometer = "",
+  setEditOdometer = () => {},
+  editServiceType = "",
+  setEditServiceType = () => {},
+  editMechanics = [],
+  setEditMechanics = () => {},
+  serviceTypeOptions = [],
+  mechanicOptions = [],
+  handleSaveEditDrawer = () => {},
+  handleDeleteDrawer = () => {},
+  handleStartEditDrawer = () => {},
+  updateEstimateLine = () => {},
   onBuyAllToggle,
-  updateDrawerJO,
-  setLightboxData,
-  onMarkCompleted
+  updateDrawerJO = () => {},
+  setLightboxData = () => {},
+  onMarkCompleted = () => {}
 }) => {
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [isReminderModalOpen, setIsReminderModalOpen] = useState(false);
@@ -92,43 +96,24 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
 
   if (!drawerJobOrder) return null;
 
-  return (
-    <>
-      {/* Backdrop */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 z-40 bg-slate-950/40"
-      />
-
-      {/* Drawer Panel */}
-      <motion.div
-        initial={{ x: "100%" }}
-        animate={{ x: 0 }}
-        exit={{ x: "100%" }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[500px] bg-white border-l border-slate-200 shadow-2xl flex flex-col"
-      >
-        {/* ── DRAWER HEADER ── */}
-        <div className="shrink-0 px-5 py-4 border-b border-slate-200 bg-white">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <h2 className="text-base font-bold text-slate-900 truncate">{drawerJobOrder.vehicleModel}</h2>
-            </div>
-
-            <button
-              onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+  const drawerContent = (
+    <div className={`flex flex-col h-full bg-white text-slate-900 ${inline ? "rounded-3xl border border-slate-200 shadow-xl overflow-hidden" : ""}`}>
+      {/* ── DRAWER HEADER ── */}
+      <div className="shrink-0 px-5 py-4 border-b border-slate-200 bg-white flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <h2 className="text-base font-bold text-slate-900 truncate">{drawerJobOrder.vehicleModel}</h2>
         </div>
 
-        {/* ── DRAWER BODY (SCROLLABLE) ── */}
-        <div className="flex-1 overflow-y-auto">
+        <button
+          onClick={onClose}
+          className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer shrink-0"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* ── DRAWER BODY (SCROLLABLE) ── */}
+      <div className="flex-1 overflow-y-auto">
 
           {/* SECTION 1: Vehicle Info & Incharge Mechanics */}
           <div className="px-5 py-4 border-b border-slate-100 space-y-3 text-xs">
@@ -417,25 +402,27 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
 
                 {(() => {
                   const items = getEffectiveEstimateItems(drawerJobOrder);
-                  const isAllBuy = items.length > 0 && items.every((i) => i.customerApproved !== false);
+                  const isAllSelected = items.length > 0 && items.every((i) => i.customerApproved !== false);
                   return (
-                    <label className="flex items-center gap-1.5 cursor-pointer text-xs text-slate-600 font-semibold select-none">
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 cursor-pointer">
                       <span>Buy all</span>
                       <input
                         type="checkbox"
-                        checked={isAllBuy}
+                        checked={isAllSelected}
+                        disabled={readOnly}
                         onChange={(e) => {
+                          if (readOnly) return;
                           const nextVal = e.target.checked;
                           if (onBuyAllToggle) {
                             onBuyAllToggle(nextVal);
-                          } else {
+                          } else if (updateEstimateLine) {
                             const current = getEffectiveEstimateItems(drawerJobOrder);
                             current.forEach((i) => {
                               updateEstimateLine(i.id, { customerApproved: nextVal });
                             });
                           }
                         }}
-                        className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                        className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer disabled:cursor-not-allowed"
                       />
                     </label>
                   );
@@ -458,11 +445,16 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                       <div className="flex items-center justify-between gap-2 mb-2.5">
                         <span className="font-normal text-slate-700 text-xs truncate">{item.description}</span>
 
-                        <div className="inline-flex items-center bg-slate-900 p-0.5 rounded-full shadow-2xs shrink-0">
+                        <div className={`inline-flex items-center bg-slate-900 p-0.5 rounded-full shadow-2xs shrink-0 ${readOnly ? "opacity-75 pointer-events-none" : ""}`}>
                           <button
                             type="button"
-                            onClick={() => updateEstimateLine(item.id, { customerApproved: true })}
-                            className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full transition-all cursor-pointer select-none ${
+                            disabled={readOnly}
+                            onClick={() => {
+                              if (!readOnly && updateEstimateLine) updateEstimateLine(item.id, { customerApproved: true });
+                            }}
+                            className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full transition-all select-none ${
+                              readOnly ? "cursor-default" : "cursor-pointer"
+                            } ${
                               isBuy
                                 ? "bg-white text-slate-900 shadow-xs font-semibold"
                                 : "text-white/90 hover:text-white font-medium"
@@ -472,8 +464,13 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                           </button>
                           <button
                             type="button"
-                            onClick={() => updateEstimateLine(item.id, { customerApproved: false })}
-                            className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full transition-all cursor-pointer select-none ${
+                            disabled={readOnly}
+                            onClick={() => {
+                              if (!readOnly && updateEstimateLine) updateEstimateLine(item.id, { customerApproved: false });
+                            }}
+                            className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full transition-all select-none ${
+                              readOnly ? "cursor-default" : "cursor-pointer"
+                            } ${
                               !isBuy
                                 ? "bg-white text-slate-900 shadow-xs font-semibold"
                                 : "text-white/90 hover:text-white font-medium"
@@ -491,18 +488,22 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                             <input
                               type="number"
                               min="1"
+                              disabled={readOnly}
+                              readOnly={readOnly}
                               value={item.qty || ""}
                               onChange={(e) => {
+                                if (readOnly || !updateEstimateLine) return;
                                 const val = e.target.value;
                                 const parsed = val === "" ? 0 : parseInt(val);
                                 updateEstimateLine(item.id, { qty: isNaN(parsed) ? 0 : parsed });
                               }}
                               onBlur={() => {
+                                if (readOnly || !updateEstimateLine) return;
                                 if (!item.qty || item.qty < 1) {
                                   updateEstimateLine(item.id, { qty: 1 });
                                 }
                               }}
-                              className="w-12 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-center font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-400/20 text-xs"
+                              className="w-12 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-center font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-400/20 text-xs disabled:bg-slate-100 disabled:text-slate-600 disabled:cursor-not-allowed"
                             />
                           </div>
                           <div className="flex items-center gap-1">
@@ -510,13 +511,16 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                             <input
                               type="number"
                               min="0"
+                              disabled={readOnly}
+                              readOnly={readOnly}
                               value={item.unitPrice || ""}
                               onChange={(e) => {
+                                if (readOnly || !updateEstimateLine) return;
                                 const val = e.target.value;
                                 const parsed = val === "" ? 0 : parseInt(val);
                                 updateEstimateLine(item.id, { unitPrice: isNaN(parsed) ? 0 : parsed });
                               }}
-                              className="w-16 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-center font-mono font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-400/20 text-xs"
+                              className="w-16 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-center font-mono font-medium text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-400/20 text-xs disabled:bg-slate-100 disabled:text-slate-600 disabled:cursor-not-allowed"
                             />
                           </div>
                         </div>
@@ -550,13 +554,16 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                         <input
                           type="number"
                           min="0"
+                          disabled={readOnly}
+                          readOnly={readOnly}
                           value={drawerJobOrder.discount || ""}
                           onChange={(e) => {
+                            if (readOnly || !updateDrawerJO) return;
                             const val = e.target.value;
                             const parsed = val === "" ? 0 : parseInt(val);
                             updateDrawerJO({ discount: isNaN(parsed) ? 0 : Math.max(0, parsed) });
                           }}
-                          className="w-16 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-right font-mono font-medium text-slate-900 outline-none focus:border-emerald-500 text-xs"
+                          className="w-16 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-right font-mono font-medium text-slate-900 outline-none focus:border-emerald-500 text-xs disabled:bg-slate-100 disabled:text-slate-600 disabled:cursor-not-allowed"
                         />
                       </div>
                     </div>
@@ -566,10 +573,15 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
                         <span className="shrink-0 font-normal text-slate-600">Comment</span>
                         <input
                           type="text"
+                          disabled={readOnly}
+                          readOnly={readOnly}
                           value={drawerJobOrder.estimateComment !== undefined ? drawerJobOrder.estimateComment : calc.commentText}
-                          onChange={(e) => updateDrawerJO({ estimateComment: e.target.value })}
+                          onChange={(e) => {
+                            if (readOnly || !updateDrawerJO) return;
+                            updateDrawerJO({ estimateComment: e.target.value });
+                          }}
                           placeholder={calc.commentText}
-                          className="w-full max-w-[260px] bg-white border border-slate-200 rounded-md px-2 py-0.5 text-right font-normal text-slate-700 outline-none focus:border-emerald-500 text-xs"
+                          className="w-full max-w-[260px] bg-white border border-slate-200 rounded-md px-2 py-0.5 text-right font-normal text-slate-700 outline-none focus:border-emerald-500 text-xs disabled:bg-slate-100 disabled:text-slate-600 disabled:cursor-not-allowed"
                         />
                       </div>
                       <div className="flex items-center justify-between text-xs font-bold text-slate-900 pt-1">
@@ -633,56 +645,87 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
               >
                 Close
               </button>
-              {drawerJobOrder.status === "Job completed" && (
-                hasReminder ? (
-                  <button
-                    disabled
-                    className="px-4 py-2 bg-emerald-100 text-emerald-800 font-semibold text-xs rounded-xl shadow-2xs flex items-center gap-1.5 cursor-not-allowed opacity-90 border border-emerald-300"
-                  >
-                    <Check className="w-4 h-4 text-emerald-700" />
-                    <span>Reminder Added</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      if (checkingReminder) return;
-                      setIsReminderModalOpen(true);
-                    }}
-                    disabled={checkingReminder}
-                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    <Bell className="w-4 h-4" />
-                    <span>{checkingReminder ? "Checking..." : "+ Add Reminder"}</span>
-                  </button>
-                )
-              )}
-              {drawerJobOrder.status !== "Job completed" && (
-                (() => {
-                  const progress = getInspectionProgress(drawerJobOrder);
-                  const isCompleted = (progress.total > 0 && progress.completed === progress.total);
-                  return isCompleted ? (
-                    <button
-                      onClick={onMarkCompleted}
-                      className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-                    >
-                      <FileText className="w-4 h-4" />
-                      <span>Complete</span>
-                    </button>
-                  ) : (
-                    <button
-                      disabled
-                      className="px-4 py-2 bg-slate-200 text-slate-400 font-medium text-xs rounded-xl shadow-2xs flex items-center gap-1.5 cursor-not-allowed opacity-70"
-                      title="Unlocks once mechanics complete the inspection checklist items (100% completed)"
-                    >
-                      <FileText className="w-4 h-4" />
-                      <span>Complete</span>
-                    </button>
-                  );
-                })()
+              {!readOnly && (
+                <>
+                  {drawerJobOrder.status === "Job completed" && (
+                    hasReminder ? (
+                      <button
+                        disabled
+                        className="px-4 py-2 bg-emerald-100 text-emerald-800 font-semibold text-xs rounded-xl shadow-2xs flex items-center gap-1.5 cursor-not-allowed opacity-90 border border-emerald-300"
+                      >
+                        <Check className="w-4 h-4 text-emerald-700" />
+                        <span>Reminder Added</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          if (checkingReminder) return;
+                          setIsReminderModalOpen(true);
+                        }}
+                        disabled={checkingReminder}
+                        className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        <Bell className="w-4 h-4" />
+                        <span>{checkingReminder ? "Checking..." : "+ Add Reminder"}</span>
+                      </button>
+                    )
+                  )}
+                  {drawerJobOrder.status !== "Job completed" && (
+                    (() => {
+                      const progress = getInspectionProgress(drawerJobOrder);
+                      const isCompleted = (progress.total > 0 && progress.completed === progress.total);
+                      return isCompleted ? (
+                        <button
+                          onClick={onMarkCompleted}
+                          className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>Complete</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="px-4 py-2 bg-slate-200 text-slate-400 font-medium text-xs rounded-xl shadow-2xs flex items-center gap-1.5 cursor-not-allowed opacity-70"
+                          title="Unlocks once mechanics complete the inspection checklist items (100% completed)"
+                        >
+                          <FileText className="w-4 h-4" />
+                          <span>Complete</span>
+                        </button>
+                      );
+                    })()
+                  )}
+                </>
               )}
             </>
           )}
         </div>
+      </div>
+  );
+
+  if (inline) {
+    return drawerContent;
+  }
+
+  return (
+    <>
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-slate-950/40"
+      />
+
+      {/* Drawer Panel */}
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", damping: 30, stiffness: 300 }}
+        className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-[500px] bg-white border-l border-slate-200 shadow-2xl flex flex-col"
+      >
+        {drawerContent}
       </motion.div>
 
       {/* CREATE REMINDER FORM MODAL */}

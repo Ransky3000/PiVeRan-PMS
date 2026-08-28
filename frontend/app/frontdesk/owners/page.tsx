@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { TailAdminLayout } from "@/components/TailAdminLayout";
 import { useDevRole } from "@/context/DevRoleContext";
 import { apiService } from "@/app/apiService";
-import { Search, Plus, UserCircle2, X, Car } from "lucide-react";
+import { Search, Plus, UserCircle2, X, Car, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CustomSelect } from "@/components/CustomSelect";
 import { useRouter } from "next/navigation";
@@ -547,28 +547,44 @@ export default function OwnersPage() {
                         <p className="text-xs text-slate-400 font-medium">No vehicles registered to this owner</p>
                       </div>
                     ) : (
-                      (selectedOwnerForDetail.vehicles || []).map((vehicle: any) => (
-                        <div key={vehicle.vehicle_id || vehicle.id} className="bg-white border border-slate-200 rounded-2xl p-4 flex gap-4 shadow-sm hover:border-slate-300 transition-all">
-                          <div className="w-16 h-16 shrink-0 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
-                            {vehicle.photo_url ? (
-                              <img src={vehicle.photo_url} alt={vehicle.model} className="w-full h-full object-cover" />
-                            ) : (
-                              <Car className="w-6 h-6 text-slate-300" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0 flex flex-col justify-between">
-                            <div>
-                              <p className="text-xs font-extrabold text-slate-900 truncate">{vehicle.make} {vehicle.model}</p>
-                              <p className="text-[10px] text-slate-400 font-bold mt-0.5">{vehicle.color} • {vehicle.year}</p>
+                      (selectedOwnerForDetail.vehicles || []).map((vehicle: any) => {
+                        const plate = vehicle.plate_number || vehicle.plate;
+                        return (
+                          <div
+                            key={vehicle.vehicle_id || vehicle.id}
+                            onClick={() => {
+                              if (plate) {
+                                setSelectedOwnerForDetail(null);
+                                router.push(`/frontdesk/vehicles?plate=${encodeURIComponent(plate)}`);
+                              }
+                            }}
+                            className="bg-white border border-slate-200 hover:border-emerald-500/80 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs hover:shadow-md transition-all cursor-pointer group"
+                            title="Click to view Vehicle Profile & Service History"
+                          >
+                            <div className="flex items-center gap-3.5 min-w-0">
+                              <div className="w-14 h-14 shrink-0 rounded-xl overflow-hidden border border-slate-100 bg-slate-50 flex items-center justify-center">
+                                {vehicle.photo_url ? (
+                                  <img src={vehicle.photo_url} alt={vehicle.model} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Car className="w-6 h-6 text-slate-300 group-hover:text-emerald-600 transition-colors" />
+                                )}
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-xs font-extrabold text-slate-900 truncate group-hover:text-emerald-700 transition-colors">
+                                  {vehicle.make} {vehicle.model}
+                                </p>
+                                <p className="text-[10px] text-slate-400 font-bold mt-0.5">{vehicle.color} • {vehicle.year}</p>
+                                <span className="inline-block bg-slate-100 group-hover:bg-emerald-50 group-hover:text-emerald-800 text-slate-800 text-[10px] font-extrabold tracking-wider px-2 py-0.5 rounded-md border border-slate-200 group-hover:border-emerald-200 uppercase mt-1 transition-colors">
+                                  {plate}
+                                </span>
+                              </div>
                             </div>
-                            <div className="flex items-center justify-between mt-1">
-                              <span className="inline-block bg-slate-100 text-slate-800 text-[10px] font-extrabold tracking-wider px-2 py-0.5 rounded-md border border-slate-200 uppercase">
-                                {vehicle.plate_number}
-                              </span>
+                            <div className="text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all">
+                              <ChevronRight className="w-5 h-5" />
                             </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>

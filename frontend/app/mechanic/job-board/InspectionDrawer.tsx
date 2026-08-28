@@ -261,10 +261,20 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                                               <input
                                                 type="number"
                                                 min="1"
-                                                value={qty}
+                                                value={qty === 0 ? "" : qty}
                                                 onChange={(e) => {
-                                                  const val = Math.max(1, parseInt(e.target.value) || 1);
-                                                  updateMaterialQty(idx, name, val);
+                                                  const raw = e.target.value;
+                                                  if (raw === "") {
+                                                    updateMaterialQty(idx, name, 0);
+                                                  } else {
+                                                    const val = parseInt(raw, 10);
+                                                    updateMaterialQty(idx, name, isNaN(val) ? 0 : Math.max(1, val));
+                                                  }
+                                                }}
+                                                onBlur={() => {
+                                                  if (!qty || qty < 1) {
+                                                    updateMaterialQty(idx, name, 1);
+                                                  }
                                                 }}
                                                 className="hidden group-hover:block w-12 bg-white border border-red-300 rounded-md py-0.5 px-1 text-center text-xs font-semibold text-slate-900 outline-none focus:border-red-600 focus:ring-1 focus:ring-red-500/20 shadow-2xs"
                                               />
@@ -457,8 +467,21 @@ export const InspectionDrawer: React.FC<InspectionDrawerProps> = ({
                                             <input
                                               type="number"
                                               min="1"
-                                              value={addMaterialQtyInput}
-                                              onChange={(e) => setAddMaterialQtyInput(Math.max(1, parseInt(e.target.value) || 1))}
+                                              value={addMaterialQtyInput === 0 ? "" : addMaterialQtyInput}
+                                              onChange={(e) => {
+                                                const raw = e.target.value;
+                                                if (raw === "") {
+                                                  setAddMaterialQtyInput(0);
+                                                } else {
+                                                  const val = parseInt(raw, 10);
+                                                  setAddMaterialQtyInput(isNaN(val) ? 0 : Math.max(1, val));
+                                                }
+                                              }}
+                                              onBlur={() => {
+                                                if (!addMaterialQtyInput || addMaterialQtyInput < 1) {
+                                                  setAddMaterialQtyInput(1);
+                                                }
+                                              }}
                                               className="w-24 bg-white border border-slate-300 rounded-xl py-2 px-3 text-center text-sm font-bold text-slate-900 outline-none focus:border-red-500 shadow-2xs"
                                             />
                                             <button

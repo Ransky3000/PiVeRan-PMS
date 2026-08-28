@@ -407,9 +407,6 @@ async def delete_job_order(jo_id: str, db: Session = Depends(get_db)):
     if not jo:
         raise HTTPException(status_code=404, detail="Job Order not found")
         
-    if jo.status != JobOrderStatus.NEW:
-        raise HTTPException(status_code=400, detail="Cannot delete a Job Order that is no longer in New status")
-        
     jo.mechanics = []
     db.delete(jo)
     db.commit()

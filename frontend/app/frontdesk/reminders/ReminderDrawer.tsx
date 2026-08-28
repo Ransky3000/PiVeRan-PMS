@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   X,
@@ -11,7 +12,8 @@ import {
   Phone,
   Check,
   Save,
-  Trash2
+  Trash2,
+  Plus
 } from "lucide-react";
 import { ReminderItem } from "./ReminderTable";
 import { apiService } from "@/app/apiService";
@@ -32,6 +34,7 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
   onDelete,
   onMarkCompleted
 }) => {
+  const router = useRouter();
   const [completedJobOrders, setCompletedJobOrders] = useState<any[]>([]);
   const [bundles, setBundles] = useState<any[]>([]);
   const [selectedJoId, setSelectedJoId] = useState("");
@@ -74,8 +77,6 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
     setTargetOdometer(reminder.targetOdometer || 10000);
   }, [reminder]);
 
-  if (!reminder) return null;
-
   // Selected Job Order & Bundle object
   const selectedJo = completedJobOrders.find((j) => j.id === selectedJoId);
   const activeServiceType = selectedServiceType || selectedJo?.serviceType || "Basic PMS";
@@ -83,20 +84,39 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
     (b) => b.packageName && activeServiceType && b.packageName.toLowerCase() === activeServiceType.toLowerCase()
   );
 
-  const selectedJoOdo = reminder.startOdometer || (selectedJo ? parseInt(String(selectedJo.odometer || "0").replace(/[^\d]/g, "")) || 0 : 0);
-  const selectedJoDate = reminder.startDate || (selectedJo ? (selectedJo.completedAt || selectedJo.updatedAt || selectedJo.createdAt) : "");
+  const selectedJoOdo = reminder?.startOdometer || (selectedJo ? parseInt(String(selectedJo.odometer || "0").replace(/[^\d]/g, "")) || 0 : 0);
+  const selectedJoDate = reminder?.startDate || (selectedJo ? (selectedJo.completedAt || selectedJo.updatedAt || selectedJo.createdAt) : "");
 
-  // Vehicle option labels
-  const jobSelectOptions: SelectOption[] = completedJobOrders.length > 0
-    ? completedJobOrders.map((j) => {
-        const vName = j.vehicleModel || (j.vehicle ? `${j.vehicle.year || ''} ${j.vehicle.make || ''} ${j.vehicle.model || ''}`.trim() : '') || "Vehicle";
-        const plate = j.plateNumber || j.plate_number || j.vehicle?.plate_number || "No Plate";
-        return {
+  // Vehicle option labels (Deduplicated by plate so each vehicle appears exactly once)
+  const jobSelectOptions: SelectOption[] = React.useMemo(() => {
+    if (completedJobOrders.length === 0 && reminder) {
+      return [{ value: reminder.joId || "1", label: `${reminder.vehicleName} | ${reminder.plateNumber}` }];
+    }
+    const seenPlates = new Set<string>();
+    const options: SelectOption[] = [];
+
+    completedJobOrders.forEach((j) => {
+      const plate = j.plateNumber || j.plate_number || j.vehicle?.plate_number || "";
+      const vName = j.vehicleModel || (j.vehicle ? `${j.vehicle.make || ''} ${j.vehicle.model || ''}`.trim() : '') || "Vehicle";
+      const key = plate.toLowerCase() || j.id;
+
+      if (!seenPlates.has(key)) {
+        seenPlates.add(key);
+        options.push({
           value: j.id,
-          label: `${vName} | ${plate}`
-        };
-      })
-    : [{ value: reminder.joId || "1", label: `${reminder.vehicleName} | ${reminder.plateNumber}` }];
+          label: plate ? `${vName} | ${plate}` : vName
+        });
+      }
+    });
+
+    return options.length > 0
+      ? options
+      : reminder
+      ? [{ value: reminder.joId || "1", label: `${reminder.vehicleName} | ${reminder.plateNumber}` }]
+      : [];
+  }, [completedJobOrders, reminder]);
+
+  if (!reminder) return null;
 
   // Service type select options
   const serviceTypeOptions: SelectOption[] = (bundles || []).length > 0
@@ -225,6 +245,29 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleCreateJobOrderFromReminder = () => {
+    if (!reminder) return;
+    const ownerId = reminder.ownerId || selectedJo?.owner_id || selectedJo?.ownerId || "";
+    const plate = reminder.plateNumber || selectedJo?.plateNumber || selectedJo?.plate_number || "";
+    const bundle = activeServiceType || "Basic PMS";
+    const odo = targetOdometer || 10000;
+    const phone = reminder.ownerPhone || selectedJo?.ownerPhone || selectedJo?.owner?.contact_number || "";
+    const fb = reminder.ownerFb || selectedJo?.ownerFb || selectedJo?.owner?.facebook || "";
+
+    const queryParams = new URLSearchParams({
+      create: "true",
+      ...(ownerId ? { ownerId } : {}),
+      ...(plate ? { plate } : {}),
+      ...(bundle ? { bundle } : {}),
+      ...(odo ? { odometer: String(odo) } : {}),
+      ...(phone ? { phone } : {}),
+      ...(fb ? { fb } : {})
+    }).toString();
+
+    onClose();
+    router.push(`/frontdesk/job-orders?${queryParams}`);
   };
 
   return (
@@ -439,7 +482,7 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
           </div>
         </div>
 
-        {/* ── DRAWER FOOTER (MATCHING SCREENSHOT 2 - NO EDIT BUTTON) ── */}
+        {/* ── DRAWER FOOTER ── */}
         <div className="shrink-0 px-6 py-4 border-t border-slate-200 bg-white flex items-center justify-between">
           <button
             type="button"
@@ -450,26 +493,37 @@ export const ReminderDrawer: React.FC<ReminderDrawerProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleSaveChanges}
-              disabled={isSaving}
-              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{isSaving ? "Saving..." : "Save Changes"}</span>
-            </button>
-
-            {reminder.status !== "Done" && (
+            {reminder.status === "Done" ? (
               <button
                 type="button"
-                onClick={handleSaveAndComplete}
-                disabled={isSaving}
-                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                onClick={handleCreateJobOrderFromReminder}
+                className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
               >
-                <Check className="w-4 h-4" />
-                <span>{isSaving ? "Saving..." : "Complete"}</span>
+                <Plus className="w-4 h-4" />
+                <span>Create Job Order</span>
               </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSaveChanges}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isSaving ? "Saving..." : "Save Changes"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveAndComplete}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>{isSaving ? "Saving..." : "Complete"}</span>
+                </button>
+              </>
             )}
 
             <button

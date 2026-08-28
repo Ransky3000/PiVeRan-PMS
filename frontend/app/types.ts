@@ -60,6 +60,8 @@ export interface JobOrder {
   inchargeMechanics: string[];
   status: JOStatus;
   createdAt: string;
+  completedAt?: string;
+  updatedAt?: string;
   vehiclePhotoUrl?: string;
   // Post-inspection data
   inspectionItems?: InspectionItem[];

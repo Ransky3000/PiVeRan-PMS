@@ -181,7 +181,50 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     }
   }, [isOpen, reminder]);
 
-  if (!isOpen) return null;
+  // Selected Job Order & Bundle object
+  const selectedJo = completedJobOrders.find((j) => j.id === selectedJoId);
+  const activeServiceType = selectedServiceType || selectedJo?.serviceType || "";
+  const matchedBundle = bundles.find(
+    (b) => b.packageName && activeServiceType && b.packageName.toLowerCase() === activeServiceType.toLowerCase()
+  );
+
+  const selectedJoOdo = selectedJo ? parseInt(String(selectedJo.odometer || "0").replace(/[^\d]/g, "")) || 0 : 0;
+  const selectedJoDate = selectedJo ? (selectedJo.completedAt || selectedJo.updatedAt || selectedJo.createdAt) : "";
+
+  // Vehicle option labels (Deduplicated by plate so each vehicle appears exactly once)
+  const jobSelectOptions: SelectOption[] = React.useMemo(() => {
+    const seenPlates = new Set<string>();
+    const options: SelectOption[] = [];
+
+    completedJobOrders.forEach((j) => {
+      const plate = j.plateNumber || j.plate_number || j.vehicle?.plate_number || "";
+      const vName = j.vehicleModel || (j.vehicle ? `${j.vehicle.make || ''} ${j.vehicle.model || ''}`.trim() : '') || "Vehicle";
+      const key = plate.toLowerCase() || j.id;
+
+      if (!seenPlates.has(key)) {
+        seenPlates.add(key);
+        options.push({
+          value: j.id,
+          label: plate ? `${vName} | ${plate}` : vName
+        });
+      }
+    });
+
+    return options;
+  }, [completedJobOrders]);
+
+  // Service type select options (from Job Order Add form)
+  const serviceTypeOptions: SelectOption[] = (bundles || []).map((b) => ({
+    value: b.packageName,
+    label: b.packageName
+  }));
+
+  // Checklist items preview dynamically reacting to selected service type (matchedBundle)
+  const checklistItems: string[] = matchedBundle?.servicesIncluded && matchedBundle.servicesIncluded.length > 0
+    ? matchedBundle.servicesIncluded
+    : selectedJo?.inspectionItems && selectedJo.inspectionItems.length > 0
+    ? selectedJo.inspectionItems.map((item: any) => item.name || item.title || item.item_name || "Inspection Item")
+    : ["Full ECU Scanning", "Diagnose", "Inspect Battery", "Replace Sparkplug", "Replace Air Filter"];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -217,38 +260,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
     }
   };
 
-  // Selected Job Order & Bundle object
-  const selectedJo = completedJobOrders.find((j) => j.id === selectedJoId);
-  const activeServiceType = selectedServiceType || selectedJo?.serviceType || "";
-  const matchedBundle = bundles.find(
-    (b) => b.packageName && activeServiceType && b.packageName.toLowerCase() === activeServiceType.toLowerCase()
-  );
-
-  const selectedJoOdo = selectedJo ? parseInt(String(selectedJo.odometer || "0").replace(/[^\d]/g, "")) || 0 : 0;
-  const selectedJoDate = selectedJo ? (selectedJo.completedAt || selectedJo.updatedAt || selectedJo.createdAt) : "";
-
-  // Vehicle option labels
-  const jobSelectOptions: SelectOption[] = completedJobOrders.map((j) => {
-    const vName = j.vehicleModel || (j.vehicle ? `${j.vehicle.year || ''} ${j.vehicle.make || ''} ${j.vehicle.model || ''}`.trim() : '') || "Vehicle";
-    const plate = j.plateNumber || j.plate_number || j.vehicle?.plate_number || "No Plate";
-    return {
-      value: j.id,
-      label: `${vName} | ${plate}`
-    };
-  });
-
-  // Service type select options (from Job Order Add form)
-  const serviceTypeOptions: SelectOption[] = (bundles || []).map((b) => ({
-    value: b.packageName,
-    label: b.packageName
-  }));
-
-  // Checklist items preview dynamically reacting to selected service type (matchedBundle)
-  const checklistItems: string[] = matchedBundle?.servicesIncluded && matchedBundle.servicesIncluded.length > 0
-    ? matchedBundle.servicesIncluded
-    : selectedJo?.inspectionItems && selectedJo.inspectionItems.length > 0
-    ? selectedJo.inspectionItems.map((item: any) => item.name || item.title || item.item_name || "Inspection Item")
-    : ["Full ECU Scanning", "Diagnose", "Inspect Battery", "Replace Sparkplug", "Replace Air Filter"];
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50">

@@ -4,277 +4,20 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { TailAdminLayout } from "@/components/TailAdminLayout";
 import { useDevRole } from "@/context/DevRoleContext";
 import { apiService } from "@/app/apiService";
-import { Search, Plus, Car, X, UserCircle2, Save, Trash2 } from "lucide-react";
+import { Search, Plus, Car, UserCircle2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { VehicleDetailDrawer } from "./VehicleDetailDrawer";
+import { JobOrderDrawer } from "@/app/frontdesk/job-orders/JobOrderDrawer";
+import { getItemPhotos } from "@/app/frontdesk/job-orders/jobOrderHelpers";
 
-function VehicleDetailDrawer({ vehicle, onClose, onSaved, onDeleted }: { vehicle: any; onClose: () => void; onSaved: (v: any) => void; onDeleted: (id: string) => void }) {
-  const [editMake, setEditMake] = useState(vehicle.make);
-  const [editModel, setEditModel] = useState(vehicle.model);
-  const [editYear, setEditYear] = useState(String(vehicle.year));
-  const [editColor, setEditColor] = useState(vehicle.color);
-  const [editPlate, setEditPlate] = useState(vehicle.plate_number);
-  const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-
-  const isDirty =
-    editMake !== vehicle.make ||
-    editModel !== vehicle.model ||
-    editYear !== String(vehicle.year) ||
-    editColor !== vehicle.color ||
-    editPlate !== vehicle.plate_number;
-
-  const handleSave = async () => {
-    if (!editMake.trim() || !editModel.trim() || !editPlate.trim()) return;
-    setSaving(true);
-    try {
-      const updated = await apiService.updateVehicle(vehicle.id, {
-        make: editMake,
-        model: editModel,
-        year: parseInt(editYear) || vehicle.year,
-        color: editColor,
-        plate_number: editPlate
-      });
-      if (updated) {
-        onSaved(updated);
-        setToast("Vehicle updated");
-        setTimeout(() => setToast(null), 2500);
-      }
-    } catch (err) {
-      console.error("Failed to update vehicle", err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!confirm(`Are you sure you want to delete ${vehicle.make} ${vehicle.model} (${vehicle.plate_number})?`)) return;
-    setDeleting(true);
-    try {
-      await apiService.deleteVehicle(vehicle.id);
-      onDeleted(vehicle.id);
-      onClose();
-    } catch (err) {
-      console.error("Failed to delete vehicle", err);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const inputCls = "w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-sm font-semibold text-slate-800 outline-none focus:border-emerald-600 focus:bg-white transition-all";
-
-  return (
-    <div className="fixed inset-0 z-50 flex justify-end">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="absolute inset-0 bg-slate-950/30"
-      />
-      <motion.div
-        initial={{ x: "100%" }}
-        animate={{ x: 0 }}
-        exit={{ x: "100%" }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="relative w-full max-w-md bg-white border-l border-slate-200 shadow-2xl h-full flex flex-col z-50 text-slate-900"
-      >
-        {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-700">
-              <Car className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-slate-900 text-sm">Vehicle Profile</h3>
-              <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Specs & Owners</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleDelete}
-              disabled={deleting}
-              title="Delete Vehicle"
-              className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-1.5 rounded-lg transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Vehicle Image Banner */}
-          <div className="w-full h-48 rounded-2xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center relative shadow-inner group">
-            {vehicle.photo_url || vehicle.photoUrl ? (
-              <>
-                <img src={vehicle.photo_url || vehicle.photoUrl} alt={vehicle.model} className="w-full h-full object-cover" />
-                <label className="absolute bottom-3 right-3 bg-slate-900/80 hover:bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-xl backdrop-blur-xs cursor-pointer transition-all flex items-center gap-1.5 shadow-md">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = async () => {
-                          const dataUrl = reader.result as string;
-                          try {
-                            const updated = await apiService.updateVehicle(vehicle.id || vehicle.vehicle_id, { photo_url: dataUrl });
-                            if (updated) onSaved(updated);
-                          } catch (err) {
-                            console.error("Failed to update vehicle image", err);
-                          }
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    className="hidden"
-                  />
-                  <span>Change Photo</span>
-                </label>
-              </>
-            ) : (
-              <label className="text-center text-slate-400 hover:text-emerald-700 cursor-pointer p-4 w-full h-full flex flex-col items-center justify-center group-hover:bg-emerald-50/50 transition-all">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const reader = new FileReader();
-                      reader.onloadend = async () => {
-                        const dataUrl = reader.result as string;
-                        try {
-                          const updated = await apiService.updateVehicle(vehicle.id || vehicle.vehicle_id, { photo_url: dataUrl });
-                          if (updated) onSaved(updated);
-                        } catch (err) {
-                          console.error("Failed to update vehicle image", err);
-                        }
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                  className="hidden"
-                />
-                <Car className="w-12 h-12 mx-auto mb-1.5 opacity-40 group-hover:opacity-80 group-hover:scale-110 transition-all" />
-                <p className="text-xs font-bold">Upload Vehicle Photo</p>
-                <p className="text-[10px] text-slate-400">Click to open camera or browse photo</p>
-              </label>
-            )}
-          </div>
-
-          {/* Editable Specs */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Specifications</h4>
-              {isDirty && (
-                <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-amber-200">
-                  Unsaved Changes
-                </span>
-              )}
-            </div>
-            <div className="bg-slate-50 rounded-2xl border border-slate-100 p-4 grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Make / Brand</span>
-                <input value={editMake} onChange={(e) => setEditMake(e.target.value)} className={inputCls} />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Model</span>
-                <input value={editModel} onChange={(e) => setEditModel(e.target.value)} className={inputCls} />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Year Model</span>
-                <input type="number" value={editYear} onChange={(e) => setEditYear(e.target.value)} className={inputCls} />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Color</span>
-                <input value={editColor} onChange={(e) => setEditColor(e.target.value)} className={inputCls} />
-              </div>
-              <div className="col-span-2 space-y-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Plate Number</span>
-                <input value={editPlate} onChange={(e) => setEditPlate(e.target.value)} className={`${inputCls} uppercase font-extrabold`} />
-              </div>
-            </div>
-
-            {isDirty && (
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white font-bold text-xs py-2.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
-              >
-                <Save className="w-4 h-4" />
-                <span>{saving ? "Saving..." : "Save Changes"}</span>
-              </button>
-            )}
-          </div>
-
-          {/* Owners List */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Associated Owners</h4>
-              <span className="bg-emerald-50 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                {(vehicle.owners || []).length} Associated
-              </span>
-            </div>
-            <div className="space-y-3">
-              {(vehicle.owners || []).length === 0 ? (
-                <div className="text-center py-8 border-2 border-dashed border-slate-200 rounded-2xl">
-                  <UserCircle2 className="w-6 h-6 text-slate-300 mx-auto mb-1.5 opacity-60" />
-                  <p className="text-xs text-slate-400 font-medium">No registered owners linked to this vehicle</p>
-                </div>
-              ) : (
-                (vehicle.owners || []).map((owner: any) => (
-                  <div key={owner.id} className="bg-white border border-slate-200 rounded-2xl p-4 flex gap-4 shadow-sm hover:border-slate-300 transition-all">
-                    <div className="w-10 h-10 shrink-0 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400">
-                      <UserCircle2 className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1 min-w-0 flex flex-col justify-between">
-                      <div>
-                        <p className="text-xs font-extrabold text-slate-900 truncate">{owner.name}</p>
-                        <p className="text-[10px] text-slate-500 font-semibold mt-0.5">{owner.phone}</p>
-                      </div>
-                      {owner.fb_handle && (
-                        <p className="text-[10px] font-bold text-emerald-700 hover:underline mt-1 truncate">
-                          <a href={owner.fb_handle.startsWith("http") ? owner.fb_handle : `https://facebook.com/${owner.fb_handle.replace("@", "")}`} target="_blank" rel="noopener noreferrer">
-                            {owner.fb_handle}
-                          </a>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Toast */}
-        <AnimatePresence>
-          {toast && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg"
-            >
-              {toast}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    </div>
-  );
-}
 export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedVehicleForDetail, setSelectedVehicleForDetail] = useState<any | null>(null);
+  const [selectedHistoricalJO, setSelectedHistoricalJO] = useState<any | null>(null);
+  const [lightboxData, setLightboxData] = useState<{ itemIdx: number; photoIdx: number } | null>(null);
 
   const [newMake, setNewMake] = useState("");
   const [newModel, setNewModel] = useState("");
@@ -297,6 +40,20 @@ export default function VehiclesPage() {
     };
     loadData();
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || vehicles.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const plateParam = params.get("plate");
+    if (plateParam) {
+      const matched = vehicles.find(
+        (v: any) => (v.plate_number || v.plate || "").toLowerCase() === plateParam.toLowerCase()
+      );
+      if (matched) {
+        setSelectedVehicleForDetail(matched);
+      }
+    }
+  }, [vehicles]);
 
   const handleAddVehicle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -595,12 +352,38 @@ export default function VehiclesPage() {
           </div>
         )}
       </AnimatePresence>
+      {/* HISTORICAL JOB ORDER DETAILS PANE (LEFT MAIN CONTENT AREA) */}
+      <AnimatePresence>
+        {selectedHistoricalJO && selectedVehicleForDetail && (
+          <div className="fixed right-[524px] top-20 bottom-6 z-[60] flex items-start justify-end pointer-events-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, x: 20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.95, x: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 250 }}
+              className="w-[460px] h-full max-h-[82vh] bg-white border border-slate-200/90 shadow-2xl rounded-3xl overflow-hidden flex flex-col pointer-events-auto"
+            >
+              <JobOrderDrawer
+                drawerJobOrder={selectedHistoricalJO}
+                onClose={() => setSelectedHistoricalJO(null)}
+                readOnly={true}
+                inline={true}
+                setLightboxData={setLightboxData}
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* VEHICLE DETAIL PANEL (EDITABLE DRAWER) */}
       <AnimatePresence>
         {selectedVehicleForDetail && (
           <VehicleDetailDrawer
             vehicle={selectedVehicleForDetail}
-            onClose={() => setSelectedVehicleForDetail(null)}
+            onClose={() => {
+              setSelectedVehicleForDetail(null);
+              setSelectedHistoricalJO(null);
+            }}
             onSaved={(updated) => {
               setVehicles(vehicles.map(v => v.id === updated.id ? updated : v));
               setSelectedVehicleForDetail(updated);
@@ -608,8 +391,60 @@ export default function VehiclesPage() {
             onDeleted={(id) => {
               setVehicles(vehicles.filter(v => v.id !== id));
               setSelectedVehicleForDetail(null);
+              setSelectedHistoricalJO(null);
             }}
+            onSelectJobOrderForDetails={(jo) => setSelectedHistoricalJO(jo)}
+            selectedJobOrderId={selectedHistoricalJO?.id}
           />
+        )}
+      </AnimatePresence>
+
+      {/* FULL-SCREEN IMAGE LIGHTBOX MODAL */}
+      <AnimatePresence>
+        {lightboxData && selectedHistoricalJO && (
+          <div className="fixed inset-0 z-[200] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative max-w-4xl max-h-[90vh] bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-slate-800 flex flex-col w-full"
+            >
+              {/* Lightbox Header */}
+              <div className="px-6 py-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-bold text-white">Diagnostic Visual Proof</h4>
+                  <span className="text-xs text-slate-400">
+                    {selectedHistoricalJO.inspectionItems?.[lightboxData.itemIdx]?.name || "Inspection Item"}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setLightboxData(null)}
+                  className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Lightbox Image Preview */}
+              <div className="flex-1 flex items-center justify-center p-6 bg-black/60 overflow-hidden min-h-[350px]">
+                {(() => {
+                  const item = selectedHistoricalJO.inspectionItems?.[lightboxData.itemIdx];
+                  const photos = item ? getItemPhotos(item) : [];
+                  const currentPhoto = photos[lightboxData.photoIdx];
+                  return currentPhoto ? (
+                    <img
+                      src={currentPhoto}
+                      alt="Visual Proof"
+                      className="max-h-[70vh] max-w-full object-contain rounded-2xl shadow-xl"
+                    />
+                  ) : (
+                    <p className="text-slate-400 text-xs">No image preview available.</p>
+                  );
+                })()}
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </TailAdminLayout>
