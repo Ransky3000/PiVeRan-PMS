@@ -1,6 +1,15 @@
 // apiService.ts - Real API backend service
 
-export const API_BASE_URL = "http://localhost:8000/api";
+const getApiBaseUrl = (): string => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && envUrl.trim() !== "") {
+    const trimmed = envUrl.trim().replace(/\/+$/, "");
+    return trimmed.endsWith("/api") ? trimmed : `${trimmed}/api`;
+  }
+  return "http://localhost:8000/api";
+};
+
+export const API_BASE_URL = getApiBaseUrl();
 
 // Transformer to map backend database snake_case structure to frontend expected camelCase structure
 export function normalizeJobOrder(be: any): any {
@@ -831,7 +840,13 @@ export const apiService = {
 
 export const subscribeToJobOrders = (onUpdate: (data?: any) => void) => {
   if (typeof window === "undefined") return () => { };
-  const wsUrl = "ws://localhost:8000/ws/job-orders";
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  let wsUrl = "ws://localhost:8000/ws/job-orders";
+  if (envUrl && envUrl.trim() !== "") {
+    const wsProto = envUrl.startsWith("https") ? "wss:" : "ws:";
+    const host = envUrl.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+    wsUrl = `${wsProto}//${host}/ws/job-orders`;
+  }
   let ws: WebSocket | null = null;
 
   try {
