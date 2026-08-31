@@ -11,17 +11,18 @@ from sqlalchemy import text
 Base.metadata.create_all(bind=engine)
 
 # Auto-migrate SQLite schema for new columns if needed
-with engine.connect() as conn:
-    try:
-        res = conn.execute(text("PRAGMA table_info(bundles);")).fetchall()
-        cols = [r[1] for r in res]
-        if "interval_km" not in cols:
-            conn.execute(text("ALTER TABLE bundles ADD COLUMN interval_km INTEGER DEFAULT 10000;"))
-        if "interval_months" not in cols:
-            conn.execute(text("ALTER TABLE bundles ADD COLUMN interval_months INTEGER DEFAULT 6;"))
-        conn.commit()
-    except Exception as e:
-        print("Migration check skipped/failed:", e)
+if engine.dialect.name == "sqlite":
+    with engine.connect() as conn:
+        try:
+            res = conn.execute(text("PRAGMA table_info(bundles);")).fetchall()
+            cols = [r[1] for r in res]
+            if "interval_km" not in cols:
+                conn.execute(text("ALTER TABLE bundles ADD COLUMN interval_km INTEGER DEFAULT 10000;"))
+            if "interval_months" not in cols:
+                conn.execute(text("ALTER TABLE bundles ADD COLUMN interval_months INTEGER DEFAULT 6;"))
+            conn.commit()
+        except Exception as e:
+            print("Migration check skipped/failed:", e)
 
 app = FastAPI(
     title="PiVeRan-PMS API",
