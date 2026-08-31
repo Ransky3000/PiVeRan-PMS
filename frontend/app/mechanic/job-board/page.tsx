@@ -14,6 +14,9 @@ import { MechanicJobCard } from "./MechanicJobCard";
 import { InspectionDrawer } from "./InspectionDrawer";
 import { AddMaterialModal } from "./AddMaterialModal";
 import { ProofLightbox } from "./ProofLightbox";
+import { CompletedVehicleCard } from "@/app/frontdesk/job-orders/CompletedVehicleCard";
+import { VehicleDetailDrawer } from "@/app/frontdesk/vehicles/VehicleDetailDrawer";
+import { JobOrderDrawer } from "@/app/frontdesk/job-orders/JobOrderDrawer";
 
 const INITIAL_MATERIAL_OPTIONS: SelectOption[] = [];
 
@@ -24,6 +27,12 @@ export default function MechanicJobBoardPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [drawerJobOrder, setDrawerJobOrder] = useState<JobOrder | null>(null);
   const [lightboxData, setLightboxData] = useState<{ itemIdx: number; photoIdx: number } | null>(null);
+  const [selectedVehicleForHistory, setSelectedVehicleForHistory] = useState<any | null>(null);
+  const [allVehicles, setAllVehicles] = useState<any[]>([]);
+
+  useEffect(() => {
+    apiService.getVehicles().then(setAllVehicles).catch(console.error);
+  }, []);
 
   // Materials master list & quick modal state
   const [materialsList, setMaterialsList] = useState<SelectOption[]>(INITIAL_MATERIAL_OPTIONS);
@@ -120,32 +129,62 @@ export default function MechanicJobBoardPage() {
   const wipJobsList = useMemo(() => activeMechanicsJobs.filter((j) => j.status === "Work in progress"), [activeMechanicsJobs]);
   const jobCompletedList = useMemo(() => activeMechanicsJobs.filter((j) => j.status === "Job completed"), [activeMechanicsJobs]);
 
-  const [completedDateFilter, setCompletedDateFilter] = useState<"today" | "7days" | "30days" | "all">("7days");
+  // Deduplicated Completed Vehicles map (1 card per vehicle for Mechanic Job completed tab)
+  const completedVehiclesGrouped = useMemo(() => {
+    const map = new Map<string, {
+      vehicleModel: string;
+      plateNumber: string;
+      ownerName: string;
+      vehiclePhotoUrl?: string;
+      jobs: JobOrder[];
+      latestDate?: string;
+      latestServiceType?: string;
+    }>();
+
+    jobCompletedList.forEach((j) => {
+      const key = (j.plateNumber || j.id).toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, {
+          vehicleModel: j.vehicleModel,
+          plateNumber: j.plateNumber,
+          ownerName: j.ownerName,
+          vehiclePhotoUrl: j.vehiclePhotoUrl,
+          jobs: [j],
+          latestDate: j.createdAt,
+          latestServiceType: j.serviceType
+        });
+      } else {
+        const existing = map.get(key)!;
+        existing.jobs.push(j);
+      }
+    });
+
+    map.forEach((group) => {
+      group.jobs.sort((a, b) => {
+        const timeA = new Date(a.completedAt || a.updatedAt || a.createdAt || 0).getTime();
+        const timeB = new Date(b.completedAt || b.updatedAt || b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+      const newest = group.jobs[0];
+      if (newest) {
+        group.latestDate = newest.createdAt;
+        group.latestServiceType = newest.serviceType;
+      }
+    });
+
+    return Array.from(map.values()).filter((group) => {
+      if (!searchTerm) return true;
+      const term = searchTerm.toLowerCase();
+      return (
+        group.vehicleModel.toLowerCase().includes(term) ||
+        group.plateNumber.toLowerCase().includes(term) ||
+        group.ownerName.toLowerCase().includes(term)
+      );
+    });
+  }, [jobCompletedList, searchTerm]);
 
   const filteredJobs = useMemo(() => {
     let list = activeTab === "NEW" ? newJobsList : activeTab === "WIP" ? wipJobsList : jobCompletedList;
-
-    if (activeTab === "JOB_COMPLETED" && completedDateFilter !== "all") {
-      const now = Date.now();
-      list = list.filter((j) => {
-        const rawDate = j.completedAt || j.updatedAt || j.createdAt;
-        if (!rawDate) return true;
-        const joDate = new Date(rawDate).getTime();
-
-        if (completedDateFilter === "today") {
-          const startOfToday = new Date().setHours(0, 0, 0, 0);
-          return joDate >= startOfToday;
-        } else if (completedDateFilter === "7days") {
-          const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-          return now - joDate <= sevenDaysMs;
-        } else if (completedDateFilter === "30days") {
-          const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-          return now - joDate <= thirtyDaysMs;
-        }
-        return true;
-      });
-    }
-
     return list.filter((j) => {
       return (
         j.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -154,7 +193,7 @@ export default function MechanicJobBoardPage() {
         j.plateNumber.toLowerCase().includes(searchTerm.toLowerCase())
       );
     });
-  }, [activeTab, newJobsList, wipJobsList, jobCompletedList, searchTerm, completedDateFilter]);
+  }, [activeTab, newJobsList, wipJobsList, jobCompletedList, searchTerm]);
 
   const updateDrawerJO = (updates: Partial<JobOrder>) => {
     if (!drawerJobOrder) return;
@@ -444,37 +483,12 @@ export default function MechanicJobBoardPage() {
             >
               Job completed
               <span className={`text-[10px] px-1.5 py-0.2 rounded-md ${activeTab === "JOB_COMPLETED" ? "bg-slate-800 text-slate-200" : "bg-slate-100 text-slate-500"}`}>
-                {jobCompletedList.length}
+                {completedVehiclesGrouped.length}
               </span>
             </button>
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto">
-            {activeTab === "JOB_COMPLETED" && (
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200/80 mr-2">
-                <span className="text-[10px] font-bold text-slate-500 px-1.5 uppercase tracking-wider">Date:</span>
-                {[
-                  { id: "today", label: "Today" },
-                  { id: "7days", label: "7 Days" },
-                  { id: "30days", label: "30 Days" },
-                  { id: "all", label: "All Time" }
-                ].map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setCompletedDateFilter(f.id as any)}
-                    className={`px-2 py-0.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      completedDateFilter === f.id
-                        ? "bg-emerald-600 text-white shadow-2xs"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:text-slate-200"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
-            )}
-
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
               <input
@@ -489,30 +503,118 @@ export default function MechanicJobBoardPage() {
         </div>
 
         {/* CARD GRID */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredJobs.length === 0 ? (
+        {activeTab === "JOB_COMPLETED" ? (
+          completedVehiclesGrouped.length === 0 ? (
             <div className="col-span-full py-16 px-4 text-center max-w-lg mx-auto bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3 my-6">
               <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
                 <Wrench className="w-7 h-7 text-slate-400" />
               </div>
               <div className="space-y-1">
-                <h3 className="font-bold text-slate-800 text-sm">No Active Jobs Found</h3>
+                <h3 className="font-bold text-slate-800 text-sm">No Completed Vehicles Found</h3>
                 <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-                  There are currently no job orders assigned under this status tab.
+                  There are currently no completed vehicle records assigned to you.
                 </p>
               </div>
             </div>
           ) : (
-            filteredJobs.map((jo) => (
-              <MechanicJobCard key={jo.id} jo={jo} onClick={() => setDrawerJobOrder({ ...jo })} />
-            ))
-          )}
-        </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {completedVehiclesGrouped.map((item) => (
+                <CompletedVehicleCard
+                  key={item.plateNumber || item.vehicleModel}
+                  vehicleModel={item.vehicleModel}
+                  plateNumber={item.plateNumber}
+                  ownerName={item.ownerName}
+                  vehiclePhotoUrl={item.vehiclePhotoUrl}
+                  completedJobsCount={item.jobs.length}
+                  latestCompletedDate={item.latestDate}
+                  latestServiceType={item.latestServiceType}
+                  onClick={() => {
+                    const matchedVehicle = allVehicles.find(
+                      (v) => (v.plate_number || v.plate || "").toLowerCase() === (item.plateNumber || "").toLowerCase()
+                    );
+                    setSelectedVehicleForHistory(
+                      matchedVehicle || {
+                        id: item.plateNumber || "v-1",
+                        vehicle_id: item.plateNumber || "v-1",
+                        make: item.vehicleModel.split(" ")[0] || "Vehicle",
+                        model: item.vehicleModel,
+                        year: 2022,
+                        color: "Black",
+                        plate_number: item.plateNumber,
+                        photo_url: item.vehiclePhotoUrl
+                      }
+                    );
+                  }}
+                />
+              ))}
+            </div>
+          )
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredJobs.length === 0 ? (
+              <div className="col-span-full py-16 px-4 text-center max-w-lg mx-auto bg-white rounded-2xl border border-slate-200/90 shadow-2xs space-y-3 my-6">
+                <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mx-auto text-slate-400">
+                  <Wrench className="w-7 h-7 text-slate-400" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-bold text-slate-800 text-sm">No Active Jobs Found</h3>
+                  <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+                    There are currently no job orders assigned under this status tab.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              filteredJobs.map((jo) => (
+                <MechanicJobCard key={jo.id} jo={jo} onClick={() => setDrawerJobOrder({ ...jo })} />
+              ))
+            )}
+          </div>
+        )}
       </div>
 
-      {/* INSPECTION DRAWER */}
+      {/* VEHICLE DETAIL & HISTORY DRAWER */}
+      {selectedVehicleForHistory && (
+        <VehicleDetailDrawer
+          vehicle={selectedVehicleForHistory}
+          hideFinancials={true}
+          onClose={() => {
+            setSelectedVehicleForHistory(null);
+            setDrawerJobOrder(null);
+          }}
+          onSaved={() => {}}
+          onDeleted={() => {
+            setSelectedVehicleForHistory(null);
+            setDrawerJobOrder(null);
+          }}
+          onSelectJobOrderForDetails={(jo) => {
+            setDrawerJobOrder(jo);
+          }}
+          selectedJobOrderId={drawerJobOrder?.id}
+        />
+      )}
+
+      {/* INSPECTION DRAWER / HISTORICAL DETAILS DOCKED SIDE-BY-SIDE */}
       <AnimatePresence>
-        {drawerJobOrder && (
+        {drawerJobOrder && selectedVehicleForHistory ? (
+          <div className="fixed right-[524px] top-20 bottom-6 z-[60] flex items-start justify-end pointer-events-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, x: 20 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.95, x: 20 }}
+              transition={{ type: "spring", damping: 25, stiffness: 250 }}
+              className="w-[460px] h-full max-h-[82vh] bg-white border border-slate-200/90 shadow-2xl rounded-3xl overflow-hidden flex flex-col pointer-events-auto"
+            >
+              <JobOrderDrawer
+                drawerJobOrder={drawerJobOrder}
+                onClose={() => setDrawerJobOrder(null)}
+                readOnly={true}
+                hideFinancials={true}
+                inline={true}
+                setLightboxData={setLightboxData}
+              />
+            </motion.div>
+          </div>
+        ) : drawerJobOrder ? (
           <InspectionDrawer
             key={drawerJobOrder.id}
             drawerJobOrder={drawerJobOrder}
@@ -551,7 +653,7 @@ export default function MechanicJobBoardPage() {
               }
             }}
           />
-        )}
+        ) : null}
       </AnimatePresence>
 
       {/* PROOF LIGHTBOX */}

@@ -11,6 +11,7 @@ interface VehicleDetailDrawerProps {
   onClose: () => void;
   onSaved: (v: any) => void;
   onDeleted: (id: string) => void;
+  hideFinancials?: boolean;
   onSelectJobOrderForDetails?: (jo: any) => void;
   selectedJobOrderId?: string | null;
 }
@@ -20,6 +21,7 @@ export function VehicleDetailDrawer({
   onClose,
   onSaved,
   onDeleted,
+  hideFinancials = false,
   onSelectJobOrderForDetails,
   selectedJobOrderId
 }: VehicleDetailDrawerProps) {
@@ -163,7 +165,7 @@ export function VehicleDetailDrawer({
             }`}
           >
             <Wrench className="w-3.5 h-3.5" />
-            <span>Specs & Owner</span>
+            <span>Description</span>
           </button>
 
           <button
@@ -329,6 +331,7 @@ export function VehicleDetailDrawer({
               vehicle={vehicle}
               jobOrders={vehicleJobOrders}
               isLoading={loadingHistory}
+              hideFinancials={hideFinancials}
               onSelectJobOrderForDetails={onSelectJobOrderForDetails}
               selectedJobOrderId={selectedJobOrderId}
             />

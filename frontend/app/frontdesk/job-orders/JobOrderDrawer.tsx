@@ -28,6 +28,7 @@ interface JobOrderDrawerProps {
   drawerJobOrder: JobOrder | null;
   onClose: () => void;
   readOnly?: boolean;
+  hideFinancials?: boolean;
   inline?: boolean;
   isEditingDrawer?: boolean;
   setIsEditingDrawer?: (editing: boolean) => void;
@@ -53,6 +54,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
   drawerJobOrder,
   onClose,
   readOnly = false,
+  hideFinancials = false,
   inline = false,
   isEditingDrawer = false,
   setIsEditingDrawer = () => {},
@@ -393,7 +395,7 @@ export const JobOrderDrawer: React.FC<JobOrderDrawerProps> = ({
           )}
 
           {/* SECTION 3: ESTIMATE */}
-          {drawerJobOrder && drawerJobOrder.status !== "New" && (
+          {!hideFinancials && drawerJobOrder && drawerJobOrder.status !== "New" && (
             <div className="px-5 py-4 border-b border-slate-100 space-y-3.5 text-xs">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 text-slate-500 font-semibold text-[10px] tracking-wide uppercase">

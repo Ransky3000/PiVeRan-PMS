@@ -16,6 +16,7 @@ interface VehicleHistoryTimelineProps {
   vehicle: any;
   jobOrders: JobOrder[];
   isLoading?: boolean;
+  hideFinancials?: boolean;
   onSelectJobOrderForDetails?: (jo: JobOrder | null) => void;
   selectedJobOrderId?: string | null;
 }
@@ -24,6 +25,7 @@ export const VehicleHistoryTimeline: React.FC<VehicleHistoryTimelineProps> = ({
   vehicle,
   jobOrders,
   isLoading = false,
+  hideFinancials = false,
   onSelectJobOrderForDetails,
   selectedJobOrderId
 }) => {
@@ -32,7 +34,9 @@ export const VehicleHistoryTimeline: React.FC<VehicleHistoryTimelineProps> = ({
   const totalVisits = jobOrders.length;
 
   const sortedJobs = [...jobOrders].sort((a, b) => {
-    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    const timeA = new Date(a.completedAt || a.updatedAt || a.createdAt || 0).getTime();
+    const timeB = new Date(b.completedAt || b.updatedAt || b.createdAt || 0).getTime();
+    return timeB - timeA;
   });
 
   // Auto-select latest visit on load when callback provided
@@ -51,7 +55,13 @@ export const VehicleHistoryTimeline: React.FC<VehicleHistoryTimelineProps> = ({
     );
   }
 
-  const latestOdometer = sortedJobs[0] ? sortedJobs[0].odometer : (vehicle.odometer || "0");
+  const maxOdoJob = sortedJobs.reduce((prev, curr) => {
+    const prevOdo = parseInt(String(prev?.odometer || "0").replace(/[^\d]/g, "")) || 0;
+    const currOdo = parseInt(String(curr?.odometer || "0").replace(/[^\d]/g, "")) || 0;
+    return currOdo >= prevOdo ? curr : prev;
+  }, sortedJobs[0]);
+
+  const latestOdometer = maxOdoJob ? maxOdoJob.odometer : (sortedJobs[0]?.odometer || vehicle.odometer || "0");
 
   const totalSpend = sortedJobs.reduce((acc, jo) => {
     if (jo.status === "Job completed" || jo.status === "Work in progress") {
@@ -83,7 +93,7 @@ export const VehicleHistoryTimeline: React.FC<VehicleHistoryTimelineProps> = ({
   return (
     <div className="space-y-5 text-slate-900">
       {/* ── LIFETIME STATS SUMMARY CARDS ── */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className={`grid ${hideFinancials ? "grid-cols-2" : "grid-cols-3"} gap-2`}>
         <div className="bg-white border border-slate-200 rounded-2xl p-3 text-center shadow-2xs">
           <span className="block text-[10px] font-bold text-slate-400 uppercase">Visits</span>
           <span className="text-base font-black text-slate-900">{totalVisits}</span>
@@ -96,12 +106,14 @@ export const VehicleHistoryTimeline: React.FC<VehicleHistoryTimelineProps> = ({
           </span>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-3 text-center shadow-2xs">
-          <span className="block text-[10px] font-bold text-slate-400 uppercase">Total Spend</span>
-          <span className="text-xs font-black text-emerald-700 truncate block mt-0.5">
-            ₱{totalSpend.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-          </span>
-        </div>
+        {!hideFinancials && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-3 text-center shadow-2xs">
+            <span className="block text-[10px] font-bold text-slate-400 uppercase">Total Spend</span>
+            <span className="text-xs font-black text-emerald-700 truncate block mt-0.5">
+              ₱{totalSpend.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── TIMELINE STREAM ── */}
