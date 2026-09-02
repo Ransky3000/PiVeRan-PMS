@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from typing import List
 from backend.app.database import get_db
 from backend.app.models.master import Owner, Vehicle, Material, Labor, Bundle, BundleService
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/master", tags=["Master Data Catalog"])
 # --- Owners Endpoints ---
 @router.get("/owners", response_model=List[OwnerResponse])
 def get_owners(db: Session = Depends(get_db)):
-    return db.query(Owner).all()
+    return db.query(Owner).options(selectinload(Owner.vehicles)).all()
 
 @router.post("/owners", response_model=OwnerResponse, status_code=status.HTTP_201_CREATED)
 def create_owner(data: OwnerCreate, db: Session = Depends(get_db)):
@@ -50,7 +50,7 @@ def update_owner(owner_id: str, data: OwnerUpdate, db: Session = Depends(get_db)
 # --- Vehicles Endpoints ---
 @router.get("/vehicles", response_model=List[VehicleResponse])
 def get_vehicles(db: Session = Depends(get_db)):
-    return db.query(Vehicle).all()
+    return db.query(Vehicle).options(selectinload(Vehicle.owners)).all()
 
 @router.post("/vehicles", response_model=VehicleResponse, status_code=status.HTTP_201_CREATED)
 def create_vehicle(data: VehicleCreate, db: Session = Depends(get_db)):
@@ -128,7 +128,7 @@ def delete_material(materials_id: str, db: Session = Depends(get_db)):
 # --- Labor Endpoints ---
 @router.get("/labor", response_model=List[LaborResponse])
 def get_labor(db: Session = Depends(get_db)):
-    return db.query(Labor).all()
+    return db.query(Labor).options(selectinload(Labor.materials)).all()
 
 @router.post("/labor", response_model=LaborResponse, status_code=status.HTTP_201_CREATED)
 def create_labor(data: LaborCreate, db: Session = Depends(get_db)):
@@ -162,7 +162,7 @@ def delete_labor(labor_id: str, db: Session = Depends(get_db)):
 # --- Bundles Endpoints ---
 @router.get("/bundles", response_model=List[BundleResponse])
 def get_bundles(db: Session = Depends(get_db)):
-    return db.query(Bundle).all()
+    return db.query(Bundle).options(selectinload(Bundle.services).selectinload(Labor.materials)).all()
 
 @router.post("/bundles", response_model=BundleResponse, status_code=status.HTTP_201_CREATED)
 def create_bundle(data: BundleCreate, db: Session = Depends(get_db)):

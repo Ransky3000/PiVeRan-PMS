@@ -1,4 +1,5 @@
 // apiService.ts - Real API backend service
+import { dataCache } from "@/lib/dataCache";
 
 const getApiBaseUrl = (): string => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -87,16 +88,43 @@ export function normalizeJobOrder(be: any): any {
 }
 
 export const apiService = {
-  getJobOrders: async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/job-orders`);
-      if (!res.ok) throw new Error("Failed to fetch job orders");
-      const data = await res.json();
-      return (data || []).map(normalizeJobOrder);
-    } catch (e) {
-      console.warn("Failed to fetch job orders from backend", e);
-      return [];
-    }
+  getJobOrders: async (forceRefresh = false) => {
+    return dataCache.getOrFetch(
+      "job-orders",
+      async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/job-orders`);
+          if (!res.ok) throw new Error("Failed to fetch job orders");
+          const data = await res.json();
+          return (data || []).map(normalizeJobOrder);
+        } catch (e) {
+          console.warn("Failed to fetch job orders from backend", e);
+          return [];
+        }
+      },
+      25000,
+      forceRefresh
+    );
+  },
+
+  getVehicleServiceHistory: async (vehicleId: string, forceRefresh = false) => {
+    if (!vehicleId) return [];
+    return dataCache.getOrFetch(
+      `vehicle-service-history:${vehicleId}`,
+      async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/job-orders/by-vehicle/${vehicleId}`);
+          if (!res.ok) throw new Error("Failed to fetch vehicle service history");
+          const data = await res.json();
+          return (data || []).map(normalizeJobOrder);
+        } catch (e) {
+          console.warn(`Failed to fetch service history for vehicle ${vehicleId}`, e);
+          return [];
+        }
+      },
+      25000,
+      forceRefresh
+    );
   },
 
   getJobOrder: async (id: string) => {
@@ -119,6 +147,8 @@ export const apiService = {
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error("Failed to update status");
+    dataCache.invalidate("job-orders");
+    dataCache.invalidate("vehicle-service-history");
     return await res.json();
   },
 
@@ -136,6 +166,8 @@ export const apiService = {
       body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error("Failed to update inspection item");
+    dataCache.invalidate("job-orders");
+    dataCache.invalidate("vehicle-service-history");
     return await res.json();
   },
 
@@ -206,6 +238,8 @@ export const apiService = {
       body: JSON.stringify(jobOrder)
     });
     if (!res.ok) throw new Error("Failed to create job order");
+    dataCache.invalidate("job-orders");
+    dataCache.invalidate("vehicle-service-history");
     const data = await res.json();
     return normalizeJobOrder(data);
   },
@@ -217,6 +251,8 @@ export const apiService = {
       body: JSON.stringify(updates)
     });
     if (!res.ok) throw new Error("Failed to update cart item");
+    dataCache.invalidate("job-orders");
+    dataCache.invalidate("vehicle-service-history");
     return await res.json();
   },
 
@@ -234,6 +270,8 @@ export const apiService = {
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error("Failed to update job order");
+      dataCache.invalidate("job-orders");
+      dataCache.invalidate("vehicle-service-history");
       const data = await res.json();
       return normalizeJobOrder(data);
     } catch (e) {
@@ -248,6 +286,8 @@ export const apiService = {
         method: "DELETE"
       });
       if (!res.ok) throw new Error("Failed to delete job order");
+      dataCache.invalidate("job-orders");
+      dataCache.invalidate("vehicle-service-history");
       return true;
     } catch (e) {
       console.error("Failed to delete job order", e);
@@ -255,21 +295,28 @@ export const apiService = {
     }
   },
 
-  getMaterials: async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/materials`);
-      if (!res.ok) throw new Error("Failed to fetch materials");
-      const data = await res.json();
-      return (data || []).map((m: any) => ({
-        id: m.materials_id,
-        name: m.name,
-        description: m.description || "",
-        price: m.price
-      }));
-    } catch (e) {
-      console.warn("Backend unavailable, falling back to mock materials", e);
-      return [];
-    }
+  getMaterials: async (forceRefresh = false) => {
+    return dataCache.getOrFetch(
+      "materials",
+      async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/master/materials`);
+          if (!res.ok) throw new Error("Failed to fetch materials");
+          const data = await res.json();
+          return (data || []).map((m: any) => ({
+            id: m.materials_id,
+            name: m.name,
+            description: m.description || "",
+            price: m.price
+          }));
+        } catch (e) {
+          console.warn("Backend unavailable, falling back to mock materials", e);
+          return [];
+        }
+      },
+      30000,
+      forceRefresh
+    );
   },
 
   createMaterial: async (material: any) => {
@@ -283,6 +330,7 @@ export const apiService = {
       })
     });
     if (!res.ok) throw new Error("Failed to create material");
+    dataCache.invalidate("materials");
     const m = await res.json();
     return {
       id: m.materials_id,
@@ -299,6 +347,7 @@ export const apiService = {
       body: JSON.stringify(updates)
     });
     if (!res.ok) throw new Error("Failed to update material");
+    dataCache.invalidate("materials");
     const m = await res.json();
     return {
       id: m.materials_id,
@@ -313,36 +362,44 @@ export const apiService = {
       method: "DELETE"
     });
     if (!res.ok) throw new Error("Failed to delete material");
+    dataCache.invalidate("materials");
     return true;
   },
 
-  getOwners: async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/owners`);
-      if (!res.ok) throw new Error("Failed to fetch owners");
-      const data = await res.json();
-      return (data || []).map((o: any) => ({
-        id: o.owner_id,
-        name: o.name,
-        phone: o.contact_number,
-        fb_handle: o.facebook || "",
-        vehicles: (o.vehicles || []).map((v: any) => ({
-          id: v.vehicle_id || v.id,
-          vehicle_id: v.vehicle_id || v.id,
-          plate_number: v.plate_number || v.plate,
-          plate: v.plate_number || v.plate,
-          make: v.make,
-          model: v.model,
-          year: v.year,
-          color: v.color,
-          photo_url: v.photo_url || v.photoUrl || null,
-          photoUrl: v.photo_url || v.photoUrl || null
-        }))
-      }));
-    } catch (e) {
-      console.warn("Failed to fetch owners list", e);
-      return [];
-    }
+  getOwners: async (forceRefresh = false) => {
+    return dataCache.getOrFetch(
+      "owners",
+      async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/master/owners`);
+          if (!res.ok) throw new Error("Failed to fetch owners");
+          const data = await res.json();
+          return (data || []).map((o: any) => ({
+            id: o.owner_id,
+            name: o.name,
+            phone: o.contact_number,
+            fb_handle: o.facebook || "",
+            vehicles: (o.vehicles || []).map((v: any) => ({
+              id: v.vehicle_id || v.id,
+              vehicle_id: v.vehicle_id || v.id,
+              plate_number: v.plate_number || v.plate,
+              plate: v.plate_number || v.plate,
+              make: v.make,
+              model: v.model,
+              year: v.year,
+              color: v.color,
+              photo_url: v.photo_url || v.photoUrl || null,
+              photoUrl: v.photo_url || v.photoUrl || null
+            }))
+          }));
+        } catch (e) {
+          console.warn("Failed to fetch owners list", e);
+          return [];
+        }
+      },
+      30000,
+      forceRefresh
+    );
   },
 
   createOwner: async (owner: any) => {
@@ -357,6 +414,8 @@ export const apiService = {
       })
     });
     if (!res.ok) throw new Error("Failed to create owner");
+    dataCache.invalidate("owners");
+    dataCache.invalidate("vehicles");
     const o = await res.json();
     return {
       id: o.owner_id,
@@ -378,33 +437,40 @@ export const apiService = {
     };
   },
 
-  getVehicles: async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/vehicles`);
-      if (!res.ok) throw new Error("Failed to fetch vehicles");
-      const data = await res.json();
-      return (data || []).map((v: any) => ({
-        id: v.vehicle_id,
-        vehicle_id: v.vehicle_id,
-        plate_number: v.plate_number,
-        plate: v.plate_number,
-        make: v.make,
-        model: v.model,
-        year: v.year,
-        color: v.color,
-        photo_url: v.photo_url || null,
-        photoUrl: v.photo_url || null,
-        owners: (v.owners || []).map((o: any) => ({
-          id: o.owner_id,
-          name: o.name,
-          phone: o.contact_number,
-          fb_handle: o.facebook || ""
-        }))
-      }));
-    } catch (e) {
-      console.warn("Failed to fetch vehicles list", e);
-      return [];
-    }
+  getVehicles: async (forceRefresh = false) => {
+    return dataCache.getOrFetch(
+      "vehicles",
+      async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/master/vehicles`);
+          if (!res.ok) throw new Error("Failed to fetch vehicles");
+          const data = await res.json();
+          return (data || []).map((v: any) => ({
+            id: v.vehicle_id,
+            vehicle_id: v.vehicle_id,
+            plate_number: v.plate_number,
+            plate: v.plate_number,
+            make: v.make,
+            model: v.model,
+            year: v.year,
+            color: v.color,
+            photo_url: v.photo_url || null,
+            photoUrl: v.photo_url || null,
+            owners: (v.owners || []).map((o: any) => ({
+              id: o.owner_id,
+              name: o.name,
+              phone: o.contact_number,
+              fb_handle: o.facebook || ""
+            }))
+          }));
+        } catch (e) {
+          console.warn("Failed to fetch vehicles list", e);
+          return [];
+        }
+      },
+      30000,
+      forceRefresh
+    );
   },
 
   createVehicle: async (vehicle: any) => {
@@ -423,6 +489,8 @@ export const apiService = {
       })
     });
     if (!res.ok) throw new Error("Failed to create vehicle");
+    dataCache.invalidate("vehicles");
+    dataCache.invalidate("owners");
     const v = await res.json();
     return {
       id: v.vehicle_id,
@@ -451,6 +519,10 @@ export const apiService = {
       body: JSON.stringify(updates)
     });
     if (!res.ok) throw new Error("Failed to update vehicle");
+    dataCache.invalidate("vehicles");
+    dataCache.invalidate("owners");
+    dataCache.invalidate("job-orders");
+    dataCache.invalidate("vehicle-service-history");
     const v = await res.json();
     return {
       id: v.vehicle_id,
@@ -477,6 +549,10 @@ export const apiService = {
       method: "DELETE"
     });
     if (!res.ok) throw new Error("Failed to delete vehicle");
+    dataCache.invalidate("vehicles");
+    dataCache.invalidate("owners");
+    dataCache.invalidate("job-orders");
+    dataCache.invalidate("vehicle-service-history");
     return true;
   },
 
@@ -546,30 +622,38 @@ export const apiService = {
       method: "DELETE"
     });
     if (!res.ok) throw new Error("Failed to delete labor");
+    dataCache.invalidate("labor");
     return true;
   },
 
-  getBundles: async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/master/bundles`);
-      if (!res.ok) throw new Error("Failed to fetch bundles");
-      const data = await res.json();
-      return (data || []).map((b: any) => ({
-        id: b.bundle_id,
-        packageName: b.bundle_name,
-        targetInterval: b.interval,
-        intervalKm: b.interval_km || 10000,
-        intervalMonths: b.interval_months || 6,
-        description: b.description || "",
-        servicesIncluded: (b.services || []).map((s: any) => s.labor_name),
-        packagePrice: `₱${parseFloat(b.discounted_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-        standaloneSum: `₱${parseFloat(b.original_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-        popularBadge: false
-      }));
-    } catch (e) {
-      console.warn("Failed to fetch bundles", e);
-      return [];
-    }
+  getBundles: async (forceRefresh = false) => {
+    return dataCache.getOrFetch(
+      "bundles",
+      async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/master/bundles`);
+          if (!res.ok) throw new Error("Failed to fetch bundles");
+          const data = await res.json();
+          return (data || []).map((b: any) => ({
+            id: b.bundle_id,
+            packageName: b.bundle_name,
+            targetInterval: b.interval,
+            intervalKm: b.interval_km || 10000,
+            intervalMonths: b.interval_months || 6,
+            description: b.description || "",
+            servicesIncluded: (b.services || []).map((s: any) => s.labor_name),
+            packagePrice: `₱${parseFloat(b.discounted_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+            standaloneSum: `₱${parseFloat(b.original_price).toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+            popularBadge: false
+          }));
+        } catch (e) {
+          console.warn("Failed to fetch bundles", e);
+          return [];
+        }
+      },
+      30000,
+      forceRefresh
+    );
   },
 
   createBundle: async (bundle: any) => {
@@ -588,6 +672,7 @@ export const apiService = {
       })
     });
     if (!res.ok) throw new Error("Failed to create bundle");
+    dataCache.invalidate("bundles");
     const b = await res.json();
     return {
       id: b.bundle_id,
@@ -855,9 +940,13 @@ export const subscribeToJobOrders = (onUpdate: (data?: any) => void) => {
       try {
         const data = JSON.parse(event.data);
         if (data.type === "JOB_ORDER_UPDATED") {
+          dataCache.invalidate("job-orders");
+          dataCache.invalidate("vehicle-service-history");
           onUpdate(data);
         }
       } catch (e) {
+        dataCache.invalidate("job-orders");
+        dataCache.invalidate("vehicle-service-history");
         onUpdate();
       }
     };

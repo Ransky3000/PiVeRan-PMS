@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Car, X, Save, Trash2, Wrench, Clock } from "lucide-react";
 import { apiService } from "@/app/apiService";
 import { VehicleHistoryTimeline } from "./VehicleHistoryTimeline";
+import { compressImage } from "@/lib/imageUtils";
 
 interface VehicleDetailDrawerProps {
   vehicle: any;
@@ -40,18 +41,13 @@ export function VehicleDetailDrawer({
 
   useEffect(() => {
     if (activeDrawerTab === "HISTORY" && vehicle) {
+      const vId = vehicle.id || vehicle.vehicle_id;
+      if (!vId) return;
       setLoadingHistory(true);
       apiService
-        .getJobOrders()
-        .then((allJobs) => {
-          const vId = vehicle.id || vehicle.vehicle_id;
-          const vPlate = (vehicle.plate_number || vehicle.plate || "").toLowerCase();
-          const filtered = (allJobs || []).filter((j: any) => {
-            const joVid = j.vehicleId || j.vehicle_id;
-            const joPlate = (j.plateNumber || j.plate_number || j.vehicle?.plate_number || "").toLowerCase();
-            return (joVid && joVid === vId) || (vPlate && joPlate === vPlate);
-          });
-          setVehicleJobOrders(filtered);
+        .getVehicleServiceHistory(vId)
+        .then((jobs) => {
+          setVehicleJobOrders(jobs || []);
         })
         .catch(console.error)
         .finally(() => setLoadingHistory(false));
@@ -198,23 +194,19 @@ export function VehicleDetailDrawer({
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = async () => {
-                              const dataUrl = reader.result as string;
-                              try {
-                                const updated = await apiService.updateVehicle(
-                                  vehicle.id || vehicle.vehicle_id,
-                                  { photo_url: dataUrl }
-                                );
-                                if (updated) onSaved(updated);
-                              } catch (err) {
-                                console.error("Failed to update vehicle image", err);
-                              }
-                            };
-                            reader.readAsDataURL(file);
+                            try {
+                              const compressedDataUrl = await compressImage(file, 600, 600, 0.75);
+                              const updated = await apiService.updateVehicle(
+                                vehicle.id || vehicle.vehicle_id,
+                                { photo_url: compressedDataUrl }
+                              );
+                              if (updated) onSaved(updated);
+                            } catch (err) {
+                              console.error("Failed to update vehicle image", err);
+                            }
                           }
                         }}
                         className="hidden"
@@ -227,23 +219,19 @@ export function VehicleDetailDrawer({
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = async () => {
-                            const dataUrl = reader.result as string;
-                            try {
-                              const updated = await apiService.updateVehicle(
-                                vehicle.id || vehicle.vehicle_id,
-                                { photo_url: dataUrl }
-                              );
-                              if (updated) onSaved(updated);
-                            } catch (err) {
-                              console.error("Failed to update vehicle image", err);
-                            }
-                          };
-                          reader.readAsDataURL(file);
+                          try {
+                            const compressedDataUrl = await compressImage(file, 600, 600, 0.75);
+                            const updated = await apiService.updateVehicle(
+                              vehicle.id || vehicle.vehicle_id,
+                              { photo_url: compressedDataUrl }
+                            );
+                            if (updated) onSaved(updated);
+                          } catch (err) {
+                            console.error("Failed to update vehicle image", err);
+                          }
                         }
                       }}
                       className="hidden"

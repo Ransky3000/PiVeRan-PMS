@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { VehicleDetailDrawer } from "./VehicleDetailDrawer";
 import { JobOrderDrawer } from "@/app/frontdesk/job-orders/JobOrderDrawer";
 import { getItemPhotos } from "@/app/frontdesk/job-orders/jobOrderHelpers";
+import { compressImage } from "@/lib/imageUtils";
 
 export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<any[]>([]);
@@ -81,14 +82,15 @@ export default function VehiclesPage() {
     }
   };
 
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setNewPhotoUrl(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const compressed = await compressImage(file, 600, 600, 0.75);
+        setNewPhotoUrl(compressed);
+      } catch (err) {
+        console.error("Failed to compress photo", err);
+      }
     }
   };
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import List
 from datetime import datetime, timedelta
 
@@ -16,6 +16,21 @@ from backend.app.schemas.job_order import (
 from backend.app.websocket_manager import ws_manager
 
 router = APIRouter(prefix="/api/job-orders", tags=["Job Orders"])
+
+def get_eager_job_orders_query(db: Session):
+    return (
+        db.query(JobOrder)
+        .options(
+            joinedload(JobOrder.owner),
+            joinedload(JobOrder.vehicle),
+            joinedload(JobOrder.bundle),
+            selectinload(JobOrder.mechanics),
+            selectinload(JobOrder.checklist_items).joinedload(ChecklistDetail.labor),
+            selectinload(JobOrder.checklist_items)
+            .selectinload(ChecklistDetail.cart_items)
+            .joinedload(Cart.material),
+        )
+    )
 
 def resolve_bundle_services(bundle_id: str, db: Session, resolved_ids: set = None) -> list:
     if resolved_ids is None:
@@ -142,12 +157,22 @@ def map_job_order_to_response(jo: JobOrder) -> dict:
 
 @router.get("", response_model=List[JobOrderResponse])
 def get_job_orders(db: Session = Depends(get_db)):
-    job_orders = db.query(JobOrder).all()
+    job_orders = get_eager_job_orders_query(db).order_by(JobOrder.created_at.desc()).all()
+    return [map_job_order_to_response(jo) for jo in job_orders]
+
+@router.get("/by-vehicle/{vehicle_id}", response_model=List[JobOrderResponse])
+def get_job_orders_by_vehicle(vehicle_id: str, db: Session = Depends(get_db)):
+    job_orders = (
+        get_eager_job_orders_query(db)
+        .filter(JobOrder.vehicle_id == vehicle_id)
+        .order_by(JobOrder.created_at.desc())
+        .all()
+    )
     return [map_job_order_to_response(jo) for jo in job_orders]
 
 @router.get("/{jo_id}", response_model=JobOrderResponse)
 def get_job_order(jo_id: str, db: Session = Depends(get_db)):
-    jo = db.query(JobOrder).filter(JobOrder.jo_id == jo_id).first()
+    jo = get_eager_job_orders_query(db).filter(JobOrder.jo_id == jo_id).first()
     if not jo:
         raise HTTPException(status_code=404, detail="Job Order not found")
     return map_job_order_to_response(jo)
